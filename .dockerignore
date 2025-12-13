@@ -1,0 +1,60 @@
+# ==========================
+# Git & Version Control
+# ==========================
+.git
+.gitignore
+
+# ==========================
+# Python Build Artifacts
+# ==========================
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# ==========================
+# Virtual Environments
+# ==========================
+.venv/
+venv/
+env/
+ENV/
+*.env
+*.venv
+
+# ==========================
+# Tests & Docs
+# ==========================
+tests/
+docs/
+*.md
+
+# ==========================
+# Logs & Temp Files
+# ==========================
+*.log
+tmp/
+test-results/
+
+# ==========================
+# IDE / Editor
+# ==========================
+.vscode/
+.idea/
+
+# ==========================
+# OS Files
+# ==========================
+.DS_Store
+Thumbs.db
+
+# ==========================
+# CI/CD Configs (not needed in runtime image)
+# ==========================
+.gitlab-ci.yml
+docker-compose.yml
+docker-compose.override.yml

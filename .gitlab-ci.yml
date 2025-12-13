@@ -1,18 +1,116 @@
-# You can override the included template(s) by including variable overrides
-# SAST customization: https://docs.gitlab.com/ee/user/application_security/sast/#customizing-the-sast-settings
-# Secret Detection customization: https://docs.gitlab.com/user/application_security/secret_detection/pipeline/configure
-# Dependency Scanning customization: https://docs.gitlab.com/ee/user/application_security/dependency_scanning/#customizing-the-dependency-scanning-settings
-# Container Scanning customization: https://docs.gitlab.com/ee/user/application_security/container_scanning/#customizing-the-container-scanning-settings
-# Note that environment variables can be set in several places
-# See https://docs.gitlab.com/ee/ci/variables/#cicd-variable-precedence
 stages:
-- test
-- secret-detection
-sast:
-  stage: test
-include:
-- template: Security/Secret-Detection.gitlab-ci.yml
+  - scan_code
+  - build
+  - docker
+  - scan_image
+
 variables:
-  SECRET_DETECTION_ENABLED: 'true'
-secret_detection:
-  stage: secret-detection
+  DOCKER_BUILDKIT: "1"
+  IMAGE_NAME: "$CI_REGISTRY_IMAGE/simple-time-service"
+  # Use git tag if available (for releases), otherwise fallback to commit SHA
+  IMAGE_TAG: "${CI_COMMIT_TAG:-$CI_COMMIT_SHORT_SHA}"
+
+# ---------------------------
+# 🔍 CODE SECURITY SCANS
+# ---------------------------
+
+# SAST — Multi-language static analysis
+semgrep_scan:
+  stage: scan_code
+  image: returntocorp/semgrep:latest
+  script:
+    - echo "Running Semgrep SAST scan..."
+    - semgrep --config p/ci --error --exclude tests/
+  allow_failure: true
+  only:
+    - merge_requests
+    - main
+    - tags
+
+# Secret Detection — API keys, tokens, creds
+gitleaks_scan:
+  stage: scan_code
+  image: zricethezav/gitleaks:latest
+  script:
+    - echo "Scanning for secrets with Gitleaks..."
+    - gitleaks detect --source . --no-banner --exit-code 1
+  allow_failure: false
+  only:
+    - merge_requests
+    - main
+    - tags
+
+# Dockerfile Lint — security & efficiency
+hadolint_scan:
+  stage: scan_code
+  image: hadolint/hadolint:latest
+  script:
+    - echo "Linting Dockerfile with Hadolint..."
+    - hadolint Dockerfile
+  allow_failure: true
+  only:
+    - merge_requests
+    - main
+    - tags
+
+# ---------------------------
+# 🧱 BUILD STAGE
+# ---------------------------
+build:
+  stage: build
+  image: python:3.11
+  script:
+    - echo "Running build validation..."
+    - pip install -r requirements.txt
+    - python -m compileall app/
+  artifacts:
+    paths:
+      - app/__pycache__/
+    expire_in: 1 hour
+  only:
+    - merge_requests
+    - main
+    - tags
+
+# ---------------------------
+# 🐳 DOCKER BUILD & PUSH
+# ---------------------------
+docker:
+  stage: docker
+  image: docker:25.0.3
+  services:
+    - docker:dind
+  variables:
+    DOCKER_DRIVER: overlay2
+  script:
+    - echo "Logging into container registry..."
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
+
+    # Optional: setup Buildx for multi-arch (amd64 + arm64)
+    - docker buildx create --use
+    - docker buildx inspect --bootstrap
+
+    - echo "Building Docker image with tag: $IMAGE_TAG"
+    - docker buildx build \
+        --platform linux/amd64,linux/arm64 \
+        -t "$IMAGE_NAME:$IMAGE_TAG" \
+        -t "$IMAGE_NAME:$CI_COMMIT_SHORT_SHA" \
+        -t "$IMAGE_NAME:latest" \
+    - merge_requests
+    - main
+    - tags
+
+# ---------------------------
+# 🧫 IMAGE SECURITY SCAN
+# ---------------------------
+trivy_scan:
+  stage: scan_image
+  image: aquasec/trivy:latest
+  script:
+    - echo "Scanning Docker image for vulnerabilities..."
+    - trivy image --exit-code 0 "$IMAGE_NAME:$IMAGE_TAG" || true
+    - trivy config --exit-code 0 . || true
+  allow_failure: true
+  only:
+    - main
+    - tags
