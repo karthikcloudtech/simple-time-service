@@ -10,6 +10,7 @@ variables:
   # Use git tag if available (for releases), otherwise fallback to commit SHA
   IMAGE_TAG: "${CI_COMMIT_TAG:-$CI_COMMIT_SHORT_SHA}"
 
+
 # ---------------------------
 # 🔍 CODE SECURITY SCANS
 # ---------------------------
@@ -59,6 +60,8 @@ hadolint_scan:
 # ---------------------------
 build:
   stage: build
+  variables:
+    DEBUG: "true" 
   image: python:3.11
   script:
     - echo "Running build validation..."
@@ -90,6 +93,10 @@ docker:
     - docker buildx create --use
     - docker buildx inspect --bootstrap
     - echo "Building Docker image with tag $IMAGE_TAG"
+    - echo "IMAGE_NAME=$IMAGE_NAME"
+    - echo "IMAGE_TAG=$IMAGE_TAG"
+    - echo "CI_COMMIT_SHORT_SHA=$CI_COMMIT_SHORT_SHA"
+
     - docker buildx build \
         --platform linux/amd64,linux/arm64 \
         -t "$IMAGE_NAME:$IMAGE_TAG" \
