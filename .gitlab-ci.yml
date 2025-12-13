@@ -20,7 +20,7 @@ semgrep_scan:
   image: returntocorp/semgrep:latest
   script:
     - echo "Running Semgrep SAST scan..."
-    - semgrep --config p/ci --error --exclude tests/
+    - semgrep --config p/ci --error --exclude tests/ .
   allow_failure: true
   only:
     - merge_requests
@@ -30,7 +30,9 @@ semgrep_scan:
 # Secret Detection — API keys, tokens, creds
 gitleaks_scan:
   stage: scan_code
-  image: zricethezav/gitleaks:latest
+  image:
+    name: zricethezav/gitleaks:latest
+    entrypoint: [""]
   script:
     - echo "Scanning for secrets with Gitleaks..."
     - gitleaks detect --source . --no-banner --exit-code 1
@@ -43,16 +45,16 @@ gitleaks_scan:
 # Dockerfile Lint — security & efficiency
 hadolint_scan:
   stage: scan_code
-  image: hadolint/hadolint:latest
+  image:
+    name: hadolint/hadolint:latest
+    entrypoint: [""]
   script:
-    - echo "Linting Dockerfile with Hadolint..."
     - hadolint Dockerfile
   allow_failure: true
   only:
     - merge_requests
     - main
     - tags
-
 # ---------------------------
 # 🧱 BUILD STAGE
 # ---------------------------
