@@ -116,5 +116,4 @@ trivy_scan:
     - trivy config --exit-code 0 . || true
   allow_failure: true
   only:
-    - main
-    - tags
+    - merge_requests
