@@ -132,3 +132,5 @@ trivy_scan:
   only:
     - merge_requests
   allow_failure: true
+  rules:
+    - when: always       # runs even if previous jobs fail
