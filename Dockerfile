@@ -2,18 +2,18 @@
 FROM public.ecr.aws/amazonlinux/amazonlinux:2023 AS builder
 
 RUN dnf install -y \
-    python3.14 \
-    python3.14-pip \
+    python3.11 \
+    python3.11-pip \
     gcc \
  && dnf clean all
 WORKDIR /build
 COPY requirements.txt .
-RUN python3.14 -m pip install --no-cache-dir --prefix=/install -r requirements.txt
+RUN python3.11 -m pip install --no-cache-dir --prefix=/install -r requirements.txt
 
 #stage-2
 FROM public.ecr.aws/amazonlinux/amazonlinux:2023
 RUN dnf install -y \
-    python3.14 \
+    python3.11 \
     shadow-utils \
  && dnf clean all
 WORKDIR /app
@@ -24,4 +24,4 @@ RUN useradd -m appuser \
  && chown -R appuser:appuser /app /usr/local
 USER appuser
 EXPOSE 8080
-CMD ["python3.14", "app/app.py"]
+CMD ["python3.11", "app/app.py"]

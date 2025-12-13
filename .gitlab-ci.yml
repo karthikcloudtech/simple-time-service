@@ -59,7 +59,7 @@ hadolint_scan:
 # ---------------------------
 build:
   stage: build
-  image: python:3.14
+  image: python:3.11
   script:
     - echo "Running build validation..."
     - pip install -r requirements.txt
@@ -96,6 +96,8 @@ docker:
         -t "$IMAGE_NAME:$IMAGE_TAG" \
         -t "$IMAGE_NAME:$CI_COMMIT_SHORT_SHA" \
         -t "$IMAGE_NAME:latest" \
+        --push \
+        .
   only:
     - merge_requests
     - main
