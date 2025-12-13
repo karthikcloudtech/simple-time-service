@@ -80,12 +80,10 @@ build:
 docker:
   stage: docker
   variables:
-    DEBUG: "true" 
+    DOCKER_DRIVER: overlay2
   image: docker:29.1.3
   services:
     - docker:dind
-  variables:
-    DOCKER_DRIVER: overlay2
   script:
     - echo "Logging into container registry..."
     - echo "$CI_REGISTRY_PASSWORD" | docker login "$CI_REGISTRY" -u "$CI_REGISTRY_USER" --password-stdin
@@ -96,13 +94,14 @@ docker:
     - echo "IMAGE_NAME=$IMAGE_NAME"
     - echo "IMAGE_TAG=$IMAGE_TAG"
     - echo "CI_COMMIT_SHORT_SHA=$CI_COMMIT_SHORT_SHA"
-    - docker buildx build --platform linux/amd64,linux/arm64 -t "$IMAGE_NAME:$CI_COMMIT_SHORT_SHA" -t "$IMAGE_NAME:latest" --push .
+    #- docker buildx build --platform linux/amd64,linux/arm64 -t "$IMAGE_NAME:$CI_COMMIT_SHORT_SHA" -t "$IMAGE_NAME:latest" --push .
+    - docker buildx build --platform linux/amd64 -t "$IMAGE_NAME:$CI_COMMIT_SHORT_SHA" -t "$IMAGE_NAME:latest" --push .
 
         .
   only:
     - merge_requests
-    - main
-    - tags
+    #- main
+    #- tags
 
 # ---------------------------
 # 🧫 IMAGE SECURITY SCAN
