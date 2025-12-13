@@ -6,7 +6,7 @@ stages:
 
 variables:
   DOCKER_BUILDKIT: "1"
-  IMAGE_NAME: "$CI_REGISTRY_IMAGE/simple-time-service"
+  IMAGE_NAME: "$CI_REGISTRY_IMAGE"
   # Use git tag if available (for releases), otherwise fallback to commit SHA
   IMAGE_TAG: "${CI_COMMIT_TAG:-$CI_COMMIT_SHORT_SHA}"
 
@@ -85,8 +85,7 @@ docker:
     DOCKER_DRIVER: overlay2
   script:
     - echo "Logging into container registry..."
-    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
-
+    - echo "$CI_REGISTRY_PASSWORD" | docker login "$CI_REGISTRY" -u "$CI_REGISTRY_USER" --password-stdin
     # Optional: setup Buildx for multi-arch (amd64 + arm64)
     - docker buildx create --use
     - docker buildx inspect --bootstrap
