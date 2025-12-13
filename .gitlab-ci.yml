@@ -110,7 +110,7 @@ docker:
     - ls -lR
 
     - echo "===== CHECK OWNERSHIP OF /app AND /usr/local ====="
-    - sudo find . -exec ls -ld {} \;
+    - find . -exec ls -ld {} \;
 
     - echo "===== END DEBUG ====="
 
