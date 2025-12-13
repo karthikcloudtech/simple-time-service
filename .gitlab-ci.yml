@@ -124,7 +124,9 @@ docker:
 # ---------------------------
 trivy_scan:
   stage: scan_image
-  image: aquasec/trivy:latest
+  image:
+    name: docker.io/aquasec/trivy:latest
+    entrypoint: [""]
   script:
     - echo "Scanning Docker image for vulnerabilities..."
     - trivy image --exit-code 0 "$IMAGE_NAME:latest" || true
