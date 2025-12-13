@@ -60,8 +60,6 @@ hadolint_scan:
 # ---------------------------
 build:
   stage: build
-  variables:
-    DEBUG: "true" 
   image: python:3.11
   script:
     - echo "Running build validation..."
@@ -81,6 +79,8 @@ build:
 # ---------------------------
 docker:
   stage: docker
+  variables:
+    DEBUG: "true" 
   image: docker:29.1.3
   services:
     - docker:dind
@@ -99,7 +99,6 @@ docker:
 
     - docker buildx build \
         --platform linux/amd64,linux/arm64 \
-        -t "$IMAGE_NAME:$IMAGE_TAG" \
         -t "$IMAGE_NAME:$CI_COMMIT_SHORT_SHA" \
         -t "$IMAGE_NAME:latest" \
         --push \
