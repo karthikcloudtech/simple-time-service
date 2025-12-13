@@ -85,6 +85,13 @@ docker:
   services:
     - docker:dind
   script:
+    - echo "===== BEFORE BUILD ====="
+    - whoami
+    - id
+    - ls -la
+    - pwd
+
+
     - echo "Logging into container registry..."
     - echo "$CI_REGISTRY_PASSWORD" | docker login "$CI_REGISTRY" -u "$CI_REGISTRY_USER" --password-stdin
     # Optional: setup Buildx for multi-arch (amd64 + arm64)
@@ -96,8 +103,17 @@ docker:
     - echo "CI_COMMIT_SHORT_SHA=$CI_COMMIT_SHORT_SHA"
     #- docker buildx build --platform linux/amd64,linux/arm64 -t "$IMAGE_NAME:$CI_COMMIT_SHORT_SHA" -t "$IMAGE_NAME:latest" --push .
     - docker buildx build --platform linux/amd64 -t "$IMAGE_NAME:$CI_COMMIT_SHORT_SHA" -t "$IMAGE_NAME:latest" --push .
+    - echo "===== AFTER BUILD ====="
+    - whoami
+    - id
+    - echo "Listing all files recursively:"
+    - ls -lR
 
-        .
+    - echo "===== CHECK OWNERSHIP OF /app AND /usr/local ====="
+    - sudo find . -exec ls -ld {} \;
+
+    - echo "===== END DEBUG ====="
+
   only:
     - merge_requests
     #- main
@@ -111,8 +127,8 @@ trivy_scan:
   image: aquasec/trivy:latest
   script:
     - echo "Scanning Docker image for vulnerabilities..."
-    - trivy image --exit-code 0 "$IMAGE_NAME:$IMAGE_TAG" || true
+    - trivy image --exit-code 0 "$IMAGE_NAME:latest" || true
     - trivy config --exit-code 0 . || true
-  allow_failure: true
   only:
     - merge_requests
+  allow_failure: true
