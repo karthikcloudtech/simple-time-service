@@ -89,13 +89,13 @@ docker:
     # Optional: setup Buildx for multi-arch (amd64 + arm64)
     - docker buildx create --use
     - docker buildx inspect --bootstrap
-
-    - echo "Building Docker image with tag: $IMAGE_TAG"
+    - echo "Building Docker image with tag $IMAGE_TAG"
     - docker buildx build \
         --platform linux/amd64,linux/arm64 \
         -t "$IMAGE_NAME:$IMAGE_TAG" \
         -t "$IMAGE_NAME:$CI_COMMIT_SHORT_SHA" \
         -t "$IMAGE_NAME:latest" \
+  only:
     - merge_requests
     - main
     - tags
