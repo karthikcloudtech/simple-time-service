@@ -45,22 +45,21 @@ gitleaks_scan:
 # Dockerfile Lint — security & efficiency
 hadolint_scan:
   stage: scan_code
-  image:
-    name: hadolint/hadolint:latest
-    entrypoint: [""]
+  image: hadolint/hadolint:latest-debian
   script:
     - hadolint Dockerfile
-  allow_failure: true
   only:
     - merge_requests
     - main
     - tags
+
+
 # ---------------------------
 # 🧱 BUILD STAGE
 # ---------------------------
 build:
   stage: build
-  image: python:3.11
+  image: python:3.14
   script:
     - echo "Running build validation..."
     - pip install -r requirements.txt
@@ -79,7 +78,7 @@ build:
 # ---------------------------
 docker:
   stage: docker
-  image: docker:25.0.3
+  image: docker:29.1.3
   services:
     - docker:dind
   variables:
