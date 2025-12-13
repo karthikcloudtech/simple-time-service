@@ -129,8 +129,8 @@ trivy_scan:
     - echo "Scanning Docker image for vulnerabilities..."
     - trivy image --exit-code 0 "$IMAGE_NAME:latest" || true
     - trivy config --exit-code 0 . || true
-  only:
-    - merge_requests
+  #only:
+  #  - merge_requests
   allow_failure: true
   rules:
     - when: always       # runs even if previous jobs fail
