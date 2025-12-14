@@ -76,7 +76,11 @@ docker:
   script:
     - |
       echo "Logging into container registry..."
-      echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin      
+      echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+      #Optional: setup Buildx for multi-arch (amd64 + arm64)
+      docker buildx create --use
+      docker buildx inspect --bootstrap
+      
       TAGS="-t $IMAGE_NAME:$CI_COMMIT_SHORT_SHA"
 
       if [ -n "$CI_COMMIT_TAG" ]; then
