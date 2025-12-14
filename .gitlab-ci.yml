@@ -85,21 +85,23 @@ docker:
   services:
     - docker:dind
   script:
-    - echo "Logging into container registry..."
-    - echo "$CI_REGISTRY_PASSWORD" | docker login "$CI_REGISTRY" -u "$CI_REGISTRY_USER" --password-stdin
-    # Optional: setup Buildx for multi-arch (amd64 + arm64)
-    - docker buildx create --use
-    - docker buildx inspect --bootstrap
-    - echo "Building Docker image with tag $IMAGE_TAG"
-    - echo "IMAGE_NAME=$IMAGE_NAME"
-    - echo "IMAGE_TAG=$IMAGE_TAG"
-    - echo "CI_COMMIT_SHORT_SHA=$CI_COMMIT_SHORT_SHA"
-    #- docker buildx build --platform linux/amd64,linux/arm64 -t "$IMAGE_NAME:$CI_COMMIT_SHORT_SHA" -t "$IMAGE_NAME:latest" --push .
-    - docker buildx build --platform linux/amd64 -t "$IMAGE_NAME:$CI_COMMIT_SHORT_SHA" -t "$IMAGE_NAME:latest" --push .
+    - |
+      echo "Logging into container registry..."
+      echo "$CI_REGISTRY_PASSWORD" | docker login "$CI_REGISTRY" -u "$CI_REGISTRY_USER" --password-stdin
+      #Optional: setup Buildx for multi-arch (amd64 + arm64)
+      docker buildx create --use
+      docker buildx inspect --bootstrap
+      
+      TAGS="-t $IMAGE_NAME:$CI_COMMIT_SHORT_SHA"
 
+      if [ -n "$IMAGE_TAG" ]; then
+        TAGS="$TAGS -t $IMAGE_NAME:$IMAGE_TAG"
+      fi
+      echo "Building and pushing Docker image with tags: $TAGS"
+      docker buildx build --platform linux/amd64 $TAGS --push .
+      #docker buildx build --platform linux/amd64,linux/arm64 $TAGS --push . 
   only:
     - merge_requests
-    #- main
     - tags
 
 # ---------------------------
@@ -112,7 +114,7 @@ trivy_scan:
     entrypoint: [""]
   script:
     - echo "Scanning Docker image for vulnerabilities..."
-    - trivy image --exit-code 0 "$IMAGE_NAME:latest" || true
+    - trivy image --exit-code 0 "$IMAGE_NAME:$CI_COMMIT_SHORT_SHA" || true
     - trivy config --exit-code 0 . || true
   #only:
   #  - merge_requests
