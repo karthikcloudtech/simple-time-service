@@ -21,9 +21,8 @@ semgrep_scan:
     - echo "Running Semgrep SAST scan..."
     - semgrep --config p/ci --error --exclude tests/ .
   allow_failure: true
-  only:
-    - merge_requests
-
+  rules:
+    - if: '$CI_MERGE_REQUEST_ID'
 # Secret Detection — API keys, tokens, creds
 gitleaks_scan:
   stage: scan_code
@@ -34,8 +33,8 @@ gitleaks_scan:
     - echo "Scanning for secrets with Gitleaks..."
     - gitleaks detect --source . --no-banner --exit-code 1
   allow_failure: false
-  only:
-    - merge_requests
+  rules:
+    - if: '$CI_MERGE_REQUEST_ID'  
 
 # Dockerfile Lint — security & efficiency
 hadolint_scan:
@@ -43,8 +42,8 @@ hadolint_scan:
   image: hadolint/hadolint:latest-debian
   script:
     - hadolint --ignore DL3041 Dockerfile
-  only:
-    - merge_requests
+  rules:
+    - if: '$CI_MERGE_REQUEST_ID'  
 
 
 # ---------------------------
@@ -61,8 +60,8 @@ build:
     paths:
       - app/__pycache__/
     expire_in: 1 hour
-  only:
-    - merge_requests
+  rules:
+    - if: '$CI_MERGE_REQUEST_ID'  
 
 # ---------------------------
 # 🐳 DOCKER BUILD & PUSH (Docker Hub)
@@ -90,8 +89,8 @@ docker:
       echo "Building and pushing Docker image with tags: $TAGS"
       #docker buildx build --platform linux/amd64 $TAGS --push .
       docker buildx build --platform linux/amd64,linux/arm64 $TAGS --push . 
-  only:
-    - merge_requests
+  rules:
+    - if: '$CI_MERGE_REQUEST_ID'  
 # ---------------------------
 # 🧫 IMAGE SECURITY SCAN
 # ---------------------------
@@ -105,8 +104,8 @@ trivy_scan:
     - trivy image --exit-code 0 "$IMAGE_NAME:$CI_COMMIT_SHORT_SHA" || true
     - trivy config --exit-code 0 . || true
   allow_failure: true
-  only:
-    - merge_requests
+  rules:
+    - if: '$CI_MERGE_REQUEST_ID'  
 
 docker_release_version:
   stage: release_version
@@ -123,4 +122,3 @@ docker_release_version:
     - docker push "$IMAGE_NAME:$CI_COMMIT_TAG"
   rules:
     - if: '$CI_COMMIT_TAG && $CI_COMMIT_BRANCH == "main"'
-
