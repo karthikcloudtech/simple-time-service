@@ -100,7 +100,7 @@ docker:
   only:
     - merge_requests
     #- main
-    #- tags
+    - tags
 
 # ---------------------------
 # 🧫 IMAGE SECURITY SCAN
