@@ -1,5 +1,5 @@
-#stage-1
-FROM public.ecr.aws/amazonlinux/amazonlinux:2023 AS builder
+# Stage 1: Builder
+FROM --platform=$BUILDPLATFORM amazonlinux:2023 AS builder
 
 RUN dnf install -y \
     python3.11 \
@@ -10,8 +10,8 @@ WORKDIR /build
 COPY requirements.txt .
 RUN python3.11 -m pip install --no-cache-dir --prefix=/install -r requirements.txt
 
-#stage-2
-FROM public.ecr.aws/amazonlinux/amazonlinux:2023
+#Stage 2: Final Image
+FROM --platform=$BUILDPLATFORM amazonlinux:2023 AS final
 RUN dnf install -y \
     python3.11 \
     shadow-utils \
