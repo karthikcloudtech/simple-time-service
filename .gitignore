@@ -1,0 +1,52 @@
+# ==========================
+# Python
+# ==========================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pdb
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# ==========================
+# Virtual environments
+# ==========================
+.venv/
+env/
+venv/
+ENV/
+*.env
+*.venv
+
+# ==========================
+# IDE / Editor
+# ==========================
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ==========================
+# OS files
+# ==========================
+.DS_Store
+Thumbs.db
+
+# ==========================
+# Docker & Compose
+# ==========================
+docker-compose.override.yml
+*.log
+
+# ==========================
+# Testing / Temp
+# ==========================
+test-results/
+tmp/
