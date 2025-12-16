@@ -4,6 +4,7 @@ stages:
   - docker
   - scan_image
   - release_version
+  - terraform
 
 variables:
   DOCKER_BUILDKIT: "1"
@@ -122,3 +123,7 @@ docker_release_version:
     - docker push "$IMAGE_NAME:$CI_COMMIT_TAG"
   rules:
     - if: '$CI_COMMIT_TAG && $CI_COMMIT_BRANCH == "main"'
+
+# Include Terraform CI configuration
+include:
+  - local: 'infra/.gitlab-ci.yml'

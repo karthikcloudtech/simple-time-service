@@ -1,0 +1,74 @@
+# ---------------------------
+# 🏗️ TERRAFORM INFRASTRUCTURE
+# ---------------------------
+# This file contains Terraform-specific CI/CD jobs
+# Only runs when files in infra/ directory are changed
+
+variables:
+  TF_ROOT: "infra/environments/prod"
+  AWS_DEFAULT_REGION: "us-east-1"
+
+terraform_plan:
+  stage: terraform
+  image: hashicorp/terraform:latest
+  variables:
+    TF_ROOT: "infra/environments/prod"
+    AWS_DEFAULT_REGION: "us-east-1"
+  before_script:
+    - cd $TF_ROOT
+    - terraform --version
+    - |
+      if [ -n "$TF_STATE_BUCKET" ] && [ -n "$TF_STATE_KEY" ]; then
+        terraform init -backend-config="bucket=${TF_STATE_BUCKET}" -backend-config="key=${TF_STATE_KEY}" -backend-config="region=${AWS_DEFAULT_REGION}"
+      else
+        echo "No remote backend configured, using local state"
+        terraform init
+      fi
+  script:
+    - echo "Running Terraform plan..."
+    - terraform validate
+    - terraform plan -out=tfplan -var-file=terraform.tfvars
+  artifacts:
+    paths:
+      - $TF_ROOT/tfplan
+      - $TF_ROOT/.terraform
+    expire_in: 1 week
+  rules:
+    - if: '$CI_MERGE_REQUEST_ID'
+      changes:
+        - "infra/**/*"
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      changes:
+        - "infra/**/*"
+
+terraform_apply:
+  stage: terraform
+  image: hashicorp/terraform:latest
+  variables:
+    TF_ROOT: "infra/environments/prod"
+    AWS_DEFAULT_REGION: "us-east-1"
+  dependencies:
+    - terraform_plan
+  before_script:
+    - cd $TF_ROOT
+    - terraform --version
+    - |
+      if [ -n "$TF_STATE_BUCKET" ] && [ -n "$TF_STATE_KEY" ]; then
+        terraform init -backend-config="bucket=${TF_STATE_BUCKET}" -backend-config="key=${TF_STATE_KEY}" -backend-config="region=${AWS_DEFAULT_REGION}"
+      else
+        echo "No remote backend configured, using local state"
+        terraform init
+      fi
+  script:
+    - echo "Applying Terraform changes..."
+    - terraform apply -auto-approve tfplan
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      changes:
+        - "infra/**/*"
+      when: manual
+    - if: '$CI_COMMIT_TAG'
+      changes:
+        - "infra/**/*"
+      when: manual
+

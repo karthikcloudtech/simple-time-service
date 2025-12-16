@@ -50,3 +50,18 @@ docker-compose.override.yml
 # ==========================
 test-results/
 tmp/
+
+# Terraform
+.terraform/
+.terraform.lock.hcl
+terraform.tfstate
+terraform.tfstate.*
+*.tfstate.backup
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+*.tfvars.json
+*.tfstate
+*.tfstate.*
