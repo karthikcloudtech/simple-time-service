@@ -5,6 +5,7 @@ stages:
   - scan_image
   - release_version
   - terraform
+  - terraform_apply
 
 variables:
   DOCKER_BUILDKIT: "1"

@@ -1,6 +1,5 @@
 terraform {
   required_version = ">= 1.0"
-
   required_providers {
     aws = {
       source  = "hashicorp/aws"
@@ -11,7 +10,6 @@ terraform {
 
 provider "aws" {
   region = var.aws_region
-
   default_tags {
     tags = {
       Project     = var.project_name
@@ -21,32 +19,36 @@ provider "aws" {
   }
 }
 
-# VPC Module
+terraform {
+  backend "s3" {
+    bucket         = "simple-time-service-tf-state-prod"
+    key            = "prod/terraform.tfstate"
+    region         = "us-east-1"
+    dynamodb_table = "simple-time-service-tf-lock-prod"
+    encrypt        = true
+  }
+}
+
+locals {
+  eks_cluster_name = "${var.project_name}-${var.environment}"
+}
+
 module "vpc" {
   source = "../../terraform/modules/vpc"
 
-  project_name           = var.project_name
-  environment            = var.environment
-  vpc_cidr               = var.vpc_cidr
-  availability_zones     = var.availability_zones
-  private_subnet_cidrs   = var.private_subnet_cidrs
-  public_subnet_cidrs    = var.public_subnet_cidrs
-  eks_cluster_name       = var.eks_cluster_name
+  project_name         = var.project_name
+  vpc_cidr             = var.vpc_cidr
+  availability_zones   = var.availability_zones
+  private_subnet_cidrs = var.private_subnet_cidrs
+  public_subnet_cidrs  = var.public_subnet_cidrs
+  eks_cluster_name     = local.eks_cluster_name
 }
 
-# EKS Module
 module "eks" {
   source = "../../terraform/modules/eks"
 
-  project_name            = var.project_name
-  environment             = var.environment
-  cluster_name            = var.eks_cluster_name
-  cluster_version         = var.eks_cluster_version
-  vpc_id                  = module.vpc.vpc_id
-  subnet_ids              = module.vpc.private_subnet_ids
-  node_group_desired_size = var.eks_node_group_desired_size
-  node_group_min_size     = var.eks_node_group_min_size
-  node_group_max_size     = var.eks_node_group_max_size
-  node_instance_types     = var.eks_node_instance_types
-  node_capacity_type      = var.eks_node_capacity_type
+  project_name = var.project_name
+  cluster_name = local.eks_cluster_name
+  vpc_id       = module.vpc.vpc_id
+  subnet_ids   = module.vpc.private_subnet_ids
 }

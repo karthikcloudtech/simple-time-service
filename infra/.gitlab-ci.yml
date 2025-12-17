@@ -1,12 +1,15 @@
 # ---------------------------
 # 🏗️ TERRAFORM INFRASTRUCTURE
 # ---------------------------
-# This file contains Terraform-specific CI/CD jobs
-# Only runs when files in infra/ directory are changed
+
 
 variables:
   TF_ROOT: "infra/environments/prod"
   AWS_DEFAULT_REGION: "us-east-1"
+  PROJECT_NAME: "simple-time-service"
+  ENVIRONMENT: "prod"
+  # Required CI/CD variables:
+  # - AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY (or use GitLab OIDC)
 
 terraform_plan:
   stage: terraform
@@ -19,13 +22,13 @@ terraform_plan:
   before_script:
     - cd $TF_ROOT
     - terraform --version
+    # Verify required variables are available
     - |
-      if [ -n "$TF_STATE_BUCKET" ] && [ -n "$TF_STATE_KEY" ]; then
-        terraform init -backend-config="bucket=${TF_STATE_BUCKET}" -backend-config="key=${TF_STATE_KEY}" -backend-config="region=${AWS_DEFAULT_REGION}"
-      else
-        echo "No remote backend configured, using local state"
-        terraform init
+      if [ -z "$AWS_ACCESS_KEY_ID" ] || [ -z "$AWS_SECRET_ACCESS_KEY" ]; then
+        echo "ERROR: AWS credentials not found. Please set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY as CI/CD variables."
+        exit 1
       fi
+    - terraform init
   script:
     - echo "Running Terraform plan..."
     - terraform validate
@@ -44,7 +47,7 @@ terraform_plan:
         - "infra/**/*"
 
 terraform_apply:
-  stage: terraform
+  stage: terraform_apply
   image: 
     name: hashicorp/terraform:latest
     entrypoint: [""]
@@ -56,23 +59,22 @@ terraform_apply:
   before_script:
     - cd $TF_ROOT
     - terraform --version
+    # Verify required variables are available
     - |
-      if [ -n "$TF_STATE_BUCKET" ] && [ -n "$TF_STATE_KEY" ]; then
-        terraform init -backend-config="bucket=${TF_STATE_BUCKET}" -backend-config="key=${TF_STATE_KEY}" -backend-config="region=${AWS_DEFAULT_REGION}"
-      else
-        echo "No remote backend configured, using local state"
-        terraform init
+      if [ -z "$AWS_ACCESS_KEY_ID" ] || [ -z "$AWS_SECRET_ACCESS_KEY" ]; then
+        echo "ERROR: AWS credentials not found. Please set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY as CI/CD variables."
+        exit 1
       fi
+    - terraform init
   script:
     - echo "Applying Terraform changes..."
     - terraform apply -auto-approve tfplan
+  when: manual
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
       changes:
         - "infra/**/*"
-      when: manual
     - if: '$CI_COMMIT_TAG'
       changes:
         - "infra/**/*"
-      when: manual
 
