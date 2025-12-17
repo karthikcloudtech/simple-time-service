@@ -222,6 +222,7 @@ resource "aws_iam_role_policy_attachment" "cluster_autoscaler" {
   }
 }
 
+
 resource "aws_security_group_rule" "cluster_to_nodes" {
   type = "ingress"
   from_port = 443
