@@ -47,14 +47,14 @@ terraform_plan:
         - "infra/**/*"
 
 terraform_apply:
-  stage: terraform_apply
+  stage: terraform
   image: 
     name: hashicorp/terraform:latest
     entrypoint: [""]
   variables:
     TF_ROOT: "infra/environments/prod"
     AWS_DEFAULT_REGION: "us-east-1"
-  dependencies:
+  needs:
     - terraform_plan
   before_script:
     - cd $TF_ROOT
