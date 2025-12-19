@@ -3,6 +3,14 @@ resource "aws_security_group" "eks_cluster" {
   description = "Security group for EKS cluster"
   vpc_id      = var.vpc_id
 
+  ingress {
+    description = "HTTPS from VPC"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = [var.vpc_cidr]
+  }
+
   egress {
     from_port   = 0
     to_port     = 0
@@ -21,10 +29,26 @@ resource "aws_security_group" "eks_nodes" {
   vpc_id      = var.vpc_id
 
   ingress {
-    from_port   = 0
-    to_port     = 65535
+    description     = "All traffic from cluster"
+    from_port       = 0
+    to_port         = 65535
+    protocol        = "tcp"
+    security_groups = [aws_security_group.eks_cluster.id]
+  }
+  ingress {
+    description = "Kubelet API from nodes"
+    from_port   = 10250
+    to_port     = 10250
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    self        = true
+  }
+
+  ingress {
+    description = "Kube-proxy metrics from nodes"
+    from_port   = 10256
+    to_port     = 10256
+    protocol    = "tcp"
+    self        = true
   }
 
   egress {
@@ -38,6 +62,11 @@ resource "aws_security_group" "eks_nodes" {
     Name = "${var.project_name}-eks-nodes-sg"
   }
 }
+
+
+
+
+
 
 resource "aws_iam_role" "eks_cluster_role" {
   name = "${var.project_name}-eks-cluster-role"
@@ -138,7 +167,7 @@ resource "aws_eks_node_group" "main" {
   }
 
   lifecycle {
-    create_before_destroy = false
+    create_before_destroy = true
   }
 }
 
@@ -219,23 +248,4 @@ resource "aws_iam_role_policy_attachment" "cluster_autoscaler" {
   lifecycle {
     create_before_destroy = true
   }
-}
-
-
-resource "aws_security_group_rule" "cluster_to_nodes" {
-  type = "ingress"
-  from_port = 443
-  to_port = 443
-  protocol = "tcp"
-  source_security_group_id = aws_security_group.eks_cluster.id
-  security_group_id = aws_security_group.eks_nodes.id
-}
-
-resource "aws_security_group_rule" "nodes_to_cluster" {
-  type = "ingress"
-  from_port = 0
-  to_port = 65535
-  protocol = "-1"
-  source_security_group_id = aws_security_group.eks_nodes.id
-  security_group_id = aws_security_group.eks_cluster.id
 }

@@ -17,3 +17,8 @@ variable "subnet_ids" {
   description = "Subnet IDs for the cluster"
   type        = list(string)
 }
+
+variable "vpc_cidr" {
+  description = "VPC CIDR block"
+  type        = string
+}
