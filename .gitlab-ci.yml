@@ -53,6 +53,8 @@ terrascan_scan:
     name: accurics/terrascan:latest
     entrypoint: [""]
   script:
+    - echo "Initializing Terrascan policy engine..."
+    - terrascan init
     - echo "Scanning Terraform files for security issues..."
     - terrascan scan -i terraform -t all -d infra/
   allow_failure: true
