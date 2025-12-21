@@ -3,6 +3,11 @@ from datetime import datetime
 
 app = Flask(__name__)
 
+@app.route("/healthz", methods=["GET"])
+def health_check():
+    """Lightweight health check endpoint for Kubernetes probes"""
+    return jsonify({"status": "healthy"}), 200
+
 @app.route("/", methods=["GET"])
 def get_time_and_ip():
     forwarded_for_list = request.headers.getlist("X-Forwarded-For")
