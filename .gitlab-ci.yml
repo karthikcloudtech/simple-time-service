@@ -64,13 +64,20 @@ terrascan_scan:
 # Dependency Vulnerability Scan — OWASP Dependency-Check
 owasp_dependency_check:
   stage: scan_code
+  needs: []
   image:
     name: owasp/dependency-check:latest
     entrypoint: [""]
   script:
     - echo "Scanning Python dependencies for known vulnerabilities..."
     - mkdir -p reports
-    - /usr/share/dependency-check/bin/dependency-check.sh --scan . --format JSON --format HTML --out reports --enableExperimental --failOnCVSS 7 --project "simple-time-service" || true
+    - |
+      if [ -n "$NVD_API_KEY" ]; then
+        /usr/share/dependency-check/bin/dependency-check.sh --scan . --format JSON --format HTML --out reports --enableExperimental --failOnCVSS 7 --project "simple-time-service" --nvdApiKey "$NVD_API_KEY" || true
+      else
+        echo "Warning: NVD_API_KEY not set. Download will be slower. Get a free key at https://nvd.nist.gov/developers/request-an-api-key"
+        /usr/share/dependency-check/bin/dependency-check.sh --scan . --format JSON --format HTML --out reports --enableExperimental --failOnCVSS 7 --project "simple-time-service" || true
+      fi
   artifacts:
     paths:
       - reports/
