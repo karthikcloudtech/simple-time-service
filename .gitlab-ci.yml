@@ -46,6 +46,31 @@ hadolint_scan:
   rules:
     - if: '$CI_MERGE_REQUEST_ID'  
 
+# Infrastructure as Code Security — Terraform scanning
+terrascan_scan:
+  stage: scan_code
+  image: accurics/terrascan:latest
+  script:
+    - echo "Scanning Terraform files for security issues..."
+    - terrascan scan -i terraform -t all -d infra/
+  allow_failure: true
+  rules:
+    - if: '$CI_MERGE_REQUEST_ID'
+
+# Dependency Vulnerability Scan — OWASP Dependency-Check
+owasp_dependency_check:
+  stage: scan_code
+  image: owasp/dependency-check:latest
+  script:
+    - echo "Scanning Python dependencies for known vulnerabilities..."
+    - dependency-check.sh --scan . --format JSON --format HTML --out reports --enableExperimental --failOnCVSS 7
+  artifacts:
+    paths:
+      - reports/
+    expire_in: 1 week
+  allow_failure: true
+  rules:
+    - if: '$CI_MERGE_REQUEST_ID'
 
 # ---------------------------
 # 🧱 BUILD STAGE
