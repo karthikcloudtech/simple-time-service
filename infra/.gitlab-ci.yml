@@ -55,7 +55,8 @@ terraform_apply:
     TF_ROOT: "infra/environments/prod"
     AWS_DEFAULT_REGION: "us-east-1"
   needs:
-    - terraform_plan
+    - job: terraform_plan
+      optional: true
   before_script:
     - cd $TF_ROOT
     - terraform --version
@@ -72,5 +73,9 @@ terraform_apply:
   when: manual
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
+      changes:
+        - "infra/**/*"
     - if: '$CI_MERGE_REQUEST_ID'
+      changes:
+        - "infra/**/*"
 
