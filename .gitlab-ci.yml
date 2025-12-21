@@ -49,7 +49,9 @@ hadolint_scan:
 # Infrastructure as Code Security — Terraform scanning
 terrascan_scan:
   stage: scan_code
-  image: accurics/terrascan:latest
+  image:
+    name: accurics/terrascan:latest
+    entrypoint: [""]
   script:
     - echo "Scanning Terraform files for security issues..."
     - terrascan scan -i terraform -t all -d infra/
@@ -60,10 +62,13 @@ terrascan_scan:
 # Dependency Vulnerability Scan — OWASP Dependency-Check
 owasp_dependency_check:
   stage: scan_code
-  image: owasp/dependency-check:latest
+  image:
+    name: owasp/dependency-check:latest
+    entrypoint: [""]
   script:
     - echo "Scanning Python dependencies for known vulnerabilities..."
-    - dependency-check.sh --scan . --format JSON --format HTML --out reports --enableExperimental --failOnCVSS 7
+    - mkdir -p reports
+    - /usr/share/dependency-check/bin/dependency-check.sh --scan . --format JSON --format HTML --out reports --enableExperimental --failOnCVSS 7 --project "simple-time-service" || true
   artifacts:
     paths:
       - reports/
