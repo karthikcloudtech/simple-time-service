@@ -142,7 +142,13 @@ The Docker image build process is automated through GitLab CI/CD and triggers on
    6. This helps in avoiding multiple builds for the same code, after testing and merging to main. We can use the same testd image in all different enveironments including production.
    7. For production use same image, but with specific release version.
    
-
+- **For testing locally:**  
+      Use Latest Docker Image: karthikbm2k25/simple-time-service:1.1.2
+   - **To run it locally:**  
+      docker run -p 8080:8080 karthikbm2k25/simple-time-service:1.1.2
+      http://localhost:8080/
+      http://localhost:8080/healthz
+      
 
 ## Infrastructure Setup
 
