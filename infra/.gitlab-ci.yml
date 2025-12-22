@@ -78,4 +78,5 @@ terraform_apply:
     - if: '$CI_MERGE_REQUEST_ID'
       changes:
         - "infra/**/*"
+        
 

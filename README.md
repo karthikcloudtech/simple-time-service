@@ -2,7 +2,7 @@
 
 ## Document Information
 **Version:** 1.0  
-**Last Updated:** 2024  
+**Last Updated:** 2025  
 **Status:** Production
 
 ---
@@ -48,6 +48,7 @@ The service is deployed as a containerized application on Amazon EKS with the fo
 - **Application Layer:** Flask service running in Kubernetes pods
 - **Network Layer:** Application Load Balancer (ALB) with ingress controller
 - **Infrastructure Layer:** VPC with public/private subnets, EKS cluster
+      For high availability, we have used 2 subnets, where deployment pods will move to different subnet in case of one of the AZ failure.
 - **State Management:** Terraform state stored in S3 with DynamoDB locking
 
 ---
@@ -125,20 +126,23 @@ The Docker image build process is automated through GitLab CI/CD and triggers on
 
 - **Trigger:** Merge request creation
 - **Image Tag:** Automatically uses commit hash as the image tag
-- **Build Command:**
-  ```bash
-  docker build -t simple-time-service:commit-hash .
-  ```
+- **Multi-platform build:** 
+   The Dockerfile builds multi-platform docker images. It uses commit short hash as image tag.
+   It builds Docker image for both architectures ARM64 and AMD64 under same tag.
+   If docker engine is in mac or ARM64 architecture, it automatically returns ARM64 image.
+   If docker engine is in linux or AMD64 architecture, it automatically returns AMD64 image.
 
-#### Manual Build (Local Development)
+- **RELEASE versions:**   
+   1. Once a docker image with specific tag is tested in dev, staging etc. We can promote it or tag a 
+   release version to the image. 
+   2. Tag the git commit once qa is completed and qualified for the release/deployment. 
+   3. To tag or set release version of the docker inage, we just need to add git tag to the specific git commit.
+   4. Once we add git tag like "1.1.0" to commit and push the tag, gitlab runner will trigger the "Release_Version" stage.
+   5. In "Release_Version" stage of cicd, it pulls the fully tested existing docker image of specific commit and adds the 1.1.0 version to the same image(tag).
+   6. This helps in avoiding multiple builds for the same code, after testing and merging to main. We can use the same testd image in all different enveironments including production.
+   7. For production use same image, but with specific release version.
+   
 
-For local development and testing:
-
-```bash
-docker build -t simple-time-service:local .
-```
-
----
 
 ## Infrastructure Setup
 
@@ -158,24 +162,15 @@ The infrastructure deployment process is fully automated:
 - **Terraform Plan:** Automatically executed on merge request creation
 - **Terraform Apply:** Requires manual approval via GitLab CI/CD pipeline interface
 
-### Manual Infrastructure Deployment
 
-If deploying infrastructure manually:
 
 #### 1. Review Changes
+   On Merge request, Terraform plan is triggered.
+   Review it and approve the code changes and terraform plan output.
 
-```bash
-cd infra/environments/prod
-terraform init
-terraform plan
-```
+#### 2. Deploy Infrastructure
 
-#### 2. Apply Infrastructure
-
-```bash
-terraform apply
-```
-
+Once approved and merged, you can trigger the deployment / terraform apply manually on a single click.
 This will create:
 - VPC with public/private subnets
 - EKS cluster with node groups
@@ -277,13 +272,8 @@ Infrastructure configuration is managed through Terraform variables. See `infra/
 
 ### Updating Application Image
 
-#### Automated Process (Recommended)
 
-1. **Build and Tag:** The CI/CD pipeline automatically builds and tags images with commit hash on merge request creation
-2. **Release Tagging:** To create a release version:
-   - Tag the git commit with a version (e.g., `v1.1.0`)
-   - Push the tag to the remote repository
-   - The `docker_release` stage will automatically tag the existing image with the release version
+
 
 #### Manual Process
 
@@ -329,7 +319,7 @@ kubectl rollout undo deployment/simple-time-service
 
 ## Support and Maintenance
 
-For issues, questions, or contributions, please refer to the project repository or contact the development team.
+For issues, questions, or contributions, please refer to the project repository or contact the Devops team.
 
 ---
 
