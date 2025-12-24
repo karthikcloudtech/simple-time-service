@@ -1,0 +1,15 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# This template is meant to be copied per feature/branch.
+# Replace <ENV_NAME> with a unique name (e.g. "feat-login", "user123").
+namespace: simple-time-service-<ENV_NAME>
+
+resources:
+  - ../../base
+
+patches:
+  - path: patch-dev.yaml
+  - path: patch-ingress.yaml
+
+

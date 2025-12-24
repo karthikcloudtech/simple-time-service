@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: simple-time-service-dev
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://gitlab.com/karthikbm2k25/simple-time-service.git
+    # Use your dev branch here, e.g. "develop" or "feature/dev"
+    targetRevision: develop
+    path: gitops/apps/simple-time-service/overlays/dev
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: simple-time-service-dev
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+
+

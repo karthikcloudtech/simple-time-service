@@ -1,0 +1,26 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  # Example preview environment Application.
+  # CI can create a copy of this per feature/branch, replacing <ENV_NAME>.
+  name: simple-time-service-<ENV_NAME>
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://gitlab.com/karthikbm2k25/simple-time-service.git
+    # CI should set this to the feature branch name, e.g. "feat-login".
+    targetRevision: <BRANCH_NAME>
+    # CI should copy dev-template to "dev-<ENV_NAME>" and point here.
+    path: gitops/apps/simple-time-service/overlays/dev-<ENV_NAME>
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: simple-time-service-<ENV_NAME>
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+
+

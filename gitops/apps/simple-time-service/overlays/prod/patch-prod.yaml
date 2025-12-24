@@ -1,0 +1,14 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: simple-time-service
+spec:
+  replicas: 3
+  template:
+    spec:
+      containers:
+        - name: simple-time-service
+          # Example: prod uses a specific, tested release image tag
+          image: karthikbm2k25/simple-time-service:1.1.0
+
+

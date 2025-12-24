@@ -1,0 +1,14 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: simple-time-service
+spec:
+  replicas: 1
+  template:
+    spec:
+      containers:
+        - name: simple-time-service
+          # Example: dev can use "latest" or a fast-changing tag
+          image: karthikbm2k25/simple-time-service:latest
+
+
