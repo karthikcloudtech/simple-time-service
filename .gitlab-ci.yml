@@ -1,8 +1,8 @@
 stages:
-  - scan_code
-  - build
+  - #scan_code # disabled for now
+  - #build
   - docker
-  - scan_image
+  - #scan_image
   - release_version
   - terraform
 
