@@ -127,11 +127,24 @@ docker:
   script:
     - |
       echo "Waiting for Docker daemon to be ready..."
+      echo "Checking Docker connection..."
+      timeout=60
+      counter=0
       until docker info > /dev/null 2>&1; do
-        echo "Waiting for Docker daemon..."
+        if [ $counter -ge $timeout ]; then
+          echo "ERROR: Docker daemon did not become ready within ${timeout} seconds"
+          echo "Checking Docker service status..."
+          docker info || true
+          echo "This usually means privileged mode is not enabled in the runner config."
+          echo "Please check /etc/gitlab-runner/config.toml and ensure privileged = true"
+          exit 1
+        fi
+        echo "Waiting for Docker daemon... (${counter}/${timeout})"
         sleep 1
+        counter=$((counter + 1))
       done
       echo "Docker daemon is ready!"
+      docker info
       
       echo "Logging into container registry..."
       echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
