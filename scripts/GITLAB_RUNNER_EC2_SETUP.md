@@ -62,38 +62,39 @@ The script installs:
 
 ## Step 4: Register GitLab Runner
 
-1. **Get Registration Token**:
+1. **Create Runner in GitLab UI**:
    - Go to your GitLab project
    - Navigate to: **Settings → CI/CD → Runners**
-   - Expand **"New instance runner"** section
-   - Copy the **registration token**
+   - Expand **"New project runner"** section
+   - Configure:
+     - **Description**: `simple-time-service-ec2-runner`
+     - **Tags**: `project-specific`
+     - **Run untagged jobs**: No (unchecked)
+   - Click **"Create runner"**
+   - Copy the **authentication token** shown on the page
 
-2. **Register the Runner**:
+2. **Register the Runner on EC2**:
    ```bash
-   sudo gitlab-runner register
+   sudo gitlab-runner register \
+     --url https://gitlab.com/ \
+     --token <authentication-token> \
+     --executor docker \
+     --docker-image docker:latest \
+     --description simple-time-service-ec2-runner \
+     --tag-list project-specific \
+     --run-untagged=false
    ```
 
-3. **Answer the prompts**:
-   ```
-   GitLab instance URL: https://gitlab.com/
-   Registration token: <paste your token>
-   Description: simple-time-service-ec2-runner
-   Tags: project-specific
-   Executor: docker
-   Default Docker image: docker:latest
-   ```
+## Step 5: Verify Runner
 
-## Step 5: Start and Verify Runner
+The GitLab Runner service is already installed and enabled by the setup script. After registration, it will start automatically.
 
 ```bash
-# Start GitLab Runner service
-sudo gitlab-runner start
-
 # Check status
 sudo gitlab-runner status
 
 # View logs (if needed)
-sudo gitlab-runner --debug run
+sudo journalctl -u gitlab-runner -f
 ```
 
 ## Step 6: Verify in GitLab
@@ -141,10 +142,33 @@ sudo usermod -aG docker $USER
 ### Runner keeps stopping:
 ```bash
 # Install as systemd service (persistent)
-sudo gitlab-runner install
+sudo gitlab-runner install --user ec2-user
 sudo gitlab-runner start
 sudo systemctl enable gitlab-runner
 ```
+
+### Reinstalling GitLab Runner:
+
+If you need to completely reinstall GitLab Runner:
+
+```bash
+# 1. Stop and uninstall the service
+sudo gitlab-runner stop
+sudo gitlab-runner uninstall
+
+# 2. Remove runner configuration (optional, to start fresh)
+sudo rm -rf /etc/gitlab-runner/config.toml
+
+# 3. Uninstall the package
+sudo dnf remove -y gitlab-runner
+
+# 4. Re-run the setup script
+sudo ./setup-gitlab-runner-ec2.sh
+
+# 5. Register the runner again with a new token from GitLab UI
+```
+
+**Note**: After uninstalling, you'll need to create a new runner in GitLab UI and get a new authentication token, as the old token will be invalidated.
 
 ## Security Best Practices
 

@@ -113,12 +113,12 @@ docker:
   stage: docker
   variables:
     DOCKER_DRIVER: overlay2
+    DOCKER_HOST: tcp://docker:2375
   image: docker:29.1.3
   services:
-    - docker:dind
-  tags:
-    - project-specific  # Prefer project-specific runner, fallback to shared
-    - shared
+    - name: docker:dind
+      command: ["--tls=false", "--host=0.0.0.0:2375"]
+
   script:
     - |
       echo "Logging into container registry..."
