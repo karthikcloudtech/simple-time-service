@@ -5,6 +5,7 @@ stages:
   - #scan_image
   - release_version
   - terraform
+  - install_addons  # Runs after terraform completes
 
 variables:
   DOCKER_BUILDKIT: "1"
@@ -182,3 +183,4 @@ docker_release_version:
 # Include Terraform CI configuration
 include:
   - local: 'infra/.gitlab-ci.yml'
+  - local: '.gitlab-ci-addons.yml'

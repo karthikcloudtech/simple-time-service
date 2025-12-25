@@ -1,9 +1,6 @@
 # Separate CI configuration for EKS addons installation
 # This job runs once after cluster creation or when manually triggered
-
-stages:
-  - infrastructure
-  - install_addons
+# Note: Stage must come after 'terraform' alphabetically to run after infrastructure
 
 variables:
   CLUSTER_NAME: "simple-time-service-${CI_ENVIRONMENT_NAME:-prod}"
@@ -11,10 +8,10 @@ variables:
   PROJECT_NAME: "simple-time-service"
 
 # Install EKS Addons
-# This job should run AFTER infrastructure is deployed
-# Can be triggered manually or as part of infrastructure stage
+# This job should run AFTER infrastructure is deployed (terraform apply)
+# Can be triggered manually or with INSTALL_ADDONS variable
 install_eks_addons:
-  stage: install_addons
+  stage: install_addons  # Stage defined in main .gitlab-ci.yml, runs after terraform
   image: 
     name: amazon/aws-cli:latest
     entrypoint: [""]
@@ -45,21 +42,19 @@ install_eks_addons:
       INSTALL_CLUSTER_AUTOSCALER="true" \
       bash scripts/install-eks-addons.sh
   rules:
-    # Run manually or when infrastructure changes
-    - if: '$CI_COMMIT_BRANCH == "main" && $INSTALL_ADDONS == "true"'
-    - if: '$CI_PIPELINE_SOURCE == "web" && $CI_MERGE_REQUEST_ID == null'
-      when: manual
-      allow_failure: false
+    # Only run on main/develop branches
+    - if: '$CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "develop"'
+      when: manual  # Always requires manual approval for safety
+  needs:
+    - job: terraform_apply
+      optional: true  # Optional so job appears even if terraform_apply wasn't run
+  allow_failure: false
   environment:
     name: $CI_ENVIRONMENT_NAME
     action: start
   tags:
     - docker
     - linux
-  only:
-    - main
-    - develop
-  when: manual  # Always require manual approval for safety
 
 # Quick check job - verify addons are installed
 verify_eks_addons:
@@ -89,7 +84,8 @@ verify_eks_addons:
       echo "=== Ingress Classes ==="
       kubectl get ingressclass
   rules:
-    - if: '$CI_COMMIT_BRANCH == "main"'
+    - if: '$CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "develop"'
       when: manual
+  needs: []  # Can run independently to verify addons
   allow_failure: true
 

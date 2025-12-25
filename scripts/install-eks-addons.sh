@@ -72,6 +72,30 @@ verify_setup() {
     success "Connected to cluster: $CLUSTER_NAME"
 }
 
+wait_for_nodes() {
+    log "Waiting for at least one node to be ready..."
+    local max_attempts=60
+    local attempt=0
+    local ready_nodes=0
+    
+    while [ $attempt -lt $max_attempts ]; do
+        ready_nodes=$(kubectl get nodes --no-headers 2>/dev/null | grep -c " Ready " || echo "0")
+        
+        if [ "$ready_nodes" -gt 0 ]; then
+            success "Found $ready_nodes ready node(s)"
+            return 0
+        fi
+        
+        attempt=$((attempt + 1))
+        if [ $((attempt % 5)) -eq 0 ]; then
+            log "Still waiting for nodes to be ready... (attempt $attempt/$max_attempts)"
+        fi
+        sleep 10
+    done
+    
+    error "Timeout waiting for nodes to be ready. Please ensure the cluster has active node groups."
+}
+
 ###############################################################################
 # AWS Load Balancer Controller
 ###############################################################################
@@ -496,6 +520,7 @@ main() {
     
     check_prerequisites
     verify_setup
+    wait_for_nodes
     echo ""
     
     log "Starting installations..."
