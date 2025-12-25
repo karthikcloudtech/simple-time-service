@@ -16,6 +16,8 @@ terraform_plan:
   image: 
     name: hashicorp/terraform:latest
     entrypoint: [""]
+  tags:
+    - project-specific
   variables:
     TF_ROOT: "infra/environments/prod"
     AWS_DEFAULT_REGION: "us-east-1"
@@ -51,6 +53,8 @@ terraform_apply:
   image: 
     name: hashicorp/terraform:latest
     entrypoint: [""]
+  tags:
+    - project-specific
   variables:
     TF_ROOT: "infra/environments/prod"
     AWS_DEFAULT_REGION: "us-east-1"
@@ -58,31 +62,41 @@ terraform_apply:
     - job: terraform_plan
       optional: true
   before_script:
-    # Install AWS CLI, kubectl, and helm for addons installation (if needed)
+    # Install AWS CLI, kubectl, and helm for addons installation
     - |
-      # Check if we need these tools (addons installation is enabled by default)
-      # Install required packages
-      apk add --no-cache curl bash jq unzip
+      set -e
+      echo "Installing required tools for EKS addons installation..."
       
-      # Install AWS CLI v2
-      curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "/tmp/awscliv2.zip"
-      unzip -q /tmp/awscliv2.zip -d /tmp
-      /tmp/aws/install --bin-dir /usr/local/bin --install-dir /usr/local/aws-cli
-      rm -rf /tmp/awscliv2.zip /tmp/aws
+      # Install required packages for Alpine Linux
+      apk add --no-cache curl bash jq unzip openssl ca-certificates python3 py3-pip
+      
+      # Install AWS CLI using pip (more reliable on Alpine)
+      echo "Installing AWS CLI..."
+      pip3 install --no-cache-dir --upgrade pip
+      pip3 install --no-cache-dir awscli
+      aws --version || { echo "AWS CLI installation failed"; exit 1; }
       
       # Install kubectl
+      echo "Installing kubectl..."
       KUBECTL_VERSION=$(curl -L -s https://dl.k8s.io/release/stable.txt)
       curl -LO "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl"
       chmod +x kubectl
       mv kubectl /usr/local/bin/kubectl
+      kubectl version --client || { echo "kubectl installation failed"; exit 1; }
       
-      # Install helm
-      curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+      # Install helm (download tarball directly, no script)
+      echo "Installing helm..."
+      HELM_VERSION=$(curl -s https://api.github.com/repos/helm/helm/releases/latest | jq -r '.tag_name' || echo "v3.15.0")
+      curl -LO "https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz"
+      tar -zxvf "helm-${HELM_VERSION}-linux-amd64.tar.gz" || { echo "Helm download/extract failed"; exit 1; }
+      mv linux-amd64/helm /usr/local/bin/helm || { echo "Helm move failed"; exit 1; }
+      rm -rf "helm-${HELM_VERSION}-linux-amd64.tar.gz" linux-amd64
+      helm version --client || { echo "Helm installation failed"; exit 1; }
       
-      # Configure AWS credentials for aws CLI
-      export AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID}"
-      export AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY}"
-      export AWS_DEFAULT_REGION="${AWS_DEFAULT_REGION}"
+      echo "All tools installed successfully!"
+      echo "AWS CLI: $(aws --version)"
+      echo "kubectl: $(kubectl version --client --short)"
+      echo "helm: $(helm version --client --short)"
     - cd $TF_ROOT
     - terraform --version
     # Verify required variables are available

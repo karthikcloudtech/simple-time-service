@@ -53,8 +53,7 @@ install_eks_addons:
     name: $CI_ENVIRONMENT_NAME
     action: start
   tags:
-    - docker
-    - linux
+    - project-specific
 
 # Quick check job - verify addons are installed
 verify_eks_addons:
@@ -62,6 +61,8 @@ verify_eks_addons:
   image: 
     name: bitnami/kubectl:latest
     entrypoint: [""]
+  tags:
+    - project-specific
   before_script:
     - apk add --no-cache bash curl
     - aws configure set aws_access_key_id "$AWS_ACCESS_KEY_ID"
