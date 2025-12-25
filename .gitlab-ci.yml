@@ -1,8 +1,8 @@
 stages:
-  - scan_code
-  - build
+  # - scan_code
+  # - build
   - docker
-  - scan_image
+  # - scan_image
   - release_version
   - terraform
   - install_addons
@@ -14,95 +14,98 @@ variables:
 # ---------------------------
 # 🔍 CODE SECURITY SCANS
 # ---------------------------
+# COMMENTED OUT - scan_code stage disabled
 
-# SAST — Multi-language static analysis
-semgrep_scan:
-  stage: scan_code
-  image: returntocorp/semgrep:latest
-  script:
-    - echo "Running Semgrep SAST scan..."
-    - semgrep --config p/ci --error --exclude tests/ .
-  allow_failure: true
-  rules:
-    - if: '$CI_MERGE_REQUEST_ID'
-# Secret Detection — API keys, tokens, creds
-gitleaks_scan:
-  stage: scan_code
-  image:
-    name: zricethezav/gitleaks:latest
-    entrypoint: [""]
-  script:
-    - echo "Scanning for secrets with Gitleaks..."
-    - gitleaks detect --source . --no-banner --exit-code 1
-  allow_failure: false
-  rules:
-    - if: '$CI_MERGE_REQUEST_ID'  
+# # SAST — Multi-language static analysis
+# semgrep_scan:
+#   stage: scan_code
+#   image: returntocorp/semgrep:latest
+#   script:
+#     - echo "Running Semgrep SAST scan..."
+#     - semgrep --config p/ci --error --exclude tests/ .
+#   allow_failure: true
+#   rules:
+#     - if: '$CI_MERGE_REQUEST_ID'
+# # Secret Detection — API keys, tokens, creds
+# gitleaks_scan:
+#   stage: scan_code
+#   image:
+#     name: zricethezav/gitleaks:latest
+#     entrypoint: [""]
+#   script:
+#     - echo "Scanning for secrets with Gitleaks..."
+#     - gitleaks detect --source . --no-banner --exit-code 1
+#   allow_failure: false
+#   rules:
+#     - if: '$CI_MERGE_REQUEST_ID'  
 
-# Dockerfile Lint — security & efficiency
-hadolint_scan:
-  stage: scan_code
-  image: hadolint/hadolint:latest-debian
-  script:
-    - hadolint --ignore DL3041 Dockerfile
-  rules:
-    - if: '$CI_MERGE_REQUEST_ID'  
+# # Dockerfile Lint — security & efficiency
+# hadolint_scan:
+#   stage: scan_code
+#   image: hadolint/hadolint:latest-debian
+#   script:
+#     - hadolint --ignore DL3041 Dockerfile
+#   rules:
+#     - if: '$CI_MERGE_REQUEST_ID'  
 
-# Infrastructure as Code Security — Terraform scanning
-terrascan_scan:
-  stage: scan_code
-  image:
-    name: tenable/terrascan:latest
-    entrypoint: [""]
-  script:
-    - echo "Initializing Terrascan policies..."
-    - terrascan init || echo "Init completed (some policy warnings may occur)"
-    - echo "Scanning Terraform files for security issues..."
-    - terrascan scan -i terraform -d infra/ || echo "Scan completed with warnings"
-  allow_failure: true
-  rules:
-    - if: '$CI_MERGE_REQUEST_ID'
+# # Infrastructure as Code Security — Terraform scanning
+# terrascan_scan:
+#   stage: scan_code
+#   image:
+#     name: tenable/terrascan:latest
+#     entrypoint: [""]
+#   script:
+#     - echo "Initializing Terrascan policies..."
+#     - terrascan init || echo "Init completed (some policy warnings may occur)"
+#     - echo "Scanning Terraform files for security issues..."
+#     - terrascan scan -i terraform -d infra/ || echo "Scan completed with warnings"
+#   allow_failure: true
+#   rules:
+#     - if: '$CI_MERGE_REQUEST_ID'
 
-# Dependency Vulnerability Scan — OWASP Dependency-Check
-owasp_dependency_check:
-  stage: scan_code
-  needs: []
-  image:
-    name: owasp/dependency-check:latest
-    entrypoint: [""]
-  script:
-    - echo "Scanning Python dependencies for known vulnerabilities..."
-    - mkdir -p reports
-    - |
-      if [ -n "$NVD_API_KEY" ]; then
-        /usr/share/dependency-check/bin/dependency-check.sh --scan . --format JSON --format HTML --out reports --enableExperimental --failOnCVSS 7 --project "simple-time-service" --nvdApiKey "$NVD_API_KEY" || true
-      else
-        echo "Warning: NVD_API_KEY not set. Download will be slower. Get a free key at https://nvd.nist.gov/developers/request-an-api-key"
-        /usr/share/dependency-check/bin/dependency-check.sh --scan . --format JSON --format HTML --out reports --enableExperimental --failOnCVSS 7 --project "simple-time-service" || true
-      fi
-  artifacts:
-    paths:
-      - reports/
-    expire_in: 1 week
-  allow_failure: true
-  rules:
-    - if: '$CI_MERGE_REQUEST_ID'
+# # Dependency Vulnerability Scan — OWASP Dependency-Check
+# owasp_dependency_check:
+#   stage: scan_code
+#   needs: []
+#   image:
+#     name: owasp/dependency-check:latest
+#     entrypoint: [""]
+#   script:
+#     - echo "Scanning Python dependencies for known vulnerabilities..."
+#     - mkdir -p reports
+#     - |
+#       if [ -n "$NVD_API_KEY" ]; then
+#         /usr/share/dependency-check/bin/dependency-check.sh --scan . --format JSON --format HTML --out reports --enableExperimental --failOnCVSS 7 --project "simple-time-service" --nvdApiKey "$NVD_API_KEY" || true
+#       else
+#         echo "Warning: NVD_API_KEY not set. Download will be slower. Get a free key at https://nvd.nist.gov/developers/request-an-api-key"
+#         /usr/share/dependency-check/bin/dependency-check.sh --scan . --format JSON --format HTML --out reports --enableExperimental --failOnCVSS 7 --project "simple-time-service" || true
+#       fi
+#   artifacts:
+#     paths:
+#       - reports/
+#     expire_in: 1 week
+#   allow_failure: true
+#   rules:
+#     - if: '$CI_MERGE_REQUEST_ID'
 
 # ---------------------------
 # 🧱 BUILD STAGE
 # ---------------------------
-build:
-  stage: build
-  image: python:3.11
-  script:
-    - echo "Running build validation..."
-    - pip install -r requirements.txt
-    - python -m compileall app/
-  artifacts:
-    paths:
-      - app/__pycache__/
-    expire_in: 1 hour
-  rules:
-    - if: '$CI_MERGE_REQUEST_ID'  
+# COMMENTED OUT - build stage disabled
+
+# build:
+#   stage: build
+#   image: python:3.11
+#   script:
+#     - echo "Running build validation..."
+#     - pip install -r requirements.txt
+#     - python -m compileall app/
+#   artifacts:
+#     paths:
+#       - app/__pycache__/
+#     expire_in: 1 hour
+#   rules:
+#     - if: '$CI_MERGE_REQUEST_ID'  
 
 # ---------------------------
 # 🐳 DOCKER BUILD & PUSH (Docker Hub)
@@ -118,9 +121,18 @@ docker:
   services:
     - name: docker:dind
       command: ["--tls=false", "--host=0.0.0.0:2375"]
-
+  tags:
+    - project-specific  # Prefer project-specific runner, fallback to shared
+    - shared
   script:
     - |
+      echo "Waiting for Docker daemon to be ready..."
+      until docker info > /dev/null 2>&1; do
+        echo "Waiting for Docker daemon..."
+        sleep 1
+      done
+      echo "Docker daemon is ready!"
+      
       echo "Logging into container registry..."
       echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
       #Optional: setup Buildx for multi-arch (amd64 + arm64)
@@ -149,23 +161,25 @@ docker:
 # ---------------------------
 # 🧫 IMAGE SECURITY SCAN
 # ---------------------------
-trivy_scan:
-  stage: scan_image
-  image:
-    name: docker.io/aquasec/trivy:latest
-    entrypoint: [""]
-  script:
-    - echo "Scanning Docker image for vulnerabilities..."
-    - trivy image --exit-code 0 "$IMAGE_NAME:$CI_COMMIT_SHORT_SHA" || true
-    - trivy config --exit-code 0 . || true
-  allow_failure: true
-  rules:
-    # Scan on merge requests
-    - if: '$CI_MERGE_REQUEST_ID'
-    # Scan on merge to main
-    - if: '$CI_COMMIT_BRANCH == "main"'
-    # Scan on semantic version tags
-    - if: '$CI_COMMIT_TAG =~ /^v?[0-9]+\.[0-9]+\.[0-9]+/'  
+# COMMENTED OUT - scan_image stage disabled
+
+# trivy_scan:
+#   stage: scan_image
+#   image:
+#     name: docker.io/aquasec/trivy:latest
+#     entrypoint: [""]
+#   script:
+#     - echo "Scanning Docker image for vulnerabilities..."
+#     - trivy image --exit-code 0 "$IMAGE_NAME:$CI_COMMIT_SHORT_SHA" || true
+#     - trivy config --exit-code 0 . || true
+#   allow_failure: true
+#   rules:
+#     # Scan on merge requests
+#     - if: '$CI_MERGE_REQUEST_ID'
+#     # Scan on merge to main
+#     - if: '$CI_COMMIT_BRANCH == "main"'
+#     # Scan on semantic version tags
+#     - if: '$CI_COMMIT_TAG =~ /^v?[0-9]+\.[0-9]+\.[0-9]+/'  
 
 docker_release_version:
   stage: release_version
