@@ -2,9 +2,11 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: simple-time-service-ingress
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
 spec:
   rules:
-    - host: time.example.com
+    - host: time.trainerkarthik.shop
       http:
         paths:
           - path: /
@@ -16,7 +18,7 @@ spec:
                   number: 80
   tls:
     - hosts:
-        - time.example.com
+        - time.trainerkarthik.shop
       secretName: prod-time-tls
 
 

@@ -22,3 +22,15 @@ variable "vpc_cidr" {
   description = "VPC CIDR block"
   type        = string
 }
+
+variable "aws_region" {
+  description = "AWS region"
+  type        = string
+  default     = "us-east-1"
+}
+
+variable "skip_addons_install" {
+  description = "Skip automatic addons installation (install manually instead)"
+  type        = bool
+  default     = false
+}

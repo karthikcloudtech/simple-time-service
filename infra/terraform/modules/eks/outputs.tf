@@ -42,3 +42,23 @@ output "cluster_oidc_issuer_url" {
   description = "OIDC issuer URL for the cluster"
   value       = aws_eks_cluster.main.identity[0].oidc[0].issuer
 }
+
+output "aws_load_balancer_controller_role_arn" {
+  description = "IAM role ARN for AWS Load Balancer Controller"
+  value       = aws_iam_role.aws_load_balancer_controller.arn
+}
+
+output "ebs_csi_driver_role_arn" {
+  description = "IAM role ARN for EBS CSI Driver"
+  value       = aws_iam_role.ebs_csi_driver.arn
+}
+
+output "efs_csi_driver_role_arn" {
+  description = "IAM role ARN for EFS CSI Driver"
+  value       = aws_iam_role.efs_csi_driver.arn
+}
+
+output "external_dns_role_arn" {
+  description = "IAM role ARN for External DNS"
+  value       = aws_iam_role.external_dns.arn
+}

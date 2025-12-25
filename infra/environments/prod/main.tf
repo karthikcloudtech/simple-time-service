@@ -51,5 +51,8 @@ module "eks" {
   cluster_name = local.eks_cluster_name
   vpc_id       = module.vpc.vpc_id
   vpc_cidr     = module.vpc.vpc_cidr
+  aws_region   = var.aws_region
+  # Set to true to skip automatic addon installation (install via CI/manually)
+  # skip_addons_install = false
   subnet_ids   = module.vpc.private_subnet_ids
 }

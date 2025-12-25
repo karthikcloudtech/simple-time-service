@@ -1,23 +1,23 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: simple-time-service-dev
+  name: simple-time-service-staging
   namespace: argocd
 spec:
   project: default
   source:
     repoURL: https://gitlab.com/karthikbm2k25/simple-time-service.git
-    # Use your dev branch here, e.g. "develop" or "feature/dev"
+    # Staging watches develop branch - feature branches merge to develop
+    # Uses commit SHA tags from merged feature branches
     targetRevision: develop
-    path: gitops/apps/simple-time-service/overlays/dev
+    path: gitops/apps/simple-time-service/overlays/staging
   destination:
     server: https://kubernetes.default.svc
-    namespace: simple-time-service-dev
+    namespace: simple-time-service-staging
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
     syncOptions:
       - CreateNamespace=true
-
 

@@ -3,12 +3,13 @@ kind: Deployment
 metadata:
   name: simple-time-service
 spec:
-  replicas: 1
+  replicas: 2
   template:
     spec:
       containers:
         - name: simple-time-service
-          # Example: dev can use "latest" or a fast-changing tag
+          # Staging uses commit SHA tags (e.g., abc1234)
+          # Update this after merging feature branch MR to develop
+          # Image is already built during MR, so just update the tag here
           image: karthikbm2k25/simple-time-service:latest
-
 

@@ -8,7 +8,7 @@ This folder is designed to be copied into a dedicated GitOps repository and used
   Base Kustomize manifests for each microservice (deployment, service, ingress, config).
 
 - `apps/<service-name>/overlays/<env>`  
-  Environment-specific Kustomize overlays (e.g. `dev`, `staging`, `prod`).
+  Environment-specific Kustomize overlays (e.g. `staging`, `prod`).
 
 - `argo-apps/*.yaml`  
   Argo CD `Application` objects that point to the paths under `apps/`.

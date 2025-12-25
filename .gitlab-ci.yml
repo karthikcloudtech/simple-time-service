@@ -106,6 +106,8 @@ build:
 # ---------------------------
 # 🐳 DOCKER BUILD & PUSH (Docker Hub)
 # ---------------------------
+# Build on MR (any feature branch) - tag with commit SHA
+# This image will be reused after merge to main (same commit SHA)
 docker:
   stage: docker
   variables:
@@ -121,16 +123,25 @@ docker:
       docker buildx create --use
       docker buildx inspect --bootstrap
       
+      # Always tag with commit SHA (immutable, works for any branch)
       TAGS="-t $IMAGE_NAME:$CI_COMMIT_SHORT_SHA"
 
+      # If semantic version tag exists, also tag with that
       if [ -n "$CI_COMMIT_TAG" ]; then
         TAGS="$TAGS -t $IMAGE_NAME:$CI_COMMIT_TAG"
       fi
-      echo "Building and pushing Docker image with tags: $TAGS"
+      
+      echo "Building Docker image with commit SHA: $CI_COMMIT_SHORT_SHA"
+      echo "Tags: $TAGS"
       #docker buildx build --platform linux/amd64 $TAGS --push .
       docker buildx build --platform linux/amd64,linux/arm64 $TAGS --push . 
   rules:
-    - if: '$CI_MERGE_REQUEST_ID'  
+    # Build on merge requests (any feature branch → main)
+    - if: '$CI_MERGE_REQUEST_ID'
+    # Also build on merge to main (verifies image exists, uses cache if already built)
+    - if: '$CI_COMMIT_BRANCH == "main"'
+    # Build on semantic version tags (for prod releases)
+    - if: '$CI_COMMIT_TAG =~ /^v?[0-9]+\.[0-9]+\.[0-9]+/'  
 # ---------------------------
 # 🧫 IMAGE SECURITY SCAN
 # ---------------------------
@@ -145,7 +156,12 @@ trivy_scan:
     - trivy config --exit-code 0 . || true
   allow_failure: true
   rules:
-    - if: '$CI_MERGE_REQUEST_ID'  
+    # Scan on merge requests
+    - if: '$CI_MERGE_REQUEST_ID'
+    # Scan on merge to main
+    - if: '$CI_COMMIT_BRANCH == "main"'
+    # Scan on semantic version tags
+    - if: '$CI_COMMIT_TAG =~ /^v?[0-9]+\.[0-9]+\.[0-9]+/'  
 
 docker_release_version:
   stage: release_version

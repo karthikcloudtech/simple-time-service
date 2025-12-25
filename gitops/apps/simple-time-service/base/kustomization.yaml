@@ -7,5 +7,9 @@ resources:
   - deployment.yaml
   - service.yaml
   - ingress.yaml
+  - servicemonitor.yaml
+  # Note: ClusterIssuer is cluster-scoped and should be applied separately
+  # Apply manually: kubectl apply -f clusterissuer.yaml
+  # - clusterissuer.yaml
 
 

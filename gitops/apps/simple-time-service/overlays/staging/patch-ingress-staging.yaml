@@ -2,9 +2,11 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: simple-time-service-ingress
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-staging
 spec:
   rules:
-    - host: <ENV_NAME>-time.example.com
+    - host: staging.time.trainerkarthik.shop
       http:
         paths:
           - path: /
@@ -16,7 +18,6 @@ spec:
                   number: 80
   tls:
     - hosts:
-        - <ENV_NAME>-time.example.com
-      secretName: <ENV_NAME>-time-tls
-
+        - staging.time.trainerkarthik.shop
+      secretName: staging-time-tls
 

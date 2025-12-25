@@ -4,6 +4,7 @@ metadata:
   name: simple-time-service
   labels:
     app: simple-time-service
+    release: prometheus
 spec:
   type: ClusterIP
   ports:
@@ -11,6 +12,10 @@ spec:
       targetPort: 8080
       protocol: TCP
       name: http
+    - port: 8080
+      targetPort: 8080
+      protocol: TCP
+      name: metrics
   selector:
     app: simple-time-service
 
