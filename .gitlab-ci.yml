@@ -1,11 +1,11 @@
 stages:
-  - #scan_code # disabled for now
-  - #build
+  #- scan_code
+  #- build
   - docker
-  - #scan_image
+  #- scan_image
   - release_version
   - terraform
-  - install_addons  # Runs after terraform completes
+  - install_addons
 
 variables:
   DOCKER_BUILDKIT: "1"
