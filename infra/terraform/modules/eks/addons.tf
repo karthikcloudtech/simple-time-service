@@ -40,14 +40,23 @@ resource "null_resource" "install_eks_addons" {
   ]
 
   provisioner "local-exec" {
+    interpreter = ["/bin/bash", "-c"]
     command = <<-EOT
       set -e
+      
+      # Ensure PATH includes common locations
+      export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
       
       echo "=========================================="
       echo "Installing EKS Addons via Terraform"
       echo "Cluster: ${aws_eks_cluster.main.name}"
       echo "Region: ${var.aws_region}"
       echo "=========================================="
+      
+      # Verify tools are available
+      command -v aws >/dev/null 2>&1 || { echo "Error: aws CLI not found"; exit 1; }
+      command -v kubectl >/dev/null 2>&1 || { echo "Error: kubectl not found"; exit 1; }
+      command -v helm >/dev/null 2>&1 || { echo "Error: helm not found"; exit 1; }
       
       # Update kubeconfig
       echo "Updating kubeconfig..."
@@ -97,6 +106,8 @@ resource "null_resource" "install_eks_addons" {
     environment = {
       KUBECONFIG = "${path.module}/.kubeconfig"
       AWS_DEFAULT_REGION = var.aws_region
+      # AWS credentials should be available from GitLab CI/CD variables
+      # They are passed through from the shell environment to local-exec
     }
   }
 
