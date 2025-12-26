@@ -122,94 +122,28 @@ docker:
   services:
   script:
     - |
-      # Debug: Check environment and network connectivity
-      echo "=== DEBUG: Environment Variables ==="
-      echo "DOCKER_HOST=${DOCKER_HOST:-not set}"
-      echo "DOCKER_TLS_CERTDIR=${DOCKER_TLS_CERTDIR:-not set}"
-      echo "DOCKER_TLS_VERIFY=${DOCKER_TLS_VERIFY:-not set}"
-      echo ""
-      echo "=== DEBUG: TLS Certificate Directory ==="
-      ls -la /certs/client/ 2>&1 || echo "Certificate directory not found or not accessible"
-      echo ""
-      echo "=== DEBUG: Check if certificates exist in parent directory ==="
-      ls -la /certs/ 2>&1 || echo "Parent certs directory not found"
-      echo ""
-      echo "=== DEBUG: Network connectivity ==="
-      ping -c 2 docker || echo "Cannot ping docker service"
-      echo ""
-      echo "=== DEBUG: Test port connectivity ==="
-      echo "Waiting for dind service to start listening..."
-      for i in {1..30}; do
-        if nc -zv docker 2375 2>&1 | grep -q "succeeded"; then
-          echo "Port 2375 (HTTP) is now accessible after ${i} seconds"
-          break
-        fi
-        echo "Attempt ${i}/30: Port 2375 not ready yet..."
-        sleep 1
-      done
-      nc -zv docker 2375 2>&1 || echo "Port 2375 (HTTP) not accessible after 30 seconds"
-      nc -zv docker 2376 2>&1 || echo "Port 2376 (HTTPS) not accessible"
-      echo ""
-      echo "=== DEBUG: Check privileged mode (if available) ==="
-      if [ -c /dev/kmsg ] || [ -w /dev/kmsg ] 2>/dev/null; then
-        echo "Privileged mode indicators: /dev/kmsg accessible"
-      else
-        echo "Privileged mode indicators: /dev/kmsg not accessible (may indicate non-privileged)"
-      fi
-      echo ""
-      echo "=== DEBUG: Docker client version ==="
-      docker version --format 'Client: {{.Client.Version}}' || echo "Docker client not available"
-      echo ""
-      echo "=== DEBUG: Testing HTTP connection (port 2375) ==="
-      DOCKER_HOST=tcp://docker:2375 docker info 2>&1 | head -10 || echo "HTTP connection failed"
-      echo ""
-      echo "=== DEBUG: Testing HTTPS connection (port 2376) ==="
-      DOCKER_HOST=tcp://docker:2376 docker info 2>&1 | head -10 || echo "HTTPS connection failed"
-      echo ""
-      echo "=== DEBUG: Testing default Docker connection (auto-configured) ==="
-      docker info 2>&1 | head -10 || echo "Default connection failed"
-      echo ""
-      echo "Waiting for Docker daemon to be ready..."
-      echo "Checking Docker connection..."
       timeout=60
       counter=0
       until docker info > /dev/null 2>&1; do
         if [ $counter -ge $timeout ]; then
           echo "ERROR: Docker daemon did not become ready within ${timeout} seconds"
-          echo "=== DEBUG: Final diagnostic ==="
-          echo "DOCKER_HOST=${DOCKER_HOST}"
-          docker info 2>&1 || true
-          echo "=== DEBUG: Testing alternative connections ==="
-          docker -H tcp://docker:2375 info 2>&1 | head -10 || true
-          docker -H tcp://docker:2376 info 2>&1 | head -10 || true
           echo "This usually means privileged mode is not enabled in the runner config."
           echo "Please check /etc/gitlab-runner/config.toml and ensure privileged = true"
           exit 1
         fi
-        echo "Waiting for Docker daemon... (${counter}/${timeout})"
         sleep 1
         counter=$((counter + 1))
       done
-      echo "Docker daemon is ready!"
-      docker info
       
-      echo "Logging into container registry..."
       echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-      #Optional: setup Buildx for multi-arch (amd64 + arm64)
       docker buildx create --use
       docker buildx inspect --bootstrap
       
-      # Always tag with commit SHA (immutable, works for any branch)
       TAGS="-t $IMAGE_NAME:$CI_COMMIT_SHORT_SHA"
-
-      # If semantic version tag exists, also tag with that
       if [ -n "$CI_COMMIT_TAG" ]; then
         TAGS="$TAGS -t $IMAGE_NAME:$CI_COMMIT_TAG"
       fi
       
-      echo "Building Docker image with commit SHA: $CI_COMMIT_SHORT_SHA"
-      echo "Tags: $TAGS"
-      #docker buildx build --platform linux/amd64 $TAGS --push .
       docker buildx build --platform linux/amd64,linux/arm64 $TAGS --push . 
   rules:
     # Build on merge requests (any feature branch → main)

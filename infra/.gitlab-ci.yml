@@ -32,7 +32,6 @@ terraform_plan:
       fi
     - terraform init
   script:
-    - echo "Running Terraform plan..."
     - terraform validate
     - terraform plan -var-file=terraform.tfvars
   rules:
@@ -59,47 +58,31 @@ terraform_apply:
   before_script:
     # Optionally install AWS CLI, kubectl, and helm (non-blocking - won't prevent terraform destroy)
     - |
-      echo "Installing optional tools for EKS addons (failures are non-blocking)..."
-      
       # Install required packages for Alpine Linux
       apk add --no-cache curl bash jq unzip openssl ca-certificates python3 py3-pip || true
       
       # Install AWS CLI v1 via pip (v2 installer doesn't work on Alpine/musl)
       # Using --break-system-packages is acceptable in CI/CD environments
       if ! command -v aws &> /dev/null; then
-        echo "Installing AWS CLI..."
-        pip3 install --no-cache-dir --break-system-packages awscli 2>&1 || echo "AWS CLI installation skipped (non-critical)"
-        aws --version 2>&1 || echo "AWS CLI verification skipped"
-      else
-        echo "AWS CLI already installed: $(aws --version 2>&1)"
+        pip3 install --no-cache-dir --break-system-packages awscli 2>&1 || true
       fi
       
       # Install kubectl
       if ! command -v kubectl &> /dev/null; then
-        echo "Installing kubectl..."
         KUBECTL_VERSION=$(curl -L -s https://dl.k8s.io/release/stable.txt 2>/dev/null || echo "v1.28.0")
-        curl -LO "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl" 2>&1 || echo "kubectl download skipped"
+        curl -LO "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl" 2>&1 || true
         chmod +x kubectl 2>/dev/null || true
-        mv kubectl /usr/local/bin/kubectl 2>/dev/null || echo "kubectl move skipped"
-        kubectl version --client 2>&1 || echo "kubectl verification skipped"
-      else
-        echo "kubectl already installed: $(kubectl version --client --short 2>&1 || kubectl version --short 2>&1)"
+        mv kubectl /usr/local/bin/kubectl 2>/dev/null || true
       fi
       
       # Install helm (download tarball directly, no script)
       if ! command -v helm &> /dev/null; then
-        echo "Installing helm..."
         HELM_VERSION=$(curl -s https://api.github.com/repos/helm/helm/releases/latest 2>/dev/null | jq -r '.tag_name' || echo "v3.15.0")
-        curl -LO "https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz" 2>&1 || echo "helm download skipped"
-        tar -zxvf "helm-${HELM_VERSION}-linux-amd64.tar.gz" 2>&1 || echo "helm extract skipped"
-        mv linux-amd64/helm /usr/local/bin/helm 2>/dev/null || echo "helm move skipped"
+        curl -LO "https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz" 2>&1 || true
+        tar -zxvf "helm-${HELM_VERSION}-linux-amd64.tar.gz" 2>&1 || true
+        mv linux-amd64/helm /usr/local/bin/helm 2>/dev/null || true
         rm -rf "helm-${HELM_VERSION}-linux-amd64.tar.gz" linux-amd64 2>/dev/null || true
-        helm version 2>&1 || echo "helm verification skipped"
-      else
-        echo "helm already installed: $(helm version --short 2>&1 || helm version 2>&1)"
       fi
-      
-      echo "Tool installation check complete (failures are non-blocking for terraform operations)"
     - cd $TF_ROOT
     - terraform --version
     # Verify required variables are available
@@ -110,7 +93,6 @@ terraform_apply:
       fi
     - terraform init
   script:
-    - echo "Applying Terraform changes..."
     - terraform apply -auto-approve -var-file=terraform.tfvars
   when: manual
   rules:

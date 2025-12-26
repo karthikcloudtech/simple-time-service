@@ -30,8 +30,6 @@ install_eks_addons:
     - kubectl cluster-info
   script:
     - |
-      echo "Installing EKS addons for cluster: $CLUSTER_NAME"
-      # Run installation script
       chmod +x scripts/install-eks-addons.sh
       CLUSTER_NAME="$CLUSTER_NAME" \
       AWS_REGION="$AWS_REGION" \
