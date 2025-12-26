@@ -21,11 +21,11 @@ provider "aws" {
 
 terraform {
   backend "s3" {
-    bucket         = "simple-time-service-tf-state-prod"
-    key            = "prod/terraform.tfstate"
-    region         = "us-east-1"
-    dynamodb_table = "simple-time-service-tf-lock-prod"
-    encrypt        = true
+    bucket      = "simple-time-service-tf-state-prod"
+    key         = "prod/terraform.tfstate"
+    region      = "us-east-1"
+    use_lockfile = true
+    encrypt     = true
   }
 }
 
