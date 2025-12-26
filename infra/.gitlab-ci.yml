@@ -34,12 +34,7 @@ terraform_plan:
   script:
     - echo "Running Terraform plan..."
     - terraform validate
-    - terraform plan -out=tfplan -var-file=terraform.tfvars
-  artifacts:
-    paths:
-      - $TF_ROOT/tfplan
-      - $TF_ROOT/.terraform
-    expire_in: 1 week
+    - terraform plan -var-file=terraform.tfvars
   rules:
     - if: '$CI_MERGE_REQUEST_ID'
       changes:
@@ -116,7 +111,7 @@ terraform_apply:
     - terraform init
   script:
     - echo "Applying Terraform changes..."
-    - terraform apply -auto-approve tfplan
+    - terraform apply -auto-approve -var-file=terraform.tfvars
   when: manual
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
