@@ -68,14 +68,12 @@ terraform_apply:
       echo "Installing required tools for EKS addons installation..."
       
       # Install required packages for Alpine Linux
-      apk add --no-cache curl bash jq unzip openssl ca-certificates
+      apk add --no-cache curl bash jq unzip openssl ca-certificates python3 py3-pip
       
-      # Install AWS CLI v2 using official installer (works on Alpine, no pip needed)
+      # Install AWS CLI v1 via pip (v2 installer doesn't work on Alpine/musl)
+      # Using --break-system-packages is acceptable in CI/CD environments
       echo "Installing AWS CLI..."
-      curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "/tmp/awscliv2.zip"
-      unzip -q /tmp/awscliv2.zip -d /tmp
-      /tmp/aws/install -i /usr/local/aws-cli -b /usr/local/bin
-      rm -rf /tmp/awscliv2.zip /tmp/aws
+      pip3 install --no-cache-dir --break-system-packages awscli
       aws --version || { echo "AWS CLI installation failed"; exit 1; }
       
       # Install kubectl
