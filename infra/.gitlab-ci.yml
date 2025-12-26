@@ -62,41 +62,49 @@ terraform_apply:
     - job: terraform_plan
       optional: true
   before_script:
-    # Install AWS CLI, kubectl, and helm for addons installation
+    # Optionally install AWS CLI, kubectl, and helm (non-blocking - won't prevent terraform destroy)
     - |
-      set -e
-      echo "Installing required tools for EKS addons installation..."
+      echo "Installing optional tools for EKS addons (failures are non-blocking)..."
       
       # Install required packages for Alpine Linux
-      apk add --no-cache curl bash jq unzip openssl ca-certificates python3 py3-pip
+      apk add --no-cache curl bash jq unzip openssl ca-certificates python3 py3-pip || true
       
       # Install AWS CLI v1 via pip (v2 installer doesn't work on Alpine/musl)
       # Using --break-system-packages is acceptable in CI/CD environments
-      echo "Installing AWS CLI..."
-      pip3 install --no-cache-dir --break-system-packages awscli
-      aws --version || { echo "AWS CLI installation failed"; exit 1; }
+      if ! command -v aws &> /dev/null; then
+        echo "Installing AWS CLI..."
+        pip3 install --no-cache-dir --break-system-packages awscli 2>&1 || echo "AWS CLI installation skipped (non-critical)"
+        aws --version 2>&1 || echo "AWS CLI verification skipped"
+      else
+        echo "AWS CLI already installed: $(aws --version 2>&1)"
+      fi
       
       # Install kubectl
-      echo "Installing kubectl..."
-      KUBECTL_VERSION=$(curl -L -s https://dl.k8s.io/release/stable.txt)
-      curl -LO "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl"
-      chmod +x kubectl
-      mv kubectl /usr/local/bin/kubectl
-      kubectl version --client || { echo "kubectl installation failed"; exit 1; }
+      if ! command -v kubectl &> /dev/null; then
+        echo "Installing kubectl..."
+        KUBECTL_VERSION=$(curl -L -s https://dl.k8s.io/release/stable.txt 2>/dev/null || echo "v1.28.0")
+        curl -LO "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl" 2>&1 || echo "kubectl download skipped"
+        chmod +x kubectl 2>/dev/null || true
+        mv kubectl /usr/local/bin/kubectl 2>/dev/null || echo "kubectl move skipped"
+        kubectl version --client 2>&1 || echo "kubectl verification skipped"
+      else
+        echo "kubectl already installed: $(kubectl version --client --short 2>&1 || kubectl version --short 2>&1)"
+      fi
       
       # Install helm (download tarball directly, no script)
-      echo "Installing helm..."
-      HELM_VERSION=$(curl -s https://api.github.com/repos/helm/helm/releases/latest | jq -r '.tag_name' || echo "v3.15.0")
-      curl -LO "https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz"
-      tar -zxvf "helm-${HELM_VERSION}-linux-amd64.tar.gz" || { echo "Helm download/extract failed"; exit 1; }
-      mv linux-amd64/helm /usr/local/bin/helm || { echo "Helm move failed"; exit 1; }
-      rm -rf "helm-${HELM_VERSION}-linux-amd64.tar.gz" linux-amd64
-      helm version --client || { echo "Helm installation failed"; exit 1; }
+      if ! command -v helm &> /dev/null; then
+        echo "Installing helm..."
+        HELM_VERSION=$(curl -s https://api.github.com/repos/helm/helm/releases/latest 2>/dev/null | jq -r '.tag_name' || echo "v3.15.0")
+        curl -LO "https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz" 2>&1 || echo "helm download skipped"
+        tar -zxvf "helm-${HELM_VERSION}-linux-amd64.tar.gz" 2>&1 || echo "helm extract skipped"
+        mv linux-amd64/helm /usr/local/bin/helm 2>/dev/null || echo "helm move skipped"
+        rm -rf "helm-${HELM_VERSION}-linux-amd64.tar.gz" linux-amd64 2>/dev/null || true
+        helm version 2>&1 || echo "helm verification skipped"
+      else
+        echo "helm already installed: $(helm version --short 2>&1 || helm version 2>&1)"
+      fi
       
-      echo "All tools installed successfully!"
-      echo "AWS CLI: $(aws --version)"
-      echo "kubectl: $(kubectl version --client --short)"
-      echo "helm: $(helm version --client --short)"
+      echo "Tool installation check complete (failures are non-blocking for terraform operations)"
     - cd $TF_ROOT
     - terraform --version
     # Verify required variables are available
