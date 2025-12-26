@@ -150,6 +150,7 @@ resource "aws_eks_node_group" "main" {
   update_config {
     max_unavailable = 1
   }
+  
   tags = merge(
     { Name = "${var.cluster_name}-node-group" },
     {
