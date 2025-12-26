@@ -116,13 +116,10 @@ docker:
   stage: docker
   variables:
     DOCKER_DRIVER: overlay2
-    DOCKER_TLS_CERTDIR: "/certs/client"
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
   image: docker:29.1.3
   services:
-    - docker:dind
-  tags:
-    - project-specific  # Prefer project-specific runner, fallback to shared
-    - shared
   script:
     - |
       # Debug: Check environment and network connectivity
@@ -134,11 +131,40 @@ docker:
       echo "=== DEBUG: TLS Certificate Directory ==="
       ls -la /certs/client/ 2>&1 || echo "Certificate directory not found or not accessible"
       echo ""
+      echo "=== DEBUG: Check if certificates exist in parent directory ==="
+      ls -la /certs/ 2>&1 || echo "Parent certs directory not found"
+      echo ""
       echo "=== DEBUG: Network connectivity ==="
       ping -c 2 docker || echo "Cannot ping docker service"
       echo ""
+      echo "=== DEBUG: Test port connectivity ==="
+      echo "Waiting for dind service to start listening..."
+      for i in {1..30}; do
+        if nc -zv docker 2375 2>&1 | grep -q "succeeded"; then
+          echo "Port 2375 (HTTP) is now accessible after ${i} seconds"
+          break
+        fi
+        echo "Attempt ${i}/30: Port 2375 not ready yet..."
+        sleep 1
+      done
+      nc -zv docker 2375 2>&1 || echo "Port 2375 (HTTP) not accessible after 30 seconds"
+      nc -zv docker 2376 2>&1 || echo "Port 2376 (HTTPS) not accessible"
+      echo ""
+      echo "=== DEBUG: Check privileged mode (if available) ==="
+      if [ -c /dev/kmsg ] || [ -w /dev/kmsg ] 2>/dev/null; then
+        echo "Privileged mode indicators: /dev/kmsg accessible"
+      else
+        echo "Privileged mode indicators: /dev/kmsg not accessible (may indicate non-privileged)"
+      fi
+      echo ""
       echo "=== DEBUG: Docker client version ==="
       docker version --format 'Client: {{.Client.Version}}' || echo "Docker client not available"
+      echo ""
+      echo "=== DEBUG: Testing HTTP connection (port 2375) ==="
+      DOCKER_HOST=tcp://docker:2375 docker info 2>&1 | head -10 || echo "HTTP connection failed"
+      echo ""
+      echo "=== DEBUG: Testing HTTPS connection (port 2376) ==="
+      DOCKER_HOST=tcp://docker:2376 docker info 2>&1 | head -10 || echo "HTTPS connection failed"
       echo ""
       echo "=== DEBUG: Testing default Docker connection (auto-configured) ==="
       docker info 2>&1 | head -10 || echo "Default connection failed"
