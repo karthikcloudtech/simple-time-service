@@ -5,7 +5,7 @@
 # Run this script on your EC2 instance to set up GitLab Runner
 ###############################################################################
 
-set -euo pipefail
+set -uo pipefail
 
 echo "=========================================="
 echo "GitLab Runner Setup for AWS EC2 (AL2023)"

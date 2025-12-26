@@ -42,7 +42,6 @@ resource "null_resource" "install_eks_addons" {
   provisioner "local-exec" {
     interpreter = ["/bin/bash", "-c"]
     command = <<-EOT
-      set -e
       
       # Ensure PATH includes common locations
       export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
@@ -71,14 +70,16 @@ resource "null_resource" "install_eks_addons" {
         echo "Warning: Nodes may not be ready yet, continuing anyway..."
       }
       
-      # Get script path (from terraform module to project root)
-      # Module is at: infra/terraform/modules/eks
+      # Get script path (from terraform root module to project root)
+      # Root module is at: infra/environments/prod
       # Script is at: scripts/install-eks-addons.sh
-      # Go up 4 levels from module to project root
-      SCRIPT_PATH="${path.root}/../../../../scripts/install-eks-addons.sh"
+      # Go up 3 levels from root module to project root: prod -> environments -> infra -> project root
+      SCRIPT_PATH="${path.root}/../../../scripts/install-eks-addons.sh"
       
-      # Alternative: Use relative path from project root
-      # SCRIPT_PATH="${path.cwd}/scripts/install-eks-addons.sh"
+      # Try alternative path if first doesn't exist (from current working directory)
+      if [ ! -f "$SCRIPT_PATH" ]; then
+        SCRIPT_PATH="${path.cwd}/../../../scripts/install-eks-addons.sh"
+      fi
       
       if [ -f "$SCRIPT_PATH" ]; then
         echo "Running installation script: $SCRIPT_PATH"
@@ -96,9 +97,12 @@ resource "null_resource" "install_eks_addons" {
         INSTALL_CLUSTER_AUTOSCALER="true" \
         bash "$SCRIPT_PATH"
       else
-        echo "Warning: Installation script not found at: $SCRIPT_PATH"
+        echo "Error: Installation script not found at: $SCRIPT_PATH"
+        echo "Tried paths:"
+        echo "  - ${path.root}/../../scripts/install-eks-addons.sh"
+        echo "  - ${path.cwd}/../../scripts/install-eks-addons.sh"
+        echo "Current directory: $(pwd)"
         echo "Please install addons manually or update the script path"
-        echo "Run: ./scripts/install-eks-addons.sh"
         exit 1
       fi
     EOT
