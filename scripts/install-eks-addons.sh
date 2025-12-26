@@ -191,13 +191,32 @@ EOF
     kubectl annotate serviceaccount "$sa_name" -n "$sa_namespace" \
         eks.amazonaws.com/role-arn="$role_arn" --overwrite &>/dev/null
     
+    # Get VPC ID from cluster
+    local vpc_id=$(aws eks describe-cluster --name "$CLUSTER_NAME" --region "$AWS_REGION" \
+        --query "cluster.resourcesVpcConfig.vpcId" --output text 2>/dev/null)
+    
+    if [ -z "$vpc_id" ] || [ "$vpc_id" == "None" ]; then
+        warn "Could not get VPC ID from cluster, controller will try to auto-detect"
+        vpc_id=""
+    else
+        log "Using VPC ID: $vpc_id"
+    fi
+    
     log "Installing ALB Controller via Helm..."
+    local helm_args=(
+        "--set" "clusterName=$CLUSTER_NAME"
+        "--set" "serviceAccount.create=false"
+        "--set" "serviceAccount.name=$sa_name"
+        "--set" "region=$AWS_REGION"
+    )
+    
+    if [ -n "$vpc_id" ]; then
+        helm_args+=("--set" "vpcId=$vpc_id")
+    fi
+    
     helm upgrade --install aws-load-balancer-controller eks/aws-load-balancer-controller \
         -n "$sa_namespace" \
-        --set clusterName="$CLUSTER_NAME" \
-        --set serviceAccount.create=false \
-        --set serviceAccount.name="$sa_name" \
-        --set region="$AWS_REGION" \
+        "${helm_args[@]}" \
         --wait --timeout 5m &>/dev/null
     
     success "AWS Load Balancer Controller installed"
