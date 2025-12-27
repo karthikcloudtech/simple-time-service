@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: simple-time-service
-          image: karthikbm2k25/simple-time-service:1.1.0
+          image: karthikbm2k25/simple-time-service:1.1.2
           ports:
             - containerPort: 8080
               name: http
