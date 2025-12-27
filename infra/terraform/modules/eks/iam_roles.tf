@@ -37,16 +37,8 @@ resource "aws_iam_policy" "aws_load_balancer_controller" {
           "ec2:DescribeTags",
           "ec2:GetCoipPoolUsage",
           "ec2:DescribeCoipPools",
-          "elasticloadbalancing:DescribeLoadBalancers",
-          "elasticloadbalancing:DescribeLoadBalancerAttributes",
-          "elasticloadbalancing:DescribeListeners",
-          "elasticloadbalancing:DescribeListenerCertificates",
-          "elasticloadbalancing:DescribeSSLPolicies",
-          "elasticloadbalancing:DescribeRules",
-          "elasticloadbalancing:DescribeTargetGroups",
-          "elasticloadbalancing:DescribeTargetGroupAttributes",
-          "elasticloadbalancing:DescribeTargetHealth",
-          "elasticloadbalancing:DescribeTags"
+          "ec2:Describe*",
+          "elasticloadbalancing:Describe*"
         ]
         Resource = "*"
       },
@@ -56,6 +48,7 @@ resource "aws_iam_policy" "aws_load_balancer_controller" {
           "cognito-idp:DescribeUserPoolClient",
           "acm:ListCertificates",
           "acm:DescribeCertificate",
+          "acm:GetCertificate",
           "iam:ListServerCertificates",
           "iam:GetServerCertificate",
           "waf-regional:GetWebACL",
@@ -68,8 +61,11 @@ resource "aws_iam_policy" "aws_load_balancer_controller" {
           "wafv2:DisassociateWebACL",
           "shield:GetSubscriptionState",
           "shield:DescribeProtection",
+          "shield:DescribeSubscription",
           "shield:CreateProtection",
-          "shield:DeleteProtection"
+          "shield:DeleteProtection",
+          "tag:GetResources",
+          "tag:TagResources"
         ]
         Resource = "*"
       },
@@ -158,7 +154,8 @@ resource "aws_iam_policy" "aws_load_balancer_controller" {
         Effect = "Allow"
         Action = [
           "elasticloadbalancing:AddTags",
-          "elasticloadbalancing:RemoveTags"
+          "elasticloadbalancing:RemoveTags",
+          "elasticloadbalancing:DeleteTags"
         ]
         Resource = [
           "arn:aws:elasticloadbalancing:*:*:targetgroup/*/*",

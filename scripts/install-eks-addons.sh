@@ -74,9 +74,23 @@ install_alb_controller() {
     fi
     
     if ! aws iam get-policy --policy-arn "arn:aws:iam::${account_id}:policy/${policy_name}" &>/dev/null; then
-        curl -s -o /tmp/alb-policy.json https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/v2.8.0/docs/install/iam_policy.json
-        aws iam create-policy --policy-name "$policy_name" --policy-document file:///tmp/alb-policy.json &>/dev/null
-        rm -f /tmp/alb-policy.json
+        # Use local IAM policy file with all required permissions including DescribeListenerAttributes
+        local policy_file="$SCRIPT_DIR/aws-load-balancer-controller-iam-policy.json"
+        if [ -f "$policy_file" ]; then
+            aws iam create-policy --policy-name "$policy_name" --policy-document file://"$policy_file" &>/dev/null
+        else
+            # Fallback to downloading from GitHub if local file doesn't exist
+            curl -s -o /tmp/alb-policy.json https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/v2.8.0/docs/install/iam_policy.json
+            aws iam create-policy --policy-name "$policy_name" --policy-document file:///tmp/alb-policy.json &>/dev/null
+            rm -f /tmp/alb-policy.json
+        fi
+    else
+        # Update existing policy with latest permissions
+        local policy_file="$SCRIPT_DIR/aws-load-balancer-controller-iam-policy.json"
+        if [ -f "$policy_file" ]; then
+            local policy_arn="arn:aws:iam::${account_id}:policy/${policy_name}"
+            aws iam create-policy-version --policy-arn "$policy_arn" --policy-document file://"$policy_file" --set-as-default &>/dev/null || true
+        fi
     fi
     
     local policy_arn="arn:aws:iam::${account_id}:policy/${policy_name}"
