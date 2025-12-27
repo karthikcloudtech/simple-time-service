@@ -7,7 +7,7 @@ spec:
   project: default
   source:
     repoURL: https://gitlab.com/karthikbm2k25/simple-time-service.git
-    targetRevision: develop
+    targetRevision: main
     path: gitops/logging
   destination:
     server: https://kubernetes.default.svc
