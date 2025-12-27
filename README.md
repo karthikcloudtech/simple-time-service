@@ -137,8 +137,8 @@ The Docker image build process is automated through GitLab CI/CD and triggers on
    release version to the image. 
    2. Tag the git commit once qa is completed and qualified for the release/deployment. 
    3. To tag or set release version of the docker inage, we just need to add git tag to the specific git commit.
-   4. Once we add git tag like "1.1.0" to commit and push the tag, gitlab runner will trigger the "Release_Version" stage.
-   5. In "Release_Version" stage of cicd, it pulls the fully tested existing docker image of specific commit and adds the 1.1.0 version to the same image(tag).
+   4. Once we add git tag like "1.1.2" to commit and push the tag, gitlab runner will trigger the "Release_Version" stage.
+   5. In "Release_Version" stage of cicd, it pulls the fully tested existing docker image of specific commit and adds the 1.1.2 version to the same image(tag).
    6. This helps in avoiding multiple builds for the same code, after testing and merging to main. We can use the same testd image in all different enveironments including production.
    7. For production use same image, but with specific release version.
    

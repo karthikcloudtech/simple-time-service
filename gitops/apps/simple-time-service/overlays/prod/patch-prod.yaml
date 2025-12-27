@@ -9,6 +9,6 @@ spec:
       containers:
         - name: simple-time-service
           # Example: prod uses a specific, tested release image tag
-          image: karthikbm2k25/simple-time-service:1.1.0
+          image: karthikbm2k25/simple-time-service:1.1.2
 
 
