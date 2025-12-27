@@ -42,3 +42,8 @@ output "cluster_oidc_issuer_url" {
   description = "OIDC issuer URL for the cluster"
   value       = module.eks.cluster_oidc_issuer_url
 }
+
+output "cert_manager_role_arn" {
+  description = "IAM role ARN for cert-manager"
+  value       = module.eks.cert_manager_role_arn
+}
