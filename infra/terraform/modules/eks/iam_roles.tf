@@ -603,3 +603,75 @@ resource "aws_iam_role_policy_attachment" "external_dns" {
   }
 }
 
+# Cert-Manager IAM Role
+# Required for DNS-01 challenge with Route53 for Let's Encrypt certificates
+resource "aws_iam_policy" "cert_manager" {
+  name        = "${var.project_name}-cert-manager-policy"
+  description = "Policy for cert-manager to manage Route53 records for DNS-01 challenge"
+  policy      = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "route53:GetChange"
+        ]
+        Resource = "arn:aws:route53:::change/*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "route53:ChangeResourceRecordSets",
+          "route53:ListResourceRecordSets"
+        ]
+        Resource = "arn:aws:route53:::hostedzone/*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "route53:ListHostedZonesByName"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+
+  tags = {
+    Name = "${var.project_name}-cert-manager-policy"
+  }
+}
+
+resource "aws_iam_role" "cert_manager" {
+  name               = "${var.project_name}-cert-manager-role"
+  force_detach_policies = true
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Principal = {
+        Federated = aws_iam_openid_connect_provider.eks.arn
+      }
+      Action = "sts:AssumeRoleWithWebIdentity"
+      Condition = {
+        StringEquals = {
+          "${replace(aws_iam_openid_connect_provider.eks.url, "https://", "")}:sub" = "system:serviceaccount:cert-manager:cert-manager"
+          "${replace(aws_iam_openid_connect_provider.eks.url, "https://", "")}:aud" = "sts.amazonaws.com"
+        }
+      }
+    }]
+  })
+
+  tags = {
+    Name = "${var.project_name}-cert-manager-role"
+  }
+}
+
+resource "aws_iam_role_policy_attachment" "cert_manager" {
+  policy_arn = aws_iam_policy.cert_manager.arn
+  role       = aws_iam_role.cert_manager.name
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+

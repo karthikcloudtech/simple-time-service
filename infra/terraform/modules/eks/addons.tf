@@ -36,7 +36,8 @@ resource "null_resource" "install_eks_addons" {
     aws_iam_role.aws_load_balancer_controller,
     aws_iam_role.ebs_csi_driver,
     aws_iam_role.efs_csi_driver,
-    aws_iam_role.external_dns
+    aws_iam_role.external_dns,
+    aws_iam_role.cert_manager
   ]
 
   provisioner "local-exec" {

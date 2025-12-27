@@ -12,11 +12,16 @@ spec:
     # Name of a secret used to store the ACME account private key
     privateKeySecretRef:
       name: letsencrypt-prod
-    # Enable the HTTP-01 challenge provider
+    # Enable the DNS-01 challenge provider with Route53
     solvers:
-    - http01:
-        ingress:
-          class: alb
+    - dns01:
+        route53:
+          region: us-east-1
+          # Optional: specify hosted zone ID if you have multiple zones
+          # hostedZoneID: Z1234567890ABC
+      selector:
+        dnsZones:
+          - trainerkarthik.shop
 ---
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
@@ -31,7 +36,10 @@ spec:
     privateKeySecretRef:
       name: letsencrypt-staging
     solvers:
-    - http01:
-        ingress:
-          class: alb
+    - dns01:
+        route53:
+          region: us-east-1
+      selector:
+        dnsZones:
+          - trainerkarthik.shop
 
