@@ -1,9 +1,8 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-namespace: logging
+namespace: argocd
 
 resources:
-  - kibana-ingress.yaml
-  - elasticsearch-ingress.yaml
+  - argocd-ingress.yaml
 
