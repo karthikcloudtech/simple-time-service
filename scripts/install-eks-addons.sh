@@ -161,10 +161,31 @@ install_cluster_autoscaler() {
     kubectl create serviceaccount cluster-autoscaler -n kube-system --dry-run=client -o yaml | kubectl apply -f - &>/dev/null
     kubectl annotate serviceaccount cluster-autoscaler -n kube-system eks.amazonaws.com/role-arn="$role_arn" --overwrite &>/dev/null
     helm_repo autoscaler https://kubernetes.github.io/autoscaler
+    # Use autoDiscovery mode for EKS - automatically discovers node groups
+    # Note: Instance types are controlled by the EKS node group configuration
+    # The autoscaler will scale the node groups with their configured instance types
     if [ "$VERBOSE" = "true" ]; then
-        helm upgrade --install cluster-autoscaler autoscaler/cluster-autoscaler -n kube-system --set "autoDiscovery.clusterName=$CLUSTER_NAME" --set "awsRegion=$AWS_REGION" --set "serviceAccount.create=false" --set "serviceAccount.name=cluster-autoscaler" --set "rbac.create=true" --wait --timeout 5m
+        helm upgrade --install cluster-autoscaler autoscaler/cluster-autoscaler -n kube-system \
+            --set "autoDiscovery.clusterName=$CLUSTER_NAME" \
+            --set "awsRegion=$AWS_REGION" \
+            --set "serviceAccount.create=false" \
+            --set "serviceAccount.name=cluster-autoscaler" \
+            --set "rbac.create=true" \
+            --set "extraArgs.scan-interval=10s" \
+            --set "extraArgs.skip-nodes-with-local-storage=false" \
+            --set "extraArgs.skip-nodes-with-system-pods=false" \
+            --wait --timeout 5m
     else
-        helm upgrade --install cluster-autoscaler autoscaler/cluster-autoscaler -n kube-system --set "autoDiscovery.clusterName=$CLUSTER_NAME" --set "awsRegion=$AWS_REGION" --set "serviceAccount.create=false" --set "serviceAccount.name=cluster-autoscaler" --set "rbac.create=true" --wait --timeout 5m &>/dev/null
+        helm upgrade --install cluster-autoscaler autoscaler/cluster-autoscaler -n kube-system \
+            --set "autoDiscovery.clusterName=$CLUSTER_NAME" \
+            --set "awsRegion=$AWS_REGION" \
+            --set "serviceAccount.create=false" \
+            --set "serviceAccount.name=cluster-autoscaler" \
+            --set "rbac.create=true" \
+            --set "extraArgs.scan-interval=10s" \
+            --set "extraArgs.skip-nodes-with-local-storage=false" \
+            --set "extraArgs.skip-nodes-with-system-pods=false" \
+            --wait --timeout 5m &>/dev/null
     fi
     success "Cluster Autoscaler installed"
 }
