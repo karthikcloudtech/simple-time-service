@@ -156,11 +156,24 @@ install_cluster_autoscaler() {
     
     # Check if already installed
     if helm list -n kube-system | grep -q cluster-autoscaler; then
-        log "Cluster Autoscaler already installed. Verifying IRSA configuration..."
+        log "Cluster Autoscaler already installed. Verifying configuration..."
         local role_name="${PROJECT_NAME}-cluster-autoscaler-role"
         local role_arn=$(aws iam get-role --role-name "$role_name" --query 'Role.Arn' --output text 2>/dev/null || echo "")
         if [ -n "$role_arn" ]; then
             local sa_name="cluster-autoscaler-aws-cluster-autoscaler"
+            
+            # Verify and fix Helm ownership metadata if missing
+            local managed_by=$(kubectl get serviceaccount "$sa_name" -n kube-system -o jsonpath='{.metadata.labels.app\.kubernetes\.io/managed-by}' 2>/dev/null || echo "")
+            if [ "$managed_by" != "Helm" ]; then
+                log "Fixing Helm ownership metadata for Cluster Autoscaler ServiceAccount..."
+                kubectl label serviceaccount "$sa_name" -n kube-system app.kubernetes.io/managed-by=Helm --overwrite &>/dev/null
+                kubectl annotate serviceaccount "$sa_name" -n kube-system \
+                    meta.helm.sh/release-name=cluster-autoscaler \
+                    meta.helm.sh/release-namespace=kube-system \
+                    --overwrite &>/dev/null
+            fi
+            
+            # Verify and fix IRSA annotation
             local current_arn=$(kubectl get serviceaccount "$sa_name" -n kube-system -o jsonpath='{.metadata.annotations.eks\.amazonaws\.com/role-arn}' 2>/dev/null || echo "")
             if [ "$current_arn" != "$role_arn" ]; then
                 log "Fixing IRSA annotation for Cluster Autoscaler..."
@@ -168,12 +181,12 @@ install_cluster_autoscaler() {
                 log "Restarting Cluster Autoscaler pods..."
                 kubectl rollout restart deployment cluster-autoscaler -n kube-system &>/dev/null || \
                 kubectl delete pods -n kube-system -l app.kubernetes.io/name=aws-cluster-autoscaler &>/dev/null || true
-                success "Cluster Autoscaler IRSA configuration updated"
+                success "Cluster Autoscaler configuration updated"
             else
-                log "Cluster Autoscaler IRSA configuration is correct"
+                log "Cluster Autoscaler configuration is correct"
             fi
         else
-            warn "IAM role not found: $role_name. Skipping IRSA fix."
+            warn "IAM role not found: $role_name. Skipping configuration fix."
         fi
         return
     fi
@@ -185,7 +198,19 @@ install_cluster_autoscaler() {
     # Release name is "cluster-autoscaler", chart name is "cluster-autoscaler"
     # So ServiceAccount name is: cluster-autoscaler-aws-cluster-autoscaler
     local sa_name="cluster-autoscaler-aws-cluster-autoscaler"
+    
+    # Create ServiceAccount if it doesn't exist
     kubectl create serviceaccount "$sa_name" -n kube-system --dry-run=client -o yaml | kubectl apply -f - &>/dev/null
+    
+    # Add Helm ownership metadata (REQUIRED for Helm to manage existing ServiceAccount)
+    # This prevents "ServiceAccount exists and cannot be imported" error
+    kubectl label serviceaccount "$sa_name" -n kube-system app.kubernetes.io/managed-by=Helm --overwrite &>/dev/null
+    kubectl annotate serviceaccount "$sa_name" -n kube-system \
+        meta.helm.sh/release-name=cluster-autoscaler \
+        meta.helm.sh/release-namespace=kube-system \
+        --overwrite &>/dev/null
+    
+    # Add IRSA annotation for AWS IAM role
     kubectl annotate serviceaccount "$sa_name" -n kube-system eks.amazonaws.com/role-arn="$role_arn" --overwrite &>/dev/null
     helm_repo autoscaler https://kubernetes.github.io/autoscaler
     # Use autoDiscovery mode for EKS - automatically discovers node groups
