@@ -158,8 +158,12 @@ install_cluster_autoscaler() {
     local role_name="${PROJECT_NAME}-cluster-autoscaler-role"
     local role_arn=$(aws iam get-role --role-name "$role_name" --query 'Role.Arn' --output text 2>/dev/null || echo "")
     [ -z "$role_arn" ] && error "IAM role not found: $role_name"
-    kubectl create serviceaccount cluster-autoscaler -n kube-system --dry-run=client -o yaml | kubectl apply -f - &>/dev/null
-    kubectl annotate serviceaccount cluster-autoscaler -n kube-system eks.amazonaws.com/role-arn="$role_arn" --overwrite &>/dev/null
+    # The Helm chart creates ServiceAccount with name: <release-name>-<chart-name>
+    # Release name is "cluster-autoscaler", chart name is "cluster-autoscaler"
+    # So ServiceAccount name is: cluster-autoscaler-aws-cluster-autoscaler
+    local sa_name="cluster-autoscaler-aws-cluster-autoscaler"
+    kubectl create serviceaccount "$sa_name" -n kube-system --dry-run=client -o yaml | kubectl apply -f - &>/dev/null
+    kubectl annotate serviceaccount "$sa_name" -n kube-system eks.amazonaws.com/role-arn="$role_arn" --overwrite &>/dev/null
     helm_repo autoscaler https://kubernetes.github.io/autoscaler
     # Use autoDiscovery mode for EKS - automatically discovers node groups
     # Note: Instance types are controlled by the EKS node group configuration
@@ -169,7 +173,7 @@ install_cluster_autoscaler() {
             --set "autoDiscovery.clusterName=$CLUSTER_NAME" \
             --set "awsRegion=$AWS_REGION" \
             --set "serviceAccount.create=false" \
-            --set "serviceAccount.name=cluster-autoscaler" \
+            --set "serviceAccount.name=$sa_name" \
             --set "rbac.create=true" \
             --set "extraArgs.scan-interval=10s" \
             --set "extraArgs.skip-nodes-with-local-storage=false" \
@@ -180,7 +184,7 @@ install_cluster_autoscaler() {
             --set "autoDiscovery.clusterName=$CLUSTER_NAME" \
             --set "awsRegion=$AWS_REGION" \
             --set "serviceAccount.create=false" \
-            --set "serviceAccount.name=cluster-autoscaler" \
+            --set "serviceAccount.name=$sa_name" \
             --set "rbac.create=true" \
             --set "extraArgs.scan-interval=10s" \
             --set "extraArgs.skip-nodes-with-local-storage=false" \
@@ -197,9 +201,9 @@ install_prometheus() {
     helm_repo prometheus-community https://prometheus-community.github.io/helm-charts
     ns monitoring
     if [ "$VERBOSE" = "true" ]; then
-        helm upgrade --install prometheus prometheus-community/kube-prometheus-stack -n monitoring --set prometheus.prometheusSpec.retention=30d --set prometheus.prometheusSpec.storageSpec.volumeClaimTemplate.spec.resources.requests.storage=20Gi --set prometheus.prometheusSpec.resources.requests.memory=512Mi --set prometheus.prometheusSpec.resources.requests.cpu=250m --set prometheus.prometheusSpec.resources.limits.memory=1Gi --set prometheus.prometheusSpec.resources.limits.cpu=500m --set grafana.enabled=true --wait --timeout 10m
+        helm upgrade --install prometheus prometheus-community/kube-prometheus-stack -n monitoring --set prometheus.prometheusSpec.retention=30d --set prometheus.prometheusSpec.storageSpec.volumeClaimTemplate.spec.storageClassName=gp3 --set prometheus.prometheusSpec.storageSpec.volumeClaimTemplate.spec.resources.requests.storage=20Gi --set prometheus.prometheusSpec.resources.requests.memory=512Mi --set prometheus.prometheusSpec.resources.requests.cpu=250m --set prometheus.prometheusSpec.resources.limits.memory=1Gi --set prometheus.prometheusSpec.resources.limits.cpu=500m --set grafana.enabled=true --wait --timeout 10m
     else
-        helm upgrade --install prometheus prometheus-community/kube-prometheus-stack -n monitoring --set prometheus.prometheusSpec.retention=30d --set prometheus.prometheusSpec.storageSpec.volumeClaimTemplate.spec.resources.requests.storage=20Gi --set prometheus.prometheusSpec.resources.requests.memory=512Mi --set prometheus.prometheusSpec.resources.requests.cpu=250m --set prometheus.prometheusSpec.resources.limits.memory=1Gi --set prometheus.prometheusSpec.resources.limits.cpu=500m --set grafana.enabled=true --wait --timeout 10m &>/dev/null
+        helm upgrade --install prometheus prometheus-community/kube-prometheus-stack -n monitoring --set prometheus.prometheusSpec.retention=30d --set prometheus.prometheusSpec.storageSpec.volumeClaimTemplate.spec.storageClassName=gp3 --set prometheus.prometheusSpec.storageSpec.volumeClaimTemplate.spec.resources.requests.storage=20Gi --set prometheus.prometheusSpec.resources.requests.memory=512Mi --set prometheus.prometheusSpec.resources.requests.cpu=250m --set prometheus.prometheusSpec.resources.limits.memory=1Gi --set prometheus.prometheusSpec.resources.limits.cpu=500m --set grafana.enabled=true --wait --timeout 10m &>/dev/null
     fi
     success "Prometheus installed"
 }
@@ -281,17 +285,39 @@ EOF
         log "Installing Kibana (running in background, will wait for Elasticsearch)..."
         # Delete any failed pre-install jobs first
         kubectl delete job -n logging -l job-name=pre-install-kibana-kibana --ignore-not-found=true &>/dev/null
-        helm upgrade --install kibana elastic/kibana -n logging \
-          --set elasticsearchHosts=https://elasticsearch-master.logging.svc.cluster.local:9200 \
-          --set extraEnvs[0].name=ELASTICSEARCH_HOSTS \
-          --set extraEnvs[0].value=https://elasticsearch-master.logging.svc.cluster.local:9200 \
-          --set extraEnvs[1].name=ELASTICSEARCH_SSL_VERIFICATIONMODE \
-          --set extraEnvs[1].value=none \
-          --set resources.requests.memory=512Mi \
-          --set resources.requests.cpu=500m \
-          --set lifecycleHooks.preInstall.enabled=false \
-          --set lifecycleHooks.preUpgrade.enabled=false \
-          --set lifecycleHooks.preRollback.enabled=false $([ "$VERBOSE" != "true" ] && echo "&>/dev/null") &
+        local kibana_values_file="$PROJECT_ROOT/k8s/kibana-values.yml"
+        if [ -f "$kibana_values_file" ]; then
+            if [ "$VERBOSE" = "true" ]; then
+                helm upgrade --install kibana elastic/kibana -n logging \
+                  -f "$kibana_values_file" \
+                  --set resources.requests.memory=512Mi \
+                  --set resources.requests.cpu=500m \
+                  --set lifecycleHooks.preInstall.enabled=false \
+                  --set lifecycleHooks.preUpgrade.enabled=false \
+                  --set lifecycleHooks.preRollback.enabled=false &
+            else
+                helm upgrade --install kibana elastic/kibana -n logging \
+                  -f "$kibana_values_file" \
+                  --set resources.requests.memory=512Mi \
+                  --set resources.requests.cpu=500m \
+                  --set lifecycleHooks.preInstall.enabled=false \
+                  --set lifecycleHooks.preUpgrade.enabled=false \
+                  --set lifecycleHooks.preRollback.enabled=false &>/dev/null &
+            fi
+        else
+            warn "Kibana values file not found at $kibana_values_file, using inline values"
+            helm upgrade --install kibana elastic/kibana -n logging \
+              --set elasticsearchHosts=https://elasticsearch-master.logging.svc.cluster.local:9200 \
+              --set extraEnvs[0].name=ELASTICSEARCH_HOSTS \
+              --set extraEnvs[0].value=https://elasticsearch-master.logging.svc.cluster.local:9200 \
+              --set extraEnvs[1].name=ELASTICSEARCH_SSL_VERIFICATIONMODE \
+              --set extraEnvs[1].value=none \
+              --set resources.requests.memory=512Mi \
+              --set resources.requests.cpu=500m \
+              --set lifecycleHooks.preInstall.enabled=false \
+              --set lifecycleHooks.preUpgrade.enabled=false \
+              --set lifecycleHooks.preRollback.enabled=false $([ "$VERBOSE" != "true" ] && echo "&>/dev/null") &
+        fi
         log "Kibana installation started in background..."
     fi
     success "EFK Stack installed"

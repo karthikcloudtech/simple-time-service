@@ -151,6 +151,11 @@ resource "aws_eks_node_group" "main" {
     max_unavailable = 1
   }
   
+  # Tags required for Cluster Autoscaler to identify and manage this node group
+  # These tags are automatically propagated to the underlying Auto Scaling Group
+  # Required tags:
+  #   - k8s.io/cluster-autoscaler/enabled: "true" (enables autoscaling)
+  #   - k8s.io/cluster-autoscaler/<cluster-name>: "owned" (identifies ownership)
   tags = merge(
     { Name = "${var.cluster_name}-node-group" },
     {
@@ -233,7 +238,7 @@ resource "aws_iam_role" "cluster_autoscaler" {
       Action = "sts:AssumeRoleWithWebIdentity"
       Condition = {
         StringEquals = {
-          "${replace(aws_iam_openid_connect_provider.eks.url, "https://", "")}:sub" = "system:serviceaccount:kube-system:cluster-autoscaler"
+          "${replace(aws_iam_openid_connect_provider.eks.url, "https://", "")}:sub" = "system:serviceaccount:kube-system:cluster-autoscaler-aws-cluster-autoscaler"
           "${replace(aws_iam_openid_connect_provider.eks.url, "https://", "")}:aud" = "sts.amazonaws.com"
         }
       }

@@ -1,0 +1,10 @@
+elasticsearchHosts: "https://elasticsearch-master:9200"
+
+protocol: https
+
+extraEnvs:
+  - name: ELASTICSEARCH_SSL_CERTIFICATEAUTHORITIES
+    value: /usr/share/kibana/config/certs/ca.crt
+
+elasticsearch:
+  serviceAccountTokenSecret: kibana-kibana-es-token

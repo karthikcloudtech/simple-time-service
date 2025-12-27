@@ -1,0 +1,26 @@
+kubectl apply -f - <<'EOF'
+apiVersion: v1
+kind: Pod
+metadata:
+  name: es-test
+  namespace: logging
+spec:
+  restartPolicy: Never
+  volumes:
+  - name: elasticsearch-certs
+    secret:
+      secretName: elasticsearch-master-certs
+  containers:
+  - name: curl
+    image: curlimages/curl
+    command: ["/bin/sh"]
+    args:
+      - "-c"
+      - |
+        echo "Testing Elasticsearch connectivity..."
+        PASSWORD=$(kubectl get secret elasticsearch-master-credentials -n logging -o go-template='{{.data.password | base64decode}}')
+        curl -u elastic:$PASSWORD --cacert /certs/ca.crt https://elasticsearch-master:9200/_cluster/health?pretty
+    volumeMounts:
+    - name: elasticsearch-certs
+      mountPath: /certs
+EOF
