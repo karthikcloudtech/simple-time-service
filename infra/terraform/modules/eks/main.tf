@@ -144,7 +144,7 @@ resource "aws_eks_node_group" "main" {
   ami_type       = "AL2023_x86_64_STANDARD"  # EKS-optimized Amazon Linux 2023 AMI for x86_64
   scaling_config {
     desired_size = 2
-    max_size     = 3
+    max_size     = 4
     min_size     = 1
   }
   update_config {
