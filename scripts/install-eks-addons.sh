@@ -20,7 +20,7 @@ VERBOSE="${VERBOSE:-false}"
 # Get script directory to find storage class file
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-STORAGE_CLASS_FILE="$PROJECT_ROOT/k8s/storage-class-immediate.yaml"
+STORAGE_CLASS_FILE="$PROJECT_ROOT/k8s/storage-class-gp3.yaml"
 
 log() { echo "[INFO] $1"; }
 success() { echo "[SUCCESS] $1"; }
@@ -212,20 +212,20 @@ install_efk() {
     helm_repo fluent https://fluent.github.io/helm-charts
     ns logging
     if ! helm list -n logging | grep -q elasticsearch; then
-        # Create storage class with Immediate binding if it doesn't exist or has wrong provisioner
+        # Create storage class with gp3 if it doesn't exist or has wrong provisioner
         local sc_exists=false
         local sc_provisioner=""
-        if kubectl get storageclass gp2-immediate &>/dev/null; then
+        if kubectl get storageclass gp3 &>/dev/null; then
             sc_exists=true
-            sc_provisioner=$(kubectl get storageclass gp2-immediate -o jsonpath='{.provisioner}' 2>/dev/null || echo "")
+            sc_provisioner=$(kubectl get storageclass gp3 -o jsonpath='{.provisioner}' 2>/dev/null || echo "")
         fi
         
         if [ "$sc_exists" = false ] || [ "$sc_provisioner" != "ebs.csi.aws.com" ]; then
             if [ "$sc_exists" = true ]; then
-                log "StorageClass gp2-immediate exists with wrong provisioner ($sc_provisioner). Deleting and recreating..."
-                kubectl delete storageclass gp2-immediate &>/dev/null || warn "Failed to delete storage class, may be in use"
+                log "StorageClass gp3 exists with wrong provisioner ($sc_provisioner). Deleting and recreating..."
+                kubectl delete storageclass gp3 &>/dev/null || warn "Failed to delete storage class, may be in use"
             else
-                log "Creating storage class with Immediate binding..."
+                log "Creating storage class gp3..."
             fi
             if [ -f "$STORAGE_CLASS_FILE" ]; then
                 if [ "$VERBOSE" = "true" ]; then
@@ -239,18 +239,18 @@ install_efk() {
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
-  name: gp2-immediate
+  name: gp3
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "true"
 provisioner: ebs.csi.aws.com
+volumeBindingMode: WaitForFirstConsumer
 parameters:
-  type: gp2
+  type: gp3
   fsType: ext4
-reclaimPolicy: Delete
-volumeBindingMode: Immediate
-allowVolumeExpansion: true
 EOF
             fi
         else
-            log "StorageClass gp2-immediate already exists with correct provisioner"
+            log "StorageClass gp3 already exists with correct provisioner"
         fi
         log "Installing Elasticsearch (running in background)..."
         helm upgrade --install elasticsearch elastic/elasticsearch -n logging \
@@ -261,7 +261,7 @@ EOF
           --set resources.limits.memory=2Gi \
           --set resources.limits.cpu=1000m \
           --set persistence.enabled=true \
-          --set persistence.storageClass=gp2-immediate \
+          --set persistence.storageClass=gp3 \
           --set persistence.size=10Gi \
           --set tls.enabled=true \
           --set tls.selfSigned=true $([ "$VERBOSE" != "true" ] && echo "&>/dev/null") &
