@@ -149,7 +149,7 @@ install_prometheus() {
     log "Installing Prometheus..."
     helm_repo prometheus-community https://prometheus-community.github.io/helm-charts
     ns monitoring
-    helm upgrade --install prometheus prometheus-community/kube-prometheus-stack -n monitoring --set prometheus.prometheusSpec.retention=30d --set prometheus.prometheusSpec.storageSpec.volumeClaimTemplate.spec.resources.requests.storage=20Gi --set grafana.enabled=true --wait --timeout 10m &>/dev/null
+    helm upgrade --install prometheus prometheus-community/kube-prometheus-stack -n monitoring --set prometheus.prometheusSpec.retention=30d --set prometheus.prometheusSpec.storageSpec.volumeClaimTemplate.spec.resources.requests.storage=20Gi --set prometheus.prometheusSpec.resources.requests.memory=512Mi --set prometheus.prometheusSpec.resources.requests.cpu=250m --set prometheus.prometheusSpec.resources.limits.memory=1Gi --set prometheus.prometheusSpec.resources.limits.cpu=500m --set grafana.enabled=true --wait --timeout 10m &>/dev/null
     success "Prometheus installed"
 }
 
@@ -160,10 +160,12 @@ install_efk() {
     helm_repo elastic https://helm.elastic.co
     helm_repo fluent https://fluent.github.io/helm-charts
     ns logging
-    helm upgrade --install elasticsearch elastic/elasticsearch -n logging --set replicas=1 --set minimumMasterNodes=1 --set resources.requests.memory=2Gi --set resources.requests.cpu=1000m --set resources.limits.memory=4Gi --set resources.limits.cpu=2000m --set tls.enabled=true --set tls.selfSigned=true --wait --timeout 10m &>/dev/null || warn "Elasticsearch may need more time"
-    helm upgrade --install fluent-bit fluent/fluent-bit -n logging --set backend.type=elasticsearch --set backend.elasticsearch.host=elasticsearch-master.logging.svc.cluster.local --set backend.elasticsearch.port=9200 --set backend.elasticsearch.tls=true --set backend.elasticsearch.tls_verify=false --wait --timeout 5m &>/dev/null
+    helm upgrade --install elasticsearch elastic/elasticsearch -n logging --set replicas=1 --set minimumMasterNodes=1 --set resources.requests.memory=1Gi --set resources.requests.cpu=500m --set resources.limits.memory=2Gi --set resources.limits.cpu=1000m --set tls.enabled=true --set tls.selfSigned=true --wait --timeout 10m &>/dev/null || warn "Elasticsearch may need more time"
     kubectl wait --for=condition=Ready pod -l app=elasticsearch-master -n logging --timeout=10m &>/dev/null || warn "Elasticsearch may not be ready"
-    helm upgrade --install kibana elastic/kibana -n logging --set elasticsearchHosts=https://elasticsearch-master.logging.svc.cluster.local:9200 --set extraEnvs[0].name=ELASTICSEARCH_HOSTS --set extraEnvs[0].value=https://elasticsearch-master.logging.svc.cluster.local:9200 --set extraEnvs[1].name=ELASTICSEARCH_SSL_VERIFICATIONMODE --set extraEnvs[1].value=none --set resources.requests.memory=512Mi --set resources.requests.cpu=500m --wait --timeout 10m &>/dev/null || warn "Kibana may need more time"
+    log "Waiting for Elasticsearch to be ready to accept connections..."
+    for i in {1..30}; do kubectl exec -n logging elasticsearch-master-0 -- curl -k -s https://localhost:9200 &>/dev/null && break || sleep 10; done
+    helm upgrade --install fluent-bit fluent/fluent-bit -n logging --set backend.type=elasticsearch --set backend.elasticsearch.host=elasticsearch-master.logging.svc.cluster.local --set backend.elasticsearch.port=9200 --set backend.elasticsearch.tls=true --set backend.elasticsearch.tls_verify=false --wait --timeout 5m &>/dev/null
+    helm upgrade --install kibana elastic/kibana -n logging --set elasticsearchHosts=https://elasticsearch-master.logging.svc.cluster.local:9200 --set extraEnvs[0].name=ELASTICSEARCH_HOSTS --set extraEnvs[0].value=https://elasticsearch-master.logging.svc.cluster.local:9200 --set extraEnvs[1].name=ELASTICSEARCH_SSL_VERIFICATIONMODE --set extraEnvs[1].value=none --set resources.requests.memory=512Mi --set resources.requests.cpu=500m --set lifecycleHooks.preInstall.enabled=false --wait --timeout 10m &>/dev/null || warn "Kibana may need more time"
     success "EFK Stack installed"
 }
 
