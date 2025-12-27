@@ -153,7 +153,30 @@ install_cert_manager() {
 
 install_cluster_autoscaler() {
     [ "$INSTALL_CLUSTER_AUTOSCALER" != "true" ] && return
-    helm list -n kube-system | grep -q cluster-autoscaler && return
+    
+    # Check if already installed
+    if helm list -n kube-system | grep -q cluster-autoscaler; then
+        log "Cluster Autoscaler already installed. Verifying IRSA configuration..."
+        local role_name="${PROJECT_NAME}-cluster-autoscaler-role"
+        local role_arn=$(aws iam get-role --role-name "$role_name" --query 'Role.Arn' --output text 2>/dev/null || echo "")
+        if [ -n "$role_arn" ]; then
+            local sa_name="cluster-autoscaler-aws-cluster-autoscaler"
+            local current_arn=$(kubectl get serviceaccount "$sa_name" -n kube-system -o jsonpath='{.metadata.annotations.eks\.amazonaws\.com/role-arn}' 2>/dev/null || echo "")
+            if [ "$current_arn" != "$role_arn" ]; then
+                log "Fixing IRSA annotation for Cluster Autoscaler..."
+                kubectl annotate serviceaccount "$sa_name" -n kube-system eks.amazonaws.com/role-arn="$role_arn" --overwrite &>/dev/null
+                log "Restarting Cluster Autoscaler pods..."
+                kubectl rollout restart deployment cluster-autoscaler -n kube-system &>/dev/null || \
+                kubectl delete pods -n kube-system -l app.kubernetes.io/name=aws-cluster-autoscaler &>/dev/null || true
+                success "Cluster Autoscaler IRSA configuration updated"
+            else
+                log "Cluster Autoscaler IRSA configuration is correct"
+            fi
+        else
+            warn "IAM role not found: $role_name. Skipping IRSA fix."
+        fi
+        return
+    fi
     log "Installing Cluster Autoscaler..."
     local role_name="${PROJECT_NAME}-cluster-autoscaler-role"
     local role_arn=$(aws iam get-role --role-name "$role_name" --query 'Role.Arn' --output text 2>/dev/null || echo "")
