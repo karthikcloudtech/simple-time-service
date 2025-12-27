@@ -14,6 +14,14 @@ INSTALL_PROMETHEUS="${INSTALL_PROMETHEUS:-true}"
 INSTALL_EFK="${INSTALL_EFK:-true}"
 INSTALL_OTEL_COLLECTOR="${INSTALL_OTEL_COLLECTOR:-true}"
 
+# Optional: Set VERBOSE=true to show all command output
+VERBOSE="${VERBOSE:-false}"
+
+# Get script directory to find storage class file
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+STORAGE_CLASS_FILE="$PROJECT_ROOT/k8s/storage-class-immediate.yaml"
+
 log() { echo "[INFO] $1"; }
 success() { echo "[SUCCESS] $1"; }
 warn() { echo "[WARN] $1"; }
@@ -50,6 +58,7 @@ ns() {
 
 install_alb_controller() {
     [ "$INSTALL_ALB_CONTROLLER" != "true" ] && return
+    helm list -n kube-system | grep -q aws-load-balancer-controller && return
     log "Installing AWS Load Balancer Controller..."
     
     local oidc_issuer=$(aws eks describe-cluster --name "$CLUSTER_NAME" --region "$AWS_REGION" --query "cluster.identity.oidc.issuer" --output text | sed 's|https://||')
@@ -93,22 +102,30 @@ EOF
     local helm_args=("--set" "clusterName=$CLUSTER_NAME" "--set" "serviceAccount.create=false" "--set" "serviceAccount.name=aws-load-balancer-controller" "--set" "region=$AWS_REGION" "--set" "enableServiceMutatorWebhook=false")
     [ -n "$vpc_id" ] && [ "$vpc_id" != "None" ] && helm_args+=("--set" "vpcId=$vpc_id")
     
-    helm upgrade --install aws-load-balancer-controller eks/aws-load-balancer-controller -n kube-system "${helm_args[@]}" --wait --timeout 5m &>/dev/null
+    if [ "$VERBOSE" = "true" ]; then
+        helm upgrade --install aws-load-balancer-controller eks/aws-load-balancer-controller -n kube-system "${helm_args[@]}" --wait --timeout 5m
+    else
+        helm upgrade --install aws-load-balancer-controller eks/aws-load-balancer-controller -n kube-system "${helm_args[@]}" --wait --timeout 5m &>/dev/null
+    fi
     success "AWS Load Balancer Controller installed"
 }
 
 install_metrics_server() {
     [ "$INSTALL_METRICS_SERVER" != "true" ] && return
-    kubectl get deployment metrics-server -n kube-system &>/dev/null && return
+    helm list -n kube-system | grep -q metrics-server && return
     log "Installing Metrics Server..."
     helm_repo metrics-server https://kubernetes-sigs.github.io/metrics-server/
-    helm upgrade --install metrics-server metrics-server/metrics-server -n kube-system --set args="{--kubelet-insecure-tls}" --wait --timeout 3m &>/dev/null
+    if [ "$VERBOSE" = "true" ]; then
+        helm upgrade --install metrics-server metrics-server/metrics-server -n kube-system --set args="{--kubelet-insecure-tls}" --wait --timeout 3m
+    else
+        helm upgrade --install metrics-server metrics-server/metrics-server -n kube-system --set args="{--kubelet-insecure-tls}" --wait --timeout 3m &>/dev/null
+    fi
     success "Metrics Server installed"
 }
 
 install_argocd() {
     [ "$INSTALL_ARGOCD" != "true" ] && return
-    kubectl get deployment argocd-server -n argocd &>/dev/null && return
+    kubectl get deployment argocd-server -n argocd &>/dev/null 2>&1 && return
     log "Installing ArgoCD..."
     ns argocd
     kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
@@ -118,12 +135,16 @@ install_argocd() {
 
 install_cert_manager() {
     [ "$INSTALL_CERT_MANAGER" != "true" ] && return
-    kubectl get deployment cert-manager -n cert-manager &>/dev/null && return
+    helm list -n cert-manager | grep -q cert-manager && return
     log "Installing Cert-Manager..."
     helm_repo jetstack https://charts.jetstack.io
     ns cert-manager
     kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.13.3/cert-manager.crds.yaml &>/dev/null
-    helm upgrade --install cert-manager jetstack/cert-manager -n cert-manager --set installCRDs=false --wait --timeout 5m &>/dev/null
+    if [ "$VERBOSE" = "true" ]; then
+        helm upgrade --install cert-manager jetstack/cert-manager -n cert-manager --set installCRDs=false --wait --timeout 5m
+    else
+        helm upgrade --install cert-manager jetstack/cert-manager -n cert-manager --set installCRDs=false --wait --timeout 5m &>/dev/null
+    fi
     kubectl wait --for=condition=available deployment/cert-manager -n cert-manager --timeout=5m &>/dev/null
     kubectl wait --for=condition=available deployment/cert-manager-webhook -n cert-manager --timeout=5m &>/dev/null
     kubectl wait --for=condition=available deployment/cert-manager-cainjector -n cert-manager --timeout=5m &>/dev/null
@@ -132,6 +153,7 @@ install_cert_manager() {
 
 install_cluster_autoscaler() {
     [ "$INSTALL_CLUSTER_AUTOSCALER" != "true" ] && return
+    helm list -n kube-system | grep -q cluster-autoscaler && return
     log "Installing Cluster Autoscaler..."
     local role_name="${PROJECT_NAME}-cluster-autoscaler-role"
     local role_arn=$(aws iam get-role --role-name "$role_name" --query 'Role.Arn' --output text 2>/dev/null || echo "")
@@ -139,39 +161,124 @@ install_cluster_autoscaler() {
     kubectl create serviceaccount cluster-autoscaler -n kube-system --dry-run=client -o yaml | kubectl apply -f - &>/dev/null
     kubectl annotate serviceaccount cluster-autoscaler -n kube-system eks.amazonaws.com/role-arn="$role_arn" --overwrite &>/dev/null
     helm_repo autoscaler https://kubernetes.github.io/autoscaler
-    helm upgrade --install cluster-autoscaler autoscaler/cluster-autoscaler -n kube-system --set "autoDiscovery.clusterName=$CLUSTER_NAME" --set "awsRegion=$AWS_REGION" --set "serviceAccount.create=false" --set "serviceAccount.name=cluster-autoscaler" --set "rbac.create=true" --wait --timeout 5m &>/dev/null
+    if [ "$VERBOSE" = "true" ]; then
+        helm upgrade --install cluster-autoscaler autoscaler/cluster-autoscaler -n kube-system --set "autoDiscovery.clusterName=$CLUSTER_NAME" --set "awsRegion=$AWS_REGION" --set "serviceAccount.create=false" --set "serviceAccount.name=cluster-autoscaler" --set "rbac.create=true" --wait --timeout 5m
+    else
+        helm upgrade --install cluster-autoscaler autoscaler/cluster-autoscaler -n kube-system --set "autoDiscovery.clusterName=$CLUSTER_NAME" --set "awsRegion=$AWS_REGION" --set "serviceAccount.create=false" --set "serviceAccount.name=cluster-autoscaler" --set "rbac.create=true" --wait --timeout 5m &>/dev/null
+    fi
     success "Cluster Autoscaler installed"
 }
 
 install_prometheus() {
     [ "$INSTALL_PROMETHEUS" != "true" ] && return
-    kubectl get deployment prometheus-server -n monitoring &>/dev/null && return
+    helm list -n monitoring | grep -q prometheus && return
     log "Installing Prometheus..."
     helm_repo prometheus-community https://prometheus-community.github.io/helm-charts
     ns monitoring
-    helm upgrade --install prometheus prometheus-community/kube-prometheus-stack -n monitoring --set prometheus.prometheusSpec.retention=30d --set prometheus.prometheusSpec.storageSpec.volumeClaimTemplate.spec.resources.requests.storage=20Gi --set prometheus.prometheusSpec.resources.requests.memory=512Mi --set prometheus.prometheusSpec.resources.requests.cpu=250m --set prometheus.prometheusSpec.resources.limits.memory=1Gi --set prometheus.prometheusSpec.resources.limits.cpu=500m --set grafana.enabled=true --wait --timeout 10m &>/dev/null
+    if [ "$VERBOSE" = "true" ]; then
+        helm upgrade --install prometheus prometheus-community/kube-prometheus-stack -n monitoring --set prometheus.prometheusSpec.retention=30d --set prometheus.prometheusSpec.storageSpec.volumeClaimTemplate.spec.resources.requests.storage=20Gi --set prometheus.prometheusSpec.resources.requests.memory=512Mi --set prometheus.prometheusSpec.resources.requests.cpu=250m --set prometheus.prometheusSpec.resources.limits.memory=1Gi --set prometheus.prometheusSpec.resources.limits.cpu=500m --set grafana.enabled=true --wait --timeout 10m
+    else
+        helm upgrade --install prometheus prometheus-community/kube-prometheus-stack -n monitoring --set prometheus.prometheusSpec.retention=30d --set prometheus.prometheusSpec.storageSpec.volumeClaimTemplate.spec.resources.requests.storage=20Gi --set prometheus.prometheusSpec.resources.requests.memory=512Mi --set prometheus.prometheusSpec.resources.requests.cpu=250m --set prometheus.prometheusSpec.resources.limits.memory=1Gi --set prometheus.prometheusSpec.resources.limits.cpu=500m --set grafana.enabled=true --wait --timeout 10m &>/dev/null
+    fi
     success "Prometheus installed"
 }
 
 install_efk() {
     [ "$INSTALL_EFK" != "true" ] && return
-    kubectl get deployment elasticsearch -n logging &>/dev/null && return
+    helm list -n logging | grep -q elasticsearch && helm list -n logging | grep -q kibana && helm list -n logging | grep -q fluent-bit && return
     log "Installing EFK Stack..."
     helm_repo elastic https://helm.elastic.co
     helm_repo fluent https://fluent.github.io/helm-charts
     ns logging
-    helm upgrade --install elasticsearch elastic/elasticsearch -n logging --set replicas=1 --set minimumMasterNodes=1 --set resources.requests.memory=1Gi --set resources.requests.cpu=500m --set resources.limits.memory=2Gi --set resources.limits.cpu=1000m --set tls.enabled=true --set tls.selfSigned=true --wait --timeout 10m &>/dev/null || warn "Elasticsearch may need more time"
-    kubectl wait --for=condition=Ready pod -l app=elasticsearch-master -n logging --timeout=10m &>/dev/null || warn "Elasticsearch may not be ready"
-    log "Waiting for Elasticsearch to be ready to accept connections..."
-    for i in {1..30}; do kubectl exec -n logging elasticsearch-master-0 -- curl -k -s https://localhost:9200 &>/dev/null && break || sleep 10; done
-    helm upgrade --install fluent-bit fluent/fluent-bit -n logging --set backend.type=elasticsearch --set backend.elasticsearch.host=elasticsearch-master.logging.svc.cluster.local --set backend.elasticsearch.port=9200 --set backend.elasticsearch.tls=true --set backend.elasticsearch.tls_verify=false --wait --timeout 5m &>/dev/null
-    helm upgrade --install kibana elastic/kibana -n logging --set elasticsearchHosts=https://elasticsearch-master.logging.svc.cluster.local:9200 --set extraEnvs[0].name=ELASTICSEARCH_HOSTS --set extraEnvs[0].value=https://elasticsearch-master.logging.svc.cluster.local:9200 --set extraEnvs[1].name=ELASTICSEARCH_SSL_VERIFICATIONMODE --set extraEnvs[1].value=none --set resources.requests.memory=512Mi --set resources.requests.cpu=500m --set lifecycleHooks.preInstall.enabled=false --wait --timeout 10m &>/dev/null || warn "Kibana may need more time"
+    if ! helm list -n logging | grep -q elasticsearch; then
+        # Create storage class with Immediate binding if it doesn't exist or has wrong provisioner
+        local sc_exists=false
+        local sc_provisioner=""
+        if kubectl get storageclass gp2-immediate &>/dev/null; then
+            sc_exists=true
+            sc_provisioner=$(kubectl get storageclass gp2-immediate -o jsonpath='{.provisioner}' 2>/dev/null || echo "")
+        fi
+        
+        if [ "$sc_exists" = false ] || [ "$sc_provisioner" != "ebs.csi.aws.com" ]; then
+            if [ "$sc_exists" = true ]; then
+                log "StorageClass gp2-immediate exists with wrong provisioner ($sc_provisioner). Deleting and recreating..."
+                kubectl delete storageclass gp2-immediate &>/dev/null || warn "Failed to delete storage class, may be in use"
+            else
+                log "Creating storage class with Immediate binding..."
+            fi
+            if [ -f "$STORAGE_CLASS_FILE" ]; then
+                if [ "$VERBOSE" = "true" ]; then
+                    kubectl apply -f "$STORAGE_CLASS_FILE" || error "Failed to create storage class from $STORAGE_CLASS_FILE"
+                else
+                    kubectl apply -f "$STORAGE_CLASS_FILE" &>/dev/null || error "Failed to create storage class from $STORAGE_CLASS_FILE"
+                fi
+            else
+                warn "Storage class file not found at $STORAGE_CLASS_FILE, using inline definition"
+                kubectl apply -f - <<EOF
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: gp2-immediate
+provisioner: ebs.csi.aws.com
+parameters:
+  type: gp2
+  fsType: ext4
+reclaimPolicy: Delete
+volumeBindingMode: Immediate
+allowVolumeExpansion: true
+EOF
+            fi
+        else
+            log "StorageClass gp2-immediate already exists with correct provisioner"
+        fi
+        log "Installing Elasticsearch (running in background)..."
+        helm upgrade --install elasticsearch elastic/elasticsearch -n logging \
+          --set replicas=1 \
+          --set minimumMasterNodes=1 \
+          --set resources.requests.memory=1Gi \
+          --set resources.requests.cpu=500m \
+          --set resources.limits.memory=2Gi \
+          --set resources.limits.cpu=1000m \
+          --set persistence.enabled=true \
+          --set persistence.storageClass=gp2-immediate \
+          --set persistence.size=10Gi \
+          --set tls.enabled=true \
+          --set tls.selfSigned=true $([ "$VERBOSE" != "true" ] && echo "&>/dev/null") &
+        log "Elasticsearch installation started in background, continuing with other components..."
+    fi
+    if ! helm list -n logging | grep -q fluent-bit; then
+        log "Installing Fluent-bit (running in background)..."
+        helm upgrade --install fluent-bit fluent/fluent-bit -n logging \
+          --set backend.type=elasticsearch \
+          --set backend.elasticsearch.host=elasticsearch-master.logging.svc.cluster.local \
+          --set backend.elasticsearch.port=9200 \
+          --set backend.elasticsearch.tls=true \
+          --set backend.elasticsearch.tls_verify=false $([ "$VERBOSE" != "true" ] && echo "&>/dev/null") &
+        log "Fluent-bit installation started in background..."
+    fi
+    if ! helm list -n logging | grep -q kibana; then
+        log "Installing Kibana (running in background, will wait for Elasticsearch)..."
+        # Delete any failed pre-install jobs first
+        kubectl delete job -n logging -l job-name=pre-install-kibana-kibana --ignore-not-found=true &>/dev/null
+        helm upgrade --install kibana elastic/kibana -n logging \
+          --set elasticsearchHosts=https://elasticsearch-master.logging.svc.cluster.local:9200 \
+          --set extraEnvs[0].name=ELASTICSEARCH_HOSTS \
+          --set extraEnvs[0].value=https://elasticsearch-master.logging.svc.cluster.local:9200 \
+          --set extraEnvs[1].name=ELASTICSEARCH_SSL_VERIFICATIONMODE \
+          --set extraEnvs[1].value=none \
+          --set resources.requests.memory=512Mi \
+          --set resources.requests.cpu=500m \
+          --set lifecycleHooks.preInstall.enabled=false \
+          --set lifecycleHooks.preUpgrade.enabled=false \
+          --set lifecycleHooks.preRollback.enabled=false $([ "$VERBOSE" != "true" ] && echo "&>/dev/null") &
+        log "Kibana installation started in background..."
+    fi
     success "EFK Stack installed"
 }
 
 install_otel_collector() {
     [ "$INSTALL_OTEL_COLLECTOR" != "true" ] && return
-    kubectl get deployment otel-collector -n observability &>/dev/null && return
+    helm list -n observability | grep -q otel-collector && return
     log "Installing OpenTelemetry Collector..."
     helm_repo open-telemetry https://open-telemetry.github.io/opentelemetry-helm-charts
     ns observability
@@ -193,25 +300,42 @@ service:
     logs: {receivers: [otlp], processors: [batch], exporters: [logging]}
 EOF
     kubectl create configmap otel-collector-config --from-file=config=/tmp/otel-config.yaml -n observability --dry-run=client -o yaml | kubectl apply -f - &>/dev/null
-    helm upgrade --install otel-collector open-telemetry/opentelemetry-collector -n observability --set mode=deployment --set configMap.name=otel-collector-config --set configMap.create=false --wait --timeout 5m &>/dev/null
+    if [ "$VERBOSE" = "true" ]; then
+        helm upgrade --install otel-collector open-telemetry/opentelemetry-collector -n observability --set mode=deployment --set configMap.name=otel-collector-config --set configMap.create=false --wait --timeout 5m
+    else
+        helm upgrade --install otel-collector open-telemetry/opentelemetry-collector -n observability --set mode=deployment --set configMap.name=otel-collector-config --set configMap.create=false --wait --timeout 5m &>/dev/null
+    fi
     rm -f /tmp/otel-config.yaml
     success "OpenTelemetry Collector installed"
 }
 
 main() {
     log "EKS Addons Installation - Cluster: $CLUSTER_NAME | Region: $AWS_REGION"
+    [ "$VERBOSE" = "true" ] && log "Verbose mode enabled"
     check_prerequisites
     verify_setup
     wait_for_nodes
+    
+    # Install core components first
     install_metrics_server
     install_alb_controller
     install_cert_manager
+    
+    # Install monitoring and logging
     install_prometheus
     install_efk
     install_otel_collector
+    
+    # Install GitOps and autoscaling
     install_argocd
     install_cluster_autoscaler
-    success "Installation completed!"
+    
+    # Wait for background processes to complete
+    log "Waiting for background installations to complete..."
+    wait
+    
+    success "Installation completed! Some components may still be starting up."
+    log "Check status with: kubectl get pods --all-namespaces"
 }
 
 main "$@"
