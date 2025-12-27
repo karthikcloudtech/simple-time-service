@@ -1,0 +1,29 @@
+# AWS Certificate Manager (ACM) ClusterIssuer
+# Note: This requires AWS Load Balancer Controller with ACM integration
+# ACM certificates are managed by AWS and cost money
+
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: acm-prod
+spec:
+  acme:
+    # This is still Let's Encrypt - ACM integration is different
+    # For true ACM, you need to use AWS Load Balancer Controller annotations
+    # and request certificates directly in ACM, then reference them
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: admin@example.com
+    privateKeySecretRef:
+      name: acm-prod
+    solvers:
+    - http01:
+        ingress:
+          class: alb
+
+---
+# To use AWS ACM certificates instead:
+# 1. Request certificate in AWS ACM Console or via AWS CLI
+# 2. Use ALB Ingress Controller annotation to reference ACM certificate ARN
+# 3. Example ingress annotation:
+#    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:region:account:certificate/cert-id
+

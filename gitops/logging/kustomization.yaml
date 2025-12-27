@@ -4,6 +4,7 @@ kind: Kustomization
 namespace: logging
 
 resources:
+  - namespace.yaml
   - kibana-ingress.yaml
   - elasticsearch-ingress.yaml
 

@@ -3,6 +3,7 @@ kind: Ingress
 metadata:
   name: simple-time-service-ingress
   annotations:
+    alb.ingress.kubernetes.io/group.name: trainerkarthik-shop-staging
     cert-manager.io/cluster-issuer: letsencrypt-staging
 spec:
   rules:

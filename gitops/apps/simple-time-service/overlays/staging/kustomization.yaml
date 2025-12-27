@@ -5,6 +5,7 @@ namespace: simple-time-service-staging
 
 resources:
   - ../../base
+  - namespace.yaml
 
 patches:
   - path: patch-staging.yaml
