@@ -2,10 +2,20 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: simple-time-service-ingress
+  namespace: simple-time-service
   annotations:
+    kubernetes.io/ingress.class: alb
     alb.ingress.kubernetes.io/group.name: trainerkarthik-shop
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80,"HTTPS":443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: '443'
     cert-manager.io/cluster-issuer: letsencrypt-prod
 spec:
+  tls:
+    - hosts:
+        - time.trainerkarthik.shop
+      secretName: prod-time-tls  # Let's Encrypt cert secret
   rules:
     - host: time.trainerkarthik.shop
       http:
@@ -17,9 +27,5 @@ spec:
                 name: simple-time-service
                 port:
                   number: 80
-  tls:
-    - hosts:
-        - time.trainerkarthik.shop
-      secretName: prod-time-tls
 
 
