@@ -47,6 +47,22 @@ wait_for_nodes() {
     error "Timeout waiting for nodes"
 }
 
+wait_for_elasticsearch() {
+    log "Waiting for Elasticsearch to be ready (max 5 minutes)..."
+    for i in {1..30}; do
+        if kubectl get pods -n logging -l app=elasticsearch-master --no-headers 2>/dev/null | grep -q "Running\|Completed"; then
+            local ready_pods=$(kubectl get pods -n logging -l app=elasticsearch-master --no-headers 2>/dev/null | grep -c "Running\|Completed" || echo 0)
+            if [ "$ready_pods" -gt 0 ]; then
+                log "Elasticsearch is ready! ($ready_pods pod(s) running)"
+                return 0
+            fi
+        fi
+        [ $((i % 3)) -eq 0 ] && log "Waiting for Elasticsearch... ($((i*10))s/300s)"
+        sleep 10
+    done
+    warn "Elasticsearch may still be starting. Continuing with other components..."
+}
+
 helm_repo() {
     helm repo add "$1" "$2" &>/dev/null || true
     helm repo update "$1" &>/dev/null
@@ -147,22 +163,138 @@ install_argocd() {
     success "ArgoCD installed"
 }
 
+verify_cert_manager_rbac() {
+    log "Verifying cert-manager Kubernetes RBAC..."
+    local issues=0
+    
+    # Check service account exists
+    if ! kubectl get serviceaccount cert-manager -n cert-manager &>/dev/null; then
+        error "cert-manager service account not found"
+        return 1
+    fi
+    
+    # Check ClusterRole exists
+    if ! kubectl get clusterrole cert-manager-controller &>/dev/null; then
+        warn "cert-manager-controller ClusterRole not found"
+        ((issues++))
+    fi
+    
+    # Check ClusterRoleBinding exists
+    if ! kubectl get clusterrolebinding cert-manager-controller &>/dev/null; then
+        warn "cert-manager-controller ClusterRoleBinding not found"
+        ((issues++))
+    fi
+    
+    # Check Role exists in cert-manager namespace
+    if ! kubectl get role cert-manager:leaderelection -n cert-manager &>/dev/null; then
+        warn "cert-manager:leaderelection Role not found"
+        ((issues++))
+    fi
+    
+    # Check RoleBinding exists in cert-manager namespace
+    if ! kubectl get rolebinding cert-manager:leaderelection -n cert-manager &>/dev/null; then
+        warn "cert-manager:leaderelection RoleBinding not found"
+        ((issues++))
+    fi
+    
+    if [ $issues -eq 0 ]; then
+        log "✓ Kubernetes RBAC verified"
+        return 0
+    else
+        warn "Found $issues RBAC issues - cert-manager Helm chart should create these automatically"
+        return 1
+    fi
+}
+
+configure_cert_manager_iam() {
+    log "Configuring cert-manager IAM role annotation..."
+    local cert_manager_role_arn="${CERT_MANAGER_ROLE_ARN:-}"
+    
+    # Try to get from Terraform output if not set
+    if [ -z "$cert_manager_role_arn" ]; then
+        if command -v terraform &>/dev/null; then
+            cert_manager_role_arn=$(terraform -chdir="$PROJECT_ROOT/infra/environments/prod" output -raw cert_manager_role_arn 2>/dev/null || echo "")
+        fi
+    fi
+    
+    if [ -z "$cert_manager_role_arn" ]; then
+        warn "CERT_MANAGER_ROLE_ARN not set and could not get from Terraform output."
+        warn "Cert-manager will not be able to use Route53 DNS-01 challenge."
+        warn "Set CERT_MANAGER_ROLE_ARN environment variable or run: terraform output cert_manager_role_arn"
+        return 1
+    fi
+    
+    # Check current annotation
+    local current_arn=$(kubectl get serviceaccount cert-manager -n cert-manager -o jsonpath='{.metadata.annotations.eks\.amazonaws\.com/role-arn}' 2>/dev/null || echo "")
+    
+    if [ "$current_arn" = "$cert_manager_role_arn" ]; then
+        log "✓ IAM role annotation already correct: $cert_manager_role_arn"
+        return 0
+    fi
+    
+    # Annotate service account
+    log "Annotating cert-manager service account with IAM role ARN: $cert_manager_role_arn"
+    if kubectl annotate serviceaccount cert-manager -n cert-manager \
+      eks.amazonaws.com/role-arn="$cert_manager_role_arn" \
+      --overwrite &>/dev/null; then
+        log "✓ Service account annotated successfully"
+        
+        # Restart cert-manager pods to pick up the new IAM role
+        log "Restarting cert-manager pods to apply IAM role..."
+        kubectl rollout restart deployment cert-manager -n cert-manager &>/dev/null || true
+        kubectl rollout restart deployment cert-manager-webhook -n cert-manager &>/dev/null || true
+        kubectl rollout restart deployment cert-manager-cainjector -n cert-manager &>/dev/null || true
+        
+        # Wait for pods to be ready
+        log "Waiting for cert-manager pods to be ready..."
+        kubectl wait --for=condition=available deployment/cert-manager -n cert-manager --timeout=2m &>/dev/null || true
+        return 0
+    else
+        error "Failed to annotate cert-manager service account"
+        return 1
+    fi
+}
+
 install_cert_manager() {
     [ "$INSTALL_CERT_MANAGER" != "true" ] && return
-    helm list -n cert-manager | grep -q cert-manager && return
+    
+    # Check if already installed
+    if helm list -n cert-manager | grep -q cert-manager; then
+        log "Cert-Manager already installed, verifying configuration..."
+        verify_cert_manager_rbac || true
+        configure_cert_manager_iam || true
+        return
+    fi
+    
     log "Installing Cert-Manager..."
     helm_repo jetstack https://charts.jetstack.io
     ns cert-manager
+    
+    # Install CRDs
+    log "Installing cert-manager CRDs..."
     kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.13.3/cert-manager.crds.yaml &>/dev/null
+    
+    # Install cert-manager
+    log "Installing cert-manager Helm chart..."
     if [ "$VERBOSE" = "true" ]; then
         helm upgrade --install cert-manager jetstack/cert-manager -n cert-manager --set installCRDs=false --wait --timeout 5m
     else
         helm upgrade --install cert-manager jetstack/cert-manager -n cert-manager --set installCRDs=false --wait --timeout 5m &>/dev/null
     fi
+    
+    # Wait for deployments to be available
+    log "Waiting for cert-manager deployments..."
     kubectl wait --for=condition=available deployment/cert-manager -n cert-manager --timeout=5m &>/dev/null
     kubectl wait --for=condition=available deployment/cert-manager-webhook -n cert-manager --timeout=5m &>/dev/null
     kubectl wait --for=condition=available deployment/cert-manager-cainjector -n cert-manager --timeout=5m &>/dev/null
-    success "Cert-Manager installed"
+    
+    # Verify RBAC
+    verify_cert_manager_rbac || warn "Some RBAC resources missing, but continuing..."
+    
+    # Configure IAM role
+    configure_cert_manager_iam || warn "IAM role configuration failed, cert-manager may not have Route53 access"
+    
+    success "Cert-Manager installed and configured"
 }
 
 install_cluster_autoscaler() {
@@ -318,20 +450,38 @@ EOF
         else
             log "StorageClass gp3 already exists with correct provisioner"
         fi
-        log "Installing Elasticsearch (running in background)..."
-        helm upgrade --install elasticsearch elastic/elasticsearch -n logging \
-          --set replicas=1 \
-          --set minimumMasterNodes=1 \
-          --set resources.requests.memory=1Gi \
-          --set resources.requests.cpu=500m \
-          --set resources.limits.memory=2Gi \
-          --set resources.limits.cpu=1000m \
-          --set persistence.enabled=true \
-          --set persistence.storageClass=gp3 \
-          --set persistence.size=10Gi \
-          --set tls.enabled=true \
-          --set tls.selfSigned=true $([ "$VERBOSE" != "true" ] && echo "&>/dev/null") &
-        log "Elasticsearch installation started in background, continuing with other components..."
+        log "Installing Elasticsearch..."
+        if [ "$VERBOSE" = "true" ]; then
+            helm upgrade --install elasticsearch elastic/elasticsearch -n logging \
+              --set replicas=1 \
+              --set minimumMasterNodes=1 \
+              --set resources.requests.memory=1Gi \
+              --set resources.requests.cpu=500m \
+              --set resources.limits.memory=2Gi \
+              --set resources.limits.cpu=1000m \
+              --set persistence.enabled=true \
+              --set persistence.storageClass=gp3 \
+              --set persistence.size=10Gi \
+              --set tls.enabled=true \
+              --set tls.selfSigned=true
+        else
+            log "Installing Elasticsearch (this may take a few minutes)..."
+            helm upgrade --install elasticsearch elastic/elasticsearch -n logging \
+              --set replicas=1 \
+              --set minimumMasterNodes=1 \
+              --set resources.requests.memory=1Gi \
+              --set resources.requests.cpu=500m \
+              --set resources.limits.memory=2Gi \
+              --set resources.limits.cpu=1000m \
+              --set persistence.enabled=true \
+              --set persistence.storageClass=gp3 \
+              --set persistence.size=10Gi \
+              --set tls.enabled=true \
+              --set tls.selfSigned=true &>/dev/null
+        fi
+        log "Elasticsearch helm installation completed. Polling for pods to be ready (max 5 minutes)..."
+        # Wait for Elasticsearch to be ready (5 minutes max), then continue regardless
+        wait_for_elasticsearch
     fi
     if ! helm list -n logging | grep -q fluent-bit; then
         log "Installing Fluent-bit (running in background)..."
@@ -347,6 +497,42 @@ EOF
         log "Installing Kibana (running in background, will wait for Elasticsearch)..."
         # Delete any failed pre-install jobs first
         kubectl delete job -n logging -l job-name=pre-install-kibana-kibana --ignore-not-found=true &>/dev/null
+        
+        # Create RBAC for Kibana pre-install job to create secrets (as fallback, though hooks are disabled)
+        log "Creating RBAC permissions for Kibana pre-install job (hooks disabled, but RBAC added as safety)..."
+        kubectl apply -f - <<EOF &>/dev/null || true
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: kibana-pre-install
+  namespace: logging
+rules:
+- apiGroups: [""]
+  resources: ["secrets"]
+  verbs: ["create", "get", "patch", "update"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: kibana-pre-install
+  namespace: logging
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: kibana-pre-install
+subjects:
+- kind: ServiceAccount
+  name: kibana-kibana
+  namespace: logging
+EOF
+        
+        # Since hooks are disabled but kibana-values.yml references serviceAccountTokenSecret: kibana-kibana-es-token,
+        # the pre-install hook would normally create this secret. Since hooks are disabled, we override it to null.
+        # Alternatively, you can enable hooks again since RBAC is now fixed - the hook will create:
+        #   Secret name: kibana-kibana-es-token
+        #   Namespace: logging
+        #   Contains: Elasticsearch service account token for Kibana authentication
+        
         local kibana_values_file="$PROJECT_ROOT/k8s/kibana-values.yml"
         if [ -f "$kibana_values_file" ]; then
             if [ "$VERBOSE" = "true" ]; then
@@ -356,7 +542,10 @@ EOF
                   --set resources.requests.cpu=500m \
                   --set lifecycleHooks.preInstall.enabled=false \
                   --set lifecycleHooks.preUpgrade.enabled=false \
-                  --set lifecycleHooks.preRollback.enabled=false &
+                  --set lifecycleHooks.preRollback.enabled=false \
+                  --set lifecycleHooks.preDelete.enabled=false \
+                  --set elasticsearch.serviceAccountTokenSecret=null \
+                  --wait=false
             else
                 helm upgrade --install kibana elastic/kibana -n logging \
                   -f "$kibana_values_file" \
@@ -364,7 +553,10 @@ EOF
                   --set resources.requests.cpu=500m \
                   --set lifecycleHooks.preInstall.enabled=false \
                   --set lifecycleHooks.preUpgrade.enabled=false \
-                  --set lifecycleHooks.preRollback.enabled=false &>/dev/null &
+                  --set lifecycleHooks.preRollback.enabled=false \
+                  --set lifecycleHooks.preDelete.enabled=false \
+                  --set elasticsearch.serviceAccountTokenSecret=null \
+                  --wait=false &>/dev/null &
             fi
         else
             warn "Kibana values file not found at $kibana_values_file, using inline values"
@@ -378,7 +570,9 @@ EOF
               --set resources.requests.cpu=500m \
               --set lifecycleHooks.preInstall.enabled=false \
               --set lifecycleHooks.preUpgrade.enabled=false \
-              --set lifecycleHooks.preRollback.enabled=false $([ "$VERBOSE" != "true" ] && echo "&>/dev/null") &
+              --set lifecycleHooks.preRollback.enabled=false \
+              --set lifecycleHooks.preDelete.enabled=false \
+              --wait=false $([ "$VERBOSE" != "true" ] && echo "&>/dev/null") &
         fi
         log "Kibana installation started in background..."
     fi
@@ -443,8 +637,17 @@ main() {
     log "Waiting for background installations to complete..."
     wait
     
+    # Check installation status
+    log "Checking installation status..."
+    if [ "$INSTALL_EFK" = "true" ]; then
+        log "EFK Stack status:"
+        helm list -n logging | grep -E "elasticsearch|kibana|fluent-bit" || warn "Some EFK components not found in helm list"
+        kubectl get pods -n logging 2>/dev/null | head -10 || warn "Could not check pods in logging namespace"
+    fi
+    
     success "Installation completed! Some components may still be starting up."
     log "Check status with: kubectl get pods --all-namespaces"
+    log "Check helm releases: helm list --all-namespaces"
 }
 
 main "$@"

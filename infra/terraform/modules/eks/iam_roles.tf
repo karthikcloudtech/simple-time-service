@@ -605,6 +605,8 @@ resource "aws_iam_role_policy_attachment" "external_dns" {
 
 # Cert-Manager IAM Role
 # Required for DNS-01 challenge with Route53 for Let's Encrypt certificates
+# Based on official cert-manager Route53 DNS-01 solver requirements:
+# https://cert-manager.io/docs/configuration/acme/dns01/route53/
 resource "aws_iam_policy" "cert_manager" {
   name        = "${var.project_name}-cert-manager-policy"
   description = "Policy for cert-manager to manage Route53 records for DNS-01 challenge"
@@ -625,6 +627,11 @@ resource "aws_iam_policy" "cert_manager" {
           "route53:ListResourceRecordSets"
         ]
         Resource = "arn:aws:route53:::hostedzone/*"
+        Condition = {
+          "ForAllValues:StringEquals" = {
+            "route53:ChangeResourceRecordSetsRecordTypes" = ["TXT"]
+          }
+        }
       },
       {
         Effect = "Allow"

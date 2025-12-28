@@ -92,6 +92,7 @@ resource "null_resource" "install_eks_addons" {
         INSTALL_ARGOCD="true" \
         INSTALL_METRICS_SERVER="true" \
         INSTALL_CERT_MANAGER="true" \
+        CERT_MANAGER_ROLE_ARN="${aws_iam_role.cert_manager.arn}" \
         INSTALL_PROMETHEUS="true" \
         INSTALL_EFK="true" \
         INSTALL_OTEL_COLLECTOR="true" \
