@@ -259,6 +259,17 @@ resource "aws_iam_role_policy_attachment" "cluster_autoscaler" {
 
 # EBS CSI Driver Addon
 # Note: IAM role and policy are defined in iam_roles.tf
+# 
+# Pod Count Analysis:
+# - Controller pods: Default 2 replicas (for HA) - can be reduced to 1 for small clusters
+#   Saves ~100-200MB memory and ~100m CPU per replica
+# - Node pods: DaemonSet (1 per node) - cannot be reduced, this is required
+# 
+# To reduce controller replicas after installation:
+#   kubectl scale deployment ebs-csi-controller -n kube-system --replicas=1
+# 
+# Note: Manual scaling may be reset during addon updates. For persistent scaling,
+# consider using a Kubernetes patch or managing via ArgoCD.
 resource "aws_eks_addon" "ebs_csi_driver" {
   cluster_name             = aws_eks_cluster.main.name
   addon_name               = "aws-ebs-csi-driver"

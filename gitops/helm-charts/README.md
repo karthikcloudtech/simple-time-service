@@ -1,6 +1,8 @@
 # Helm Charts Configuration
 
-This directory contains Helm values files for ArgoCD-managed Helm charts.
+This directory contains Helm values files for **infrastructure/addon Helm charts** managed by ArgoCD.
+
+**Note:** This folder is for infrastructure components (metrics-server, cert-manager, prometheus, etc.), NOT for application Helm charts. Applications use raw Kubernetes manifests in `gitops/apps/`.
 
 ## Structure
 

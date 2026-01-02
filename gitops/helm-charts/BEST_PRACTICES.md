@@ -70,10 +70,30 @@ gitops/helm-charts/
 
 ### ❌ What NOT to Put Here
 
-1. **Custom Helm Charts** - Put in separate `charts/` directory
-2. **ArgoCD Applications** - Keep in `argo-apps/`
-3. **Raw Kubernetes Manifests** - Use `apps/` or component-specific folders
-4. **Terraform Configs** - Keep in `infra/`
+1. **Application Helm Charts** - Applications use raw Kubernetes manifests in `apps/`
+2. **Custom Helm Charts** - Put in separate `charts/` directory if you create custom charts
+3. **ArgoCD Applications** - Keep in `argo-apps/`
+4. **Raw Kubernetes Manifests** - Use `apps/` or component-specific folders
+5. **Terraform Configs** - Keep in `infra/`
+
+### 📋 Current Structure
+
+```
+gitops/
+├── helm-charts/           # ✅ Infrastructure/addon Helm values (THIS FOLDER)
+│   ├── metrics-server/
+│   ├── cert-manager/
+│   └── prometheus-stack/
+├── apps/                  # ✅ Application manifests (NOT Helm)
+│   └── simple-time-service/
+│       ├── base/
+│       └── overlays/
+└── argo-apps/            # ✅ ArgoCD Application manifests
+    ├── metrics-server.yaml
+    └── simple-time-service-prod.yaml
+```
+
+**Key Point:** Applications (`simple-time-service`) use raw Kubernetes manifests with Kustomize, NOT Helm. Only infrastructure components use Helm charts.
 
 ## Current State vs Best Practice
 

@@ -220,11 +220,25 @@ Before deploying the application to Kubernetes, ensure:
 
 ### Deploy Application
 
-#### Initial Deployment
+#### GitOps Deployment (Recommended)
+
+Applications are managed via ArgoCD GitOps. See `gitops/argo-apps/README.md` for details.
 
 ```bash
-# Update image tag in deployment.yaml if needed
-kubectl apply -f k8s/deployment.yaml
+# Apply ArgoCD Application manifest
+kubectl apply -f gitops/argo-apps/simple-time-service-prod.yaml
+
+# Or deploy manually via Kustomize
+kubectl apply -k gitops/apps/simple-time-service/overlays/prod
+```
+
+#### Legacy Manual Deployment
+
+For manual deployment (not recommended, use GitOps instead):
+
+```bash
+# Update image tag in gitops/apps/simple-time-service/base/deployment.yaml
+kubectl apply -k gitops/apps/simple-time-service/overlays/prod
 ```
 
 #### Verify Deployment
@@ -290,13 +304,20 @@ Infrastructure configuration is managed through Terraform variables. See `infra/
    ```
 
 2. **Update Deployment Manifest:**
-   - Edit `k8s/deployment.yaml`
+   - Edit `gitops/apps/simple-time-service/base/deployment.yaml`
    - Update the `image` field with the new tag
+   - Commit and push to Git (ArgoCD will auto-sync)
 
-3. **Apply Changes:**
+3. **Apply Changes (GitOps - Automatic):**
    ```bash
-   kubectl apply -f k8s/deployment.yaml
-   kubectl rollout status deployment/simple-time-service
+   # ArgoCD automatically syncs when you push to Git
+   git add gitops/apps/simple-time-service/base/deployment.yaml
+   git commit -m "Update image to 1.1.1"
+   git push
+   
+   # Or sync manually
+   argocd app sync simple-time-service-prod
+   kubectl rollout status deployment/simple-time-service -n simple-time-service
    ```
 
 ### Monitoring and Troubleshooting
