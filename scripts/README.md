@@ -281,7 +281,7 @@ helm uninstall cluster-autoscaler -n kube-system
 
 ## Related Scripts
 
-- `install-eks-addons-bootstrap.sh` - Minimal bootstrap script (only ArgoCD)
+- `install-eks-addons.sh` - Bootstrap script (installs ArgoCD only, all addons managed via GitOps)
 - `check-helm-versions.sh` - Check latest Helm chart versions
 
 ## Notes

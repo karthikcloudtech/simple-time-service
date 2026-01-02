@@ -74,7 +74,7 @@ First, install ArgoCD using the bootstrap script:
 
 ```bash
 # Run bootstrap script (installs ArgoCD only)
-./scripts/install-eks-addons-bootstrap.sh
+./scripts/install-eks-addons.sh
 ```
 
 **Alternative:** If ArgoCD is already installed, skip this step.
@@ -154,7 +154,7 @@ After applying, ArgoCD will:
 
 ## How It Works
 
-1. **Bootstrap:** Run `install-eks-addons-bootstrap.sh` to install ArgoCD (one-time)
+1. **Bootstrap:** Run `install-eks-addons.sh` to install ArgoCD (one-time)
 2. **Apply Applications:** Apply ArgoCD Application manifests to register Helm charts
 3. **GitOps Sync:** ArgoCD monitors Git repository and Helm chart repositories
 4. **Auto-Deploy:** ArgoCD automatically syncs when:
@@ -220,13 +220,13 @@ All applications watch:
 
 ## Migration from Script to ArgoCD
 
-If you previously used `scripts/install-eks-addons.sh`, migrate to ArgoCD:
+If you previously used `scripts/install-eks-addons.sh` for direct installation, migrate to ArgoCD:
 
-1. **Bootstrap ArgoCD:** Run `scripts/install-eks-addons-bootstrap.sh` (one-time)
+1. **Bootstrap ArgoCD:** Run `scripts/install-eks-addons.sh` (one-time, now only bootstraps ArgoCD)
 2. **Apply Applications:** Apply all ArgoCD Application manifests
 3. **Configure IAM:** Set ServiceAccount annotations for IAM roles
 4. **Verify:** Check all applications are synced and healthy
-5. **Old Script:** The old script can be kept for reference but is no longer needed
+5. **Note:** The script now only bootstraps ArgoCD; all addons are managed via GitOps
 
 **Note:** ArgoCD will detect existing Helm releases and take over management. No need to uninstall first.
 

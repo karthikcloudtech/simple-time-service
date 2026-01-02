@@ -36,7 +36,7 @@ kubectl get pods --all-namespaces
 
 ```bash
 # Run bootstrap script (installs ArgoCD only)
-./scripts/install-eks-addons-bootstrap.sh
+./scripts/install-eks-addons.sh
 
 # Get ArgoCD admin password
 kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
@@ -109,7 +109,7 @@ kubectl get pods --all-namespaces
 - Required manual updates for chart versions
 
 ### New Approach
-- **Bootstrap Script:** Only installs ArgoCD (`install-eks-addons-bootstrap.sh`)
+- **Bootstrap Script:** Only installs ArgoCD (`install-eks-addons.sh`)
 - **ArgoCD Applications:** Declarative manifests in `gitops/argo-apps/`
 - **Terraform:** Manages IAM roles (already done)
 - **GitOps:** ArgoCD manages all Helm charts
@@ -138,7 +138,7 @@ gitops/
     └── kustomization.yaml
 
 scripts/
-└── install-eks-addons-bootstrap.sh  # Minimal bootstrap (ArgoCD only)
+└── install-eks-addons.sh  # Bootstrap script (ArgoCD only, all addons managed via GitOps)
 ```
 
 ## Updating Chart Versions

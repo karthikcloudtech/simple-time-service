@@ -234,8 +234,7 @@ infra/
 scripts/
 ├── README.md
 ├── check-helm-versions.sh        # Check latest Helm chart versions
-├── install-eks-addons-bootstrap.sh  # Bootstrap ArgoCD (minimal)
-├── install-eks-addons.sh         # Legacy: Full addon installation
+├── install-eks-addons.sh         # Bootstrap ArgoCD (all addons managed via GitOps)
 ├── setup-gitlab-runner-ec2.sh   # GitLab Runner setup
 └── GITLAB_RUNNER_EC2_SETUP.md   # GitLab Runner documentation
 ```
