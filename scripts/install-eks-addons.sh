@@ -301,6 +301,59 @@ install_cert_manager() {
     success "Cert-Manager installed and configured"
 }
 
+wait_for_cert_manager_webhook() {
+    log "Waiting for cert-manager webhook to be ready..."
+    
+    # Wait for deployment to be available
+    if ! kubectl wait --for=condition=available deployment/cert-manager-webhook -n cert-manager --timeout=3m 2>/dev/null; then
+        warn "cert-manager-webhook deployment not ready after 3 minutes"
+        return 1
+    fi
+    
+    # Verify webhook configuration exists
+    log "Verifying cert-manager webhook configuration..."
+    local webhook_ready=false
+    for i in {1..30}; do
+        if kubectl get validatingwebhookconfiguration cert-manager-webhook &>/dev/null && \
+           kubectl get mutatingwebhookconfiguration cert-manager-webhook &>/dev/null; then
+            webhook_ready=true
+            break
+        fi
+        [ $((i % 5)) -eq 0 ] && log "Waiting for webhook configuration... ($i/30)"
+        sleep 2
+    done
+    
+    if [ "$webhook_ready" != "true" ]; then
+        warn "Webhook configurations not found, but continuing..."
+        return 1
+    fi
+    
+    # Test webhook by checking if CRD is fully established and webhook is responding
+    log "Verifying ClusterIssuer CRD is established..."
+    for i in {1..30}; do
+        if kubectl get crd clusterissuers.cert-manager.io &>/dev/null; then
+            local crd_established=$(kubectl get crd clusterissuers.cert-manager.io -o jsonpath='{.status.conditions[?(@.type=="Established")].status}' 2>/dev/null || echo "False")
+            if [ "$crd_established" = "True" ]; then
+                log "✓ ClusterIssuer CRD is established"
+                
+                # Test webhook functionality by attempting to list ClusterIssuers (tests API connectivity)
+                log "Testing webhook API connectivity..."
+                if kubectl get clusterissuer --request-timeout=5s &>/dev/null 2>&1; then
+                    log "✓ Webhook API is responding"
+                    return 0
+                else
+                    [ $((i % 5)) -eq 0 ] && log "Webhook API test failed, retrying... ($i/30)"
+                fi
+            fi
+        fi
+        [ $((i % 5)) -eq 0 ] && log "Waiting for CRD to be established... ($i/30)"
+        sleep 2
+    done
+    
+    warn "CRD may not be fully established or webhook not responding, but continuing..."
+    return 1
+}
+
 install_cluster_issuers() {
     log "Installing Let's Encrypt ClusterIssuers..."
     local clusterissuer_file="$PROJECT_ROOT/gitops/cluster-issuers/clusterissuer.yaml"
@@ -319,38 +372,85 @@ install_cluster_issuers() {
     fi
     
     # Wait for cert-manager webhook to be ready before applying ClusterIssuers
-    log "Waiting for cert-manager webhook to be ready..."
-    kubectl wait --for=condition=available deployment/cert-manager-webhook -n cert-manager --timeout=2m &>/dev/null || {
-        warn "cert-manager webhook not ready, but continuing with ClusterIssuer installation..."
-    }
+    wait_for_cert_manager_webhook || warn "Webhook readiness check had issues, but continuing..."
     
-    # Apply ClusterIssuers (bootstrap installation)
+    # Verify ClusterIssuer CRD exists
+    if ! kubectl get crd clusterissuers.cert-manager.io &>/dev/null; then
+        error "ClusterIssuer CRD not found. cert-manager may not be properly installed."
+        return 1
+    fi
+    
+    # Apply ClusterIssuers with retry logic
     log "Applying ClusterIssuers via script (bootstrap installation)..."
     log "Note: For ongoing management, consider creating an ArgoCD Application"
-    if [ "$VERBOSE" = "true" ]; then
-        kubectl apply -f "$clusterissuer_file" || {
-            error "Failed to apply ClusterIssuers"
-            return 1
-        }
-    else
-        kubectl apply -f "$clusterissuer_file" &>/dev/null || {
-            error "Failed to apply ClusterIssuers"
-            return 1
-        }
+    
+    local max_retries=5
+    local retry_delay=10
+    local attempt=1
+    local apply_success=false
+    
+    while [ $attempt -le $max_retries ]; do
+        log "Attempt $attempt/$max_retries to apply ClusterIssuers..."
+        
+        # Capture output for error reporting
+        local apply_output
+        if [ "$VERBOSE" = "true" ]; then
+            if kubectl apply -f "$clusterissuer_file"; then
+                apply_success=true
+                break
+            else
+                apply_output="kubectl apply failed (see output above)"
+            fi
+        else
+            apply_output=$(kubectl apply -f "$clusterissuer_file" 2>&1)
+            if [ $? -eq 0 ]; then
+                apply_success=true
+                break
+            fi
+        fi
+        
+        if [ $attempt -lt $max_retries ]; then
+            warn "Failed to apply ClusterIssuers (attempt $attempt/$max_retries)"
+            if [ "$VERBOSE" = "true" ] || [ -n "$apply_output" ]; then
+                echo "$apply_output" | head -20
+            fi
+            log "Retrying in ${retry_delay}s..."
+            sleep $retry_delay
+            retry_delay=$((retry_delay + 5))  # Exponential backoff
+        fi
+        
+        attempt=$((attempt + 1))
+    done
+    
+    if [ "$apply_success" != "true" ]; then
+        error "Failed to apply ClusterIssuers after $max_retries attempts"
+        if [ -n "$apply_output" ] && [ "$VERBOSE" != "true" ]; then
+            echo "Error details:"
+            echo "$apply_output"
+        fi
+        return 1
     fi
     
     # Verify ClusterIssuers are ready
     log "Verifying ClusterIssuers..."
+    local verified_count=0
     for issuer in letsencrypt-prod letsencrypt-staging; do
         if kubectl get clusterissuer "$issuer" &>/dev/null; then
             log "✓ ClusterIssuer $issuer created"
+            verified_count=$((verified_count + 1))
         else
-            warn "ClusterIssuer $issuer not found"
+            warn "ClusterIssuer $issuer not found after creation"
         fi
     done
     
-    success "ClusterIssuers installed (bootstrap)"
-    log "💡 Tip: Create an ArgoCD Application for gitops/cluster-issuers/ for GitOps management"
+    if [ $verified_count -eq 2 ]; then
+        success "ClusterIssuers installed (bootstrap)"
+        log "💡 Tip: Create an ArgoCD Application for gitops/cluster-issuers/ for GitOps management"
+        return 0
+    else
+        warn "Only $verified_count/2 ClusterIssuers verified. They may still be initializing."
+        return 0  # Don't fail, as they might be created but not immediately visible
+    fi
 }
 
 install_cluster_autoscaler() {
