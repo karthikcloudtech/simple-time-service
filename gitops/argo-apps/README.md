@@ -17,7 +17,7 @@ This directory contains ArgoCD Application manifests that define what gets autom
 |-------------|------|-----------|-----------|--------|
 | **monitoring-ingress** | `gitops/monitoring` | `monitoring` | ✅ Yes | ✅ Configured |
 | **logging-ingress** | `gitops/logging` | `logging` | ✅ Yes | ✅ Configured |
-| **argocd-ingress** | `gitops/argocd` | `argocd` | ✅ Yes | ✅ Configured |
+| **argocd-ingress** | `gitops/argocd` | `argocd` | ✅ Yes | ✅ Configured (applied by bootstrap script) |
 
 ### EKS Addons (Helm Charts via ArgoCD)
 
@@ -73,9 +73,14 @@ When you push changes to the `main` branch (or configured branch), ArgoCD will a
 First, install ArgoCD using the bootstrap script:
 
 ```bash
-# Run bootstrap script (installs ArgoCD only)
+# Run bootstrap script (installs ArgoCD + applies ingress)
 ./scripts/install-eks-addons.sh
 ```
+
+**What the script does:**
+- Installs ArgoCD from official manifest
+- Applies ArgoCD ingress (requires AWS Load Balancer Controller to be running)
+- Shows ALB hostname for DNS configuration
 
 **Alternative:** If ArgoCD is already installed, skip this step.
 
@@ -98,11 +103,11 @@ kubectl apply -f gitops/argo-apps/otel-collector-config.yaml
 kubectl apply -f gitops/argo-apps/otel-collector.yaml
 kubectl apply -f gitops/argo-apps/cluster-autoscaler.yaml
 kubectl apply -f gitops/argo-apps/argocd.yaml  # Self-management
+kubectl apply -f gitops/argo-apps/argocd-ingress.yaml  # ArgoCD ingress management
 
 # Infrastructure ingresses (already configured)
 kubectl apply -f gitops/argo-apps/monitoring.yaml
 kubectl apply -f gitops/argo-apps/logging.yaml
-kubectl apply -f gitops/argo-apps/argocd.yaml  # Ingress only
 ```
 
 **Or apply all at once:**
@@ -154,8 +159,12 @@ After applying, ArgoCD will:
 
 ## How It Works
 
-1. **Bootstrap:** Run `install-eks-addons.sh` to install ArgoCD (one-time)
+1. **Bootstrap:** Run `install-eks-addons.sh` to install ArgoCD and apply ingress (one-time)
+   - Installs ArgoCD from official manifest
+   - Applies ArgoCD ingress (requires AWS Load Balancer Controller)
+   - Shows ALB hostname for DNS configuration
 2. **Apply Applications:** Apply ArgoCD Application manifests to register Helm charts
+   - Includes `argocd-ingress.yaml` so ArgoCD can manage its own ingress via GitOps
 3. **GitOps Sync:** ArgoCD monitors Git repository and Helm chart repositories
 4. **Auto-Deploy:** ArgoCD automatically syncs when:
    - Changes are pushed to Git (polls every 3 minutes)

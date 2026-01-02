@@ -105,6 +105,25 @@ install_argocd_bootstrap() {
         return 1
     fi
     
+    # Apply ArgoCD ingress (requires AWS Load Balancer Controller to be running)
+    log "Applying ArgoCD ingress..."
+    if kubectl apply -k "$PROJECT_ROOT/gitops/argocd/" &>/dev/null; then
+        log "ArgoCD ingress applied successfully"
+        log "Waiting for ingress to be created (this may take a minute)..."
+        sleep 10
+        ALB_HOSTNAME=$(kubectl get ingress argocd-ingress -n argocd -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || echo "")
+        if [ -n "$ALB_HOSTNAME" ]; then
+            log "ALB created: $ALB_HOSTNAME"
+            log "Configure DNS: Create CNAME record for argocd.trainerkarthik.shop pointing to $ALB_HOSTNAME"
+        else
+            log "ALB is being created. Check status with: kubectl get ingress argocd-ingress -n argocd"
+        fi
+    else
+        warn "Failed to apply ArgoCD ingress. You may need to apply it manually:"
+        warn "  kubectl apply -k gitops/argocd/"
+        warn "Note: AWS Load Balancer Controller must be running for ingress to work"
+    fi
+    
     # Show next steps
     log ""
     log "═══════════════════════════════════════════════════════════════"
@@ -115,8 +134,11 @@ install_argocd_bootstrap() {
     log "   kubectl -n argocd get secret argocd-initial-admin-secret \\"
     log "     -o jsonpath=\"{.data.password}\" | base64 -d"
     log ""
-    log "2. Port-forward to access UI:"
-    log "   kubectl port-forward svc/argocd-server -n argocd 8080:443"
+    log "2. Access ArgoCD UI:"
+    log "   Option A - Via Ingress (if DNS configured):"
+    log "     https://argocd.trainerkarthik.shop"
+    log "   Option B - Port-forward:"
+    log "     kubectl port-forward svc/argocd-server -n argocd 8080:443"
     log ""
     log "3. Ensure IAM roles are created (via Terraform):"
     log "   cd infra/environments/prod && terraform apply"
