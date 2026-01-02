@@ -13,10 +13,10 @@ spec:
     privateKeySecretRef:
       name: letsencrypt-prod
     # Enable the DNS-01 challenge provider with Route53
+    # Note: region is auto-detected from AWS_REGION/AWS_DEFAULT_REGION (cert-manager 1.16+)
     solvers:
     - dns01:
         route53:
-          region: us-east-1
           # Optional: specify hosted zone ID if you have multiple zones
           # hostedZoneID: Z1234567890ABC
       selector:
@@ -38,7 +38,7 @@ spec:
     solvers:
     - dns01:
         route53:
-          region: us-east-1
+          # Region auto-detected from AWS_REGION/AWS_DEFAULT_REGION (cert-manager 1.16+)
       selector:
         dnsZones:
           - trainerkarthik.shop

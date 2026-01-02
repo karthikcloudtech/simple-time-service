@@ -263,6 +263,7 @@ install_cert_manager() {
         log "Cert-Manager already installed, verifying configuration..."
         verify_cert_manager_rbac || true
         configure_cert_manager_iam || true
+        install_cluster_issuers || true
         return
     fi
     
@@ -294,7 +295,62 @@ install_cert_manager() {
     # Configure IAM role
     configure_cert_manager_iam || warn "IAM role configuration failed, cert-manager may not have Route53 access"
     
+    # Install ClusterIssuers for Let's Encrypt
+    install_cluster_issuers
+    
     success "Cert-Manager installed and configured"
+}
+
+install_cluster_issuers() {
+    log "Installing Let's Encrypt ClusterIssuers..."
+    local clusterissuer_file="$PROJECT_ROOT/gitops/cluster-issuers/clusterissuer.yaml"
+    
+    if [ ! -f "$clusterissuer_file" ]; then
+        warn "ClusterIssuer file not found at $clusterissuer_file, skipping..."
+        return 1
+    fi
+    
+    # Check if ClusterIssuers already exist (might be managed by ArgoCD)
+    local existing_count=$(kubectl get clusterissuer letsencrypt-prod letsencrypt-staging --ignore-not-found --no-headers 2>/dev/null | wc -l | tr -d ' ')
+    if [ "$existing_count" -eq 2 ]; then
+        log "ClusterIssuers already exist (may be managed by ArgoCD), skipping installation..."
+        log "To manage via ArgoCD, create an ArgoCD Application for gitops/cluster-issuers/"
+        return 0
+    fi
+    
+    # Wait for cert-manager webhook to be ready before applying ClusterIssuers
+    log "Waiting for cert-manager webhook to be ready..."
+    kubectl wait --for=condition=available deployment/cert-manager-webhook -n cert-manager --timeout=2m &>/dev/null || {
+        warn "cert-manager webhook not ready, but continuing with ClusterIssuer installation..."
+    }
+    
+    # Apply ClusterIssuers (bootstrap installation)
+    log "Applying ClusterIssuers via script (bootstrap installation)..."
+    log "Note: For ongoing management, consider creating an ArgoCD Application"
+    if [ "$VERBOSE" = "true" ]; then
+        kubectl apply -f "$clusterissuer_file" || {
+            error "Failed to apply ClusterIssuers"
+            return 1
+        }
+    else
+        kubectl apply -f "$clusterissuer_file" &>/dev/null || {
+            error "Failed to apply ClusterIssuers"
+            return 1
+        }
+    fi
+    
+    # Verify ClusterIssuers are ready
+    log "Verifying ClusterIssuers..."
+    for issuer in letsencrypt-prod letsencrypt-staging; do
+        if kubectl get clusterissuer "$issuer" &>/dev/null; then
+            log "✓ ClusterIssuer $issuer created"
+        else
+            warn "ClusterIssuer $issuer not found"
+        fi
+    done
+    
+    success "ClusterIssuers installed (bootstrap)"
+    log "💡 Tip: Create an ArgoCD Application for gitops/cluster-issuers/ for GitOps management"
 }
 
 install_cluster_autoscaler() {

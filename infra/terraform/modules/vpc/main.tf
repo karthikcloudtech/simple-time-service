@@ -7,9 +7,6 @@ resource "aws_vpc" "main" {
     Name = "${var.project_name}-vpc"
   }
 
-  lifecycle {
-    prevent_destroy = true
-  }
 }
 
 resource "aws_internet_gateway" "main" {
@@ -33,9 +30,7 @@ resource "aws_subnet" "public" {
       "kubernetes.io/role/elb" = "1"
     } : {}
   )
-  lifecycle {
-    prevent_destroy = true
-  }
+
 }
 
 resource "aws_subnet" "private" {
