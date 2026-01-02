@@ -1,0 +1,24 @@
+# Elasticsearch Helm Values
+# Used by: gitops/argo-apps/elasticsearch.yaml
+# Chart: elastic/elasticsearch
+
+replicas: 1
+minimumMasterNodes: 1
+
+resources:
+  requests:
+    memory: 1Gi
+    cpu: 500m
+  limits:
+    memory: 2Gi
+    cpu: 1000m
+
+persistence:
+  enabled: true
+  storageClass: gp3
+  size: 10Gi
+
+tls:
+  enabled: true
+  selfSigned: true
+

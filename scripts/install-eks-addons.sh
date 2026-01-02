@@ -78,7 +78,10 @@ install_alb_controller() {
     log "Installing AWS Load Balancer Controller..."
     
     local oidc_issuer=$(aws eks describe-cluster --name "$CLUSTER_NAME" --region "$AWS_REGION" --query "cluster.identity.oidc.issuer" --output text | sed 's|https://||')
-    [ -z "$oidc_issuer" ] || [ "$oidc_issuer" == "None" ] && error "OIDC issuer not found"
+    if [ -z "$oidc_issuer" ] || [ "$oidc_issuer" == "None" ]; then
+        warn "OIDC issuer not found, skipping AWS Load Balancer Controller installation"
+        return 1
+    fi
     
     local account_id=$(aws sts get-caller-identity --query Account --output text)
     local policy_name="${PROJECT_NAME}-aws-load-balancer-controller-policy"
@@ -169,7 +172,7 @@ verify_cert_manager_rbac() {
     
     # Check service account exists
     if ! kubectl get serviceaccount cert-manager -n cert-manager &>/dev/null; then
-        error "cert-manager service account not found"
+        warn "cert-manager service account not found"
         return 1
     fi
     
@@ -250,7 +253,7 @@ configure_cert_manager_iam() {
         kubectl wait --for=condition=available deployment/cert-manager -n cert-manager --timeout=2m &>/dev/null || true
         return 0
     else
-        error "Failed to annotate cert-manager service account"
+        warn "Failed to annotate cert-manager service account, continuing..."
         return 1
     fi
 }
@@ -376,7 +379,7 @@ install_cluster_issuers() {
     
     # Verify ClusterIssuer CRD exists
     if ! kubectl get crd clusterissuers.cert-manager.io &>/dev/null; then
-        error "ClusterIssuer CRD not found. cert-manager may not be properly installed."
+        warn "ClusterIssuer CRD not found. cert-manager may not be properly installed. Skipping ClusterIssuer installation."
         return 1
     fi
     
@@ -423,7 +426,7 @@ install_cluster_issuers() {
     done
     
     if [ "$apply_success" != "true" ]; then
-        error "Failed to apply ClusterIssuers after $max_retries attempts"
+        warn "Failed to apply ClusterIssuers after $max_retries attempts, skipping..."
         if [ -n "$apply_output" ] && [ "$VERBOSE" != "true" ]; then
             echo "Error details:"
             echo "$apply_output"
@@ -495,7 +498,10 @@ install_cluster_autoscaler() {
     log "Installing Cluster Autoscaler..."
     local role_name="${PROJECT_NAME}-cluster-autoscaler-role"
     local role_arn=$(aws iam get-role --role-name "$role_name" --query 'Role.Arn' --output text 2>/dev/null || echo "")
-    [ -z "$role_arn" ] && error "IAM role not found: $role_name"
+    if [ -z "$role_arn" ]; then
+        warn "IAM role not found: $role_name, skipping Cluster Autoscaler installation"
+        return 1
+    fi
     # The Helm chart creates ServiceAccount with name: <release-name>-<chart-name>
     # Release name is "cluster-autoscaler", chart name is "cluster-autoscaler"
     # So ServiceAccount name is: cluster-autoscaler-aws-cluster-autoscaler
@@ -583,9 +589,9 @@ install_efk() {
             fi
             if [ -f "$STORAGE_CLASS_FILE" ]; then
                 if [ "$VERBOSE" = "true" ]; then
-                    kubectl apply -f "$STORAGE_CLASS_FILE" || error "Failed to create storage class from $STORAGE_CLASS_FILE"
+                    kubectl apply -f "$STORAGE_CLASS_FILE" || warn "Failed to create storage class from $STORAGE_CLASS_FILE, continuing..."
                 else
-                    kubectl apply -f "$STORAGE_CLASS_FILE" &>/dev/null || error "Failed to create storage class from $STORAGE_CLASS_FILE"
+                    kubectl apply -f "$STORAGE_CLASS_FILE" &>/dev/null || warn "Failed to create storage class from $STORAGE_CLASS_FILE, continuing..."
                 fi
             else
                 warn "Storage class file not found at $STORAGE_CLASS_FILE, using inline definition"
@@ -775,19 +781,22 @@ main() {
     verify_setup
     wait_for_nodes
     
-    # Install core components first
-    install_metrics_server
-    install_alb_controller
-    install_cert_manager
+    # Install core components first (continue on failure)
+    log "Installing core components..."
+    install_metrics_server || warn "Metrics Server installation failed or skipped, continuing..."
+    install_alb_controller || warn "AWS Load Balancer Controller installation failed or skipped, continuing..."
+    install_cert_manager || warn "Cert-Manager installation failed or skipped, continuing..."
     
-    # Install monitoring and logging
-    install_prometheus
-    install_efk
-    install_otel_collector
+    # Install monitoring and logging (continue on failure)
+    log "Installing monitoring and logging components..."
+    install_prometheus || warn "Prometheus installation failed or skipped, continuing..."
+    install_efk || warn "EFK Stack installation failed or skipped, continuing..."
+    install_otel_collector || warn "OpenTelemetry Collector installation failed or skipped, continuing..."
     
-    # Install GitOps and autoscaling
-    install_argocd
-    install_cluster_autoscaler
+    # Install GitOps and autoscaling (continue on failure)
+    log "Installing GitOps and autoscaling components..."
+    install_argocd || warn "ArgoCD installation failed or skipped, continuing..."
+    install_cluster_autoscaler || warn "Cluster Autoscaler installation failed or skipped, continuing..."
     
     # Wait for background processes to complete
     log "Waiting for background installations to complete..."

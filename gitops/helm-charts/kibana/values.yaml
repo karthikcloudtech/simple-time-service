@@ -1,0 +1,24 @@
+# Kibana Helm Values
+# Used by: gitops/argo-apps/kibana.yaml
+# Chart: elastic/kibana
+
+elasticsearchHosts: https://elasticsearch-master.logging.svc.cluster.local:9200
+
+resources:
+  requests:
+    memory: 512Mi
+    cpu: 500m
+
+lifecycleHooks:
+  preInstall:
+    enabled: false
+  preUpgrade:
+    enabled: false
+  preRollback:
+    enabled: false
+  preDelete:
+    enabled: false
+
+elasticsearch:
+  serviceAccountTokenSecret: null
+

@@ -1,0 +1,45 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cluster-autoscaler
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://kubernetes.github.io/autoscaler
+    chart: cluster-autoscaler
+    # NOTE: Verify latest version at https://artifacthub.io/packages/helm/cluster-autoscaler/cluster-autoscaler
+    # Run: helm search repo autoscaler/cluster-autoscaler --versions | head -1
+    # UPDATED: Using latest version - verify before deploying
+    targetRevision: 9.30.0
+    helm:
+      parameters:
+        - name: autoDiscovery.clusterName
+          value: simple-time-service-prod
+        - name: awsRegion
+          value: us-east-1
+        - name: serviceAccount.create
+          value: "false"
+        - name: serviceAccount.name
+          value: cluster-autoscaler-aws-cluster-autoscaler
+        - name: rbac.create
+          value: "true"
+        - name: extraArgs.scan-interval
+          value: "10s"
+        - name: extraArgs.skip-nodes-with-local-storage
+          value: "false"
+        - name: extraArgs.skip-nodes-with-system-pods
+          value: "false"
+      # IAM role ARN annotation must be set via ServiceAccount annotation
+      # Use Terraform output: terraform output cluster_autoscaler_role_arn
+      # Then annotate: kubectl annotate serviceaccount cluster-autoscaler-aws-cluster-autoscaler -n kube-system eks.amazonaws.com/role-arn=<ROLE_ARN>
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kube-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+

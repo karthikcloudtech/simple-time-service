@@ -1,0 +1,13 @@
+# OpenTelemetry Collector Helm Values
+# Used by: gitops/argo-apps/otel-collector.yaml
+# Chart: open-telemetry/opentelemetry-collector
+
+mode: deployment
+
+configMap:
+  create: false
+  name: otel-collector-config
+
+# NOTE: ConfigMap 'otel-collector-config' must exist before this application syncs
+# Created via: gitops/argo-apps/otel-collector-config.yaml
+

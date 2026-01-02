@@ -1,0 +1,7 @@
+# Metrics Server Helm Values
+# Used by: gitops/argo-apps/metrics-server.yaml
+# Chart: kubernetes-sigs/metrics-server
+
+args:
+  - --kubelet-insecure-tls
+

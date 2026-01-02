@@ -1,0 +1,9 @@
+# Cert-Manager Helm Values
+# Used by: gitops/argo-apps/cert-manager.yaml
+# Chart: jetstack/cert-manager
+
+installCRDs: true
+
+# NOTE: IAM role ARN annotation must be set via ServiceAccount annotation for Route53 DNS-01
+# Use Terraform output: terraform output cert_manager_role_arn
+

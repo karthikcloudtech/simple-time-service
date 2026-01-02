@@ -1,0 +1,16 @@
+# AWS Load Balancer Controller Helm Values
+# Used by: gitops/argo-apps/aws-load-balancer-controller.yaml
+# Chart: aws/aws-load-balancer-controller
+
+clusterName: simple-time-service-prod
+region: us-east-1
+
+serviceAccount:
+  create: false
+  name: aws-load-balancer-controller
+
+enableServiceMutatorWebhook: false
+
+# NOTE: IAM role ARN annotation must be set via ServiceAccount annotation
+# Use Terraform output: terraform output aws_load_balancer_controller_role_arn
+

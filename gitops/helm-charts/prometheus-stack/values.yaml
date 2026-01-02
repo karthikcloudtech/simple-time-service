@@ -1,0 +1,25 @@
+# Prometheus Stack Helm Values
+# Used by: gitops/argo-apps/prometheus-stack.yaml
+# Chart: prometheus-community/kube-prometheus-stack
+
+prometheus:
+  prometheusSpec:
+    retention: 30d
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: gp3
+          resources:
+            requests:
+              storage: 20Gi
+    resources:
+      requests:
+        memory: 512Mi
+        cpu: 250m
+      limits:
+        memory: 1Gi
+        cpu: 500m
+
+grafana:
+  enabled: true
+

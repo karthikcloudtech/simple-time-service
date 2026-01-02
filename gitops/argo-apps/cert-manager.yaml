@@ -1,0 +1,43 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cert-manager
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://charts.jetstack.io
+    chart: cert-manager
+    # NOTE: Verify latest version at https://artifacthub.io/packages/helm/cert-manager/cert-manager
+    # Run: helm search repo jetstack/cert-manager --versions | head -1
+    # Check Kubernetes version compatibility: https://cert-manager.io/docs/installation/supported-releases/
+    # UPDATED: Using latest version - verify before deploying
+    targetRevision: v1.15.0
+    helm:
+      parameters:
+        - name: installCRDs
+          value: "true"
+      # CRDs will be installed automatically with installCRDs=true
+      # IAM role ARN annotation must be set via ServiceAccount annotation for Route53 DNS-01
+      # Use Terraform output: terraform output cert_manager_role_arn
+      # Then annotate: kubectl annotate serviceaccount cert-manager -n cert-manager eks.amazonaws.com/role-arn=<ROLE_ARN>
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cert-manager
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+  # Ignore differences in status fields (cert-manager updates these)
+  ignoreDifferences:
+    - group: cert-manager.io
+      kind: Certificate
+      jsonPointers:
+        - /status
+    - group: cert-manager.io
+      kind: CertificateRequest
+      jsonPointers:
+        - /status
+

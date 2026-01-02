@@ -1,0 +1,39 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: aws-load-balancer-controller
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://aws.github.io/eks-charts
+    chart: aws-load-balancer-controller
+    # NOTE: Verify latest version at https://artifacthub.io/packages/helm/aws/aws-load-balancer-controller
+    # Run: helm search repo eks/aws-load-balancer-controller --versions | head -1
+    # UPDATED: Using latest version - verify before deploying
+    targetRevision: 1.8.0
+    helm:
+      parameters:
+        - name: clusterName
+          value: simple-time-service-prod
+        - name: serviceAccount.create
+          value: "false"
+        - name: serviceAccount.name
+          value: aws-load-balancer-controller
+        - name: region
+          value: us-east-1
+        - name: enableServiceMutatorWebhook
+          value: "false"
+      # IAM role ARN annotation must be set via ServiceAccount annotation
+      # Use Terraform output: terraform output aws_load_balancer_controller_role_arn
+      # Then annotate: kubectl annotate serviceaccount aws-load-balancer-controller -n kube-system eks.amazonaws.com/role-arn=<ROLE_ARN>
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kube-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+

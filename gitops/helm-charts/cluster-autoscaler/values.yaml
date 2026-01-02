@@ -1,0 +1,24 @@
+# Cluster Autoscaler Helm Values
+# Used by: gitops/argo-apps/cluster-autoscaler.yaml
+# Chart: kubernetes/autoscaler
+
+autoDiscovery:
+  clusterName: simple-time-service-prod
+
+awsRegion: us-east-1
+
+serviceAccount:
+  create: false
+  name: cluster-autoscaler-aws-cluster-autoscaler
+
+rbac:
+  create: true
+
+extraArgs:
+  scan-interval: 10s
+  skip-nodes-with-local-storage: false
+  skip-nodes-with-system-pods: false
+
+# NOTE: IAM role ARN annotation must be set via ServiceAccount annotation
+# Use Terraform output: terraform output cluster_autoscaler_role_arn
+

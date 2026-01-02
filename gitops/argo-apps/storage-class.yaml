@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: storage-class
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://gitlab.com/karthikbm2k25/simple-time-service.git
+    targetRevision: main
+    path: gitops/storage-class
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: default  # StorageClass is cluster-scoped
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false  # StorageClass is cluster-scoped, no namespace needed
+  # NOTE: This StorageClass must be created before Helm charts that use it
+  # Consider using sync waves or ensuring this syncs before prometheus-stack and elasticsearch
+

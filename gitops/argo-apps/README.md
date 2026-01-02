@@ -4,53 +4,164 @@ This directory contains ArgoCD Application manifests that define what gets autom
 
 ## Current ArgoCD Applications
 
-| Application | Path | Namespace | Auto-Sync | Status |
-|-------------|------|-----------|-----------|--------|
+### Application Deployments
+
+| Application | Path/Chart | Namespace | Auto-Sync | Status |
+|-------------|------------|-----------|-----------|--------|
 | **simple-time-service-prod** | `gitops/apps/simple-time-service/overlays/prod` | `simple-time-service` | ✅ Yes | ✅ Configured |
 | **simple-time-service-staging** | `gitops/apps/simple-time-service/overlays/staging` | `simple-time-service-staging` | ✅ Yes | ✅ Configured |
-| **monitoring-ingress** | `gitops/monitoring` | `monitoring` | ✅ Yes | ✅ **NEW** |
-| **logging-ingress** | `gitops/logging` | `logging` | ✅ Yes | ✅ **NEW** |
-| **argocd-ingress** | `gitops/argocd` | `argocd` | ✅ Yes | ✅ **NEW** |
+
+### Infrastructure Ingresses
+
+| Application | Path | Namespace | Auto-Sync | Status |
+|-------------|------|-----------|-----------|--------|
+| **monitoring-ingress** | `gitops/monitoring` | `monitoring` | ✅ Yes | ✅ Configured |
+| **logging-ingress** | `gitops/logging` | `logging` | ✅ Yes | ✅ Configured |
+| **argocd-ingress** | `gitops/argocd` | `argocd` | ✅ Yes | ✅ Configured |
+
+### EKS Addons (Helm Charts via ArgoCD)
+
+| Application | Helm Chart | Namespace | Auto-Sync | Prerequisites |
+|-------------|------------|-----------|-----------|---------------|
+| **storage-class** | `gitops/storage-class` | `default` | ✅ Yes | None (cluster-scoped) |
+| **metrics-server** | `metrics-server` (v3.12.0) | `kube-system` | ✅ Yes | None |
+| **aws-load-balancer-controller** | `aws-load-balancer-controller` (v1.7.2) | `kube-system` | ✅ Yes | IAM role + ServiceAccount annotation |
+| **cert-manager** | `cert-manager` (v1.13.3) | `cert-manager` | ✅ Yes | None |
+| **cluster-issuers** | `gitops/cluster-issuers` | `cert-manager` | ✅ Yes | cert-manager installed |
+| **prometheus-stack** | `kube-prometheus-stack` (v58.0.0) | `monitoring` | ✅ Yes | StorageClass `gp3` |
+| **elasticsearch** | `elasticsearch` (v8.11.0) | `logging` | ✅ Yes | StorageClass `gp3` |
+| **kibana** | `kibana` (v8.11.0) | `logging` | ✅ Yes | Elasticsearch installed |
+| **fluent-bit** | `fluent-bit` (v0.40.0) | `logging` | ✅ Yes | Elasticsearch installed |
+| **otel-collector-config** | `gitops/otel-collector` | `observability` | ✅ Yes | None |
+| **otel-collector** | `opentelemetry-collector` (v0.99.0) | `observability` | ✅ Yes | ConfigMap `otel-collector-config` |
+| **cluster-autoscaler** | `cluster-autoscaler` (v9.29.2) | `kube-system` | ✅ Yes | IAM role + ServiceAccount annotation |
+| **argocd** | `argo-cd` (v7.0.0) | `argocd` | ✅ Yes | Initial bootstrap via script |
+
+**NOTE:** All Helm chart versions should be verified for latest releases and compatibility:
+- Check chart repositories for latest versions
+- Verify Kubernetes version compatibility
+- See individual application files for documentation links
 
 ## Auto-Deployment Status
 
 ### ✅ Will Auto-Deploy (via ArgoCD)
 
-When you push changes to the `develop` branch, ArgoCD will automatically:
+When you push changes to the `main` branch (or configured branch), ArgoCD will automatically:
 
-1. **Application Ingresses** ✅
+1. **Application Deployments** ✅
    - `simple-time-service-prod` → Includes ingress patch
    - `simple-time-service-staging` → Includes ingress patch
 
-2. **Infrastructure Ingresses** ✅ (After applying ArgoCD apps)
+2. **Infrastructure Ingresses** ✅
    - `monitoring-ingress` → Prometheus + Grafana ingresses
    - `logging-ingress` → Kibana + Elasticsearch ingresses
    - `argocd-ingress` → ArgoCD UI ingress
 
+3. **EKS Addons** ✅ (Managed via ArgoCD GitOps)
+   - Core: StorageClass, Metrics Server, Cert-Manager, ClusterIssuers
+   - Networking: AWS Load Balancer Controller
+   - Monitoring: Prometheus Stack
+   - Logging: Elasticsearch, Kibana, Fluent-bit
+   - Observability: OpenTelemetry Collector
+   - Autoscaling: Cluster Autoscaler
+   - GitOps: ArgoCD (self-managed)
+
 ### Setup Required
 
-To enable auto-deployment for infrastructure ingresses, apply the ArgoCD Application manifests:
+#### 1. Bootstrap ArgoCD (One-time)
+
+First, install ArgoCD using the bootstrap script:
+
+```bash
+# Run bootstrap script (installs ArgoCD only)
+./scripts/install-eks-addons-bootstrap.sh
+```
+
+**Alternative:** If ArgoCD is already installed, skip this step.
+
+#### 2. Apply ArgoCD Applications
+
+After ArgoCD is installed, apply all ArgoCD Application manifests:
 
 ```bash
 # Apply all ArgoCD applications
+kubectl apply -f gitops/argo-apps/storage-class.yaml
+kubectl apply -f gitops/argo-apps/metrics-server.yaml
+kubectl apply -f gitops/argo-apps/aws-load-balancer-controller.yaml
+kubectl apply -f gitops/argo-apps/cert-manager.yaml
+kubectl apply -f gitops/argo-apps/cluster-issuers.yaml
+kubectl apply -f gitops/argo-apps/prometheus-stack.yaml
+kubectl apply -f gitops/argo-apps/elasticsearch.yaml
+kubectl apply -f gitops/argo-apps/kibana.yaml
+kubectl apply -f gitops/argo-apps/fluent-bit.yaml
+kubectl apply -f gitops/argo-apps/otel-collector-config.yaml
+kubectl apply -f gitops/argo-apps/otel-collector.yaml
+kubectl apply -f gitops/argo-apps/cluster-autoscaler.yaml
+kubectl apply -f gitops/argo-apps/argocd.yaml  # Self-management
+
+# Infrastructure ingresses (already configured)
 kubectl apply -f gitops/argo-apps/monitoring.yaml
 kubectl apply -f gitops/argo-apps/logging.yaml
-kubectl apply -f gitops/argo-apps/argocd.yaml
+kubectl apply -f gitops/argo-apps/argocd.yaml  # Ingress only
 ```
 
+**Or apply all at once:**
+```bash
+kubectl apply -f gitops/argo-apps/*.yaml
+```
+
+#### 3. Configure IAM Role Annotations
+
+Some addons require IAM role annotations on ServiceAccounts. Get role ARNs from Terraform:
+
+```bash
+# AWS Load Balancer Controller
+ROLE_ARN=$(terraform -chdir=infra/environments/prod output -raw aws_load_balancer_controller_role_arn)
+kubectl annotate serviceaccount aws-load-balancer-controller \
+  -n kube-system \
+  eks.amazonaws.com/role-arn="$ROLE_ARN" \
+  --overwrite
+
+# Cert-Manager (for Route53 DNS-01 challenge)
+ROLE_ARN=$(terraform -chdir=infra/environments/prod output -raw cert_manager_role_arn)
+kubectl annotate serviceaccount cert-manager \
+  -n cert-manager \
+  eks.amazonaws.com/role-arn="$ROLE_ARN" \
+  --overwrite
+kubectl rollout restart deployment cert-manager -n cert-manager
+kubectl rollout restart deployment cert-manager-webhook -n cert-manager
+kubectl rollout restart deployment cert-manager-cainjector -n cert-manager
+
+# Cluster Autoscaler
+ROLE_ARN=$(terraform -chdir=infra/environments/prod output -raw cluster_autoscaler_role_arn)
+kubectl annotate serviceaccount cluster-autoscaler-aws-cluster-autoscaler \
+  -n kube-system \
+  eks.amazonaws.com/role-arn="$ROLE_ARN" \
+  --overwrite
+```
+
+**Prerequisites:**
+- Terraform must be applied (IAM roles created)
+- ArgoCD must be installed (bootstrap)
+- EKS cluster must be running
+
 After applying, ArgoCD will:
-- Watch the Git repository
-- Auto-sync when changes are pushed to `develop` branch
-- Deploy ingresses automatically
-- Create SSL certificates via cert-manager
+- Watch the Git repository and Helm chart repositories
+- Auto-sync when changes are pushed to Git or chart versions are updated
+- Deploy all Helm charts and Kubernetes resources automatically
+- Create SSL certificates via cert-manager when ingresses are created
+- Self-heal if resources are manually modified
 
 ## How It Works
 
-1. **You push changes** to GitLab (develop branch)
-2. **ArgoCD detects changes** (polls every 3 minutes by default)
-3. **ArgoCD syncs automatically** (because `syncPolicy.automated` is enabled)
-4. **Ingresses are deployed** to Kubernetes
-5. **Cert-manager creates SSL certificates** automatically
+1. **Bootstrap:** Run `install-eks-addons-bootstrap.sh` to install ArgoCD (one-time)
+2. **Apply Applications:** Apply ArgoCD Application manifests to register Helm charts
+3. **GitOps Sync:** ArgoCD monitors Git repository and Helm chart repositories
+4. **Auto-Deploy:** ArgoCD automatically syncs when:
+   - Changes are pushed to Git (polls every 3 minutes)
+   - Helm chart versions are updated in Application manifests
+   - Resources are manually modified (self-healing)
+5. **Dependencies:** ArgoCD handles dependencies automatically (StorageClass before charts, Elasticsearch before Kibana, etc.)
 
 ## Manual Deployment (Alternative)
 
@@ -69,12 +180,24 @@ kubectl apply -k gitops/logging/
 # List all ArgoCD applications
 kubectl get application -n argocd
 
-# Check application status
-argocd app get monitoring-ingress
-argocd app get logging-ingress
-argocd app get argocd-ingress
-argocd app get simple-time-service-prod
-argocd app get simple-time-service-staging
+# Check specific application status
+argocd app get metrics-server
+argocd app get aws-load-balancer-controller
+argocd app get cert-manager
+argocd app get prometheus-stack
+argocd app get elasticsearch
+argocd app get cluster-autoscaler
+
+# Check sync status of all apps
+argocd app list
+
+# Verify Helm releases
+helm list --all-namespaces
+
+# Verify resources
+kubectl get pods --all-namespaces
+kubectl get storageclass gp3
+kubectl get clusterissuer
 
 # View sync status in ArgoCD UI
 # https://argocd.trainerkarthik.shop
@@ -92,14 +215,57 @@ All applications use:
 
 All applications watch:
 - **Repository**: `https://gitlab.com/karthikbm2k25/simple-time-service.git`
-- **Branch**: `develop`
+- **Branch**: `main`
 - **Path**: See table above
+
+## Migration from Script to ArgoCD
+
+If you previously used `scripts/install-eks-addons.sh`, migrate to ArgoCD:
+
+1. **Bootstrap ArgoCD:** Run `scripts/install-eks-addons-bootstrap.sh` (one-time)
+2. **Apply Applications:** Apply all ArgoCD Application manifests
+3. **Configure IAM:** Set ServiceAccount annotations for IAM roles
+4. **Verify:** Check all applications are synced and healthy
+5. **Old Script:** The old script can be kept for reference but is no longer needed
+
+**Note:** ArgoCD will detect existing Helm releases and take over management. No need to uninstall first.
 
 ## Summary
 
-✅ **Application ingresses**: Already auto-deployed via existing ArgoCD apps
-✅ **Infrastructure ingresses**: Will auto-deploy after applying new ArgoCD apps
-✅ **All ingresses**: Will be automatically synced when you push to Git
+✅ **Application deployments**: Auto-deployed via ArgoCD
+✅ **Infrastructure ingresses**: Auto-deployed via ArgoCD
+✅ **EKS addons**: All managed via ArgoCD GitOps (Helm charts)
+✅ **All resources**: Automatically synced when you push to Git or update chart versions
 
-**Next Step**: Apply the ArgoCD Application manifests to enable auto-deployment for infrastructure ingresses.
+**Benefits of ArgoCD Management:**
+- ✅ Declarative configuration in Git
+- ✅ Automatic sync and self-healing
+- ✅ Easy rollback via Git history
+- ✅ Version control for Helm chart versions
+- ✅ No manual `helm install/upgrade` commands needed
+- ✅ Consistent state across environments
+- ✅ Dependency management handled automatically
+
+**Next Steps:**
+1. Run bootstrap script to install ArgoCD (if not already installed)
+2. Apply all ArgoCD Application manifests
+3. Configure IAM role annotations for ServiceAccounts
+4. Verify all applications are synced and healthy in ArgoCD UI
+5. Update Helm chart versions as needed (verify compatibility first)
+
+## Version Verification
+
+**IMPORTANT:** Before deploying, verify all Helm chart versions are current and compatible:
+
+- **Metrics Server:** https://github.com/kubernetes-sigs/metrics-server/releases
+- **AWS Load Balancer Controller:** https://github.com/aws/eks-charts/tree/master/stable/aws-load-balancer-controller
+- **Cert-Manager:** https://github.com/cert-manager/cert-manager/releases (check Kubernetes compatibility)
+- **Prometheus Stack:** https://github.com/prometheus-community/helm-charts/releases
+- **Elasticsearch/Kibana:** https://github.com/elastic/helm-charts/releases
+- **Fluent-bit:** https://github.com/fluent/helm-charts/releases
+- **OpenTelemetry Collector:** https://github.com/open-telemetry/opentelemetry-helm-charts/releases
+- **Cluster Autoscaler:** https://github.com/kubernetes/autoscaler/releases
+- **ArgoCD:** https://github.com/argoproj/argo-helm/releases
+
+Each application file contains a NOTE with the documentation link for version verification.
 

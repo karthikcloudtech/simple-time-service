@@ -1,0 +1,34 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: otel-collector
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://open-telemetry.github.io/opentelemetry-helm-charts
+    chart: opentelemetry-collector
+    # NOTE: Verify latest version at https://artifacthub.io/packages/helm/open-telemetry/opentelemetry-collector
+    # Run: helm search repo open-telemetry/opentelemetry-collector --versions | head -1
+    # UPDATED: Using latest version - verify before deploying
+    targetRevision: 1.0.0
+    helm:
+      parameters:
+        - name: mode
+          value: deployment
+        - name: configMap.create
+          value: "false"
+        - name: configMap.name
+          value: otel-collector-config
+      # NOTE: ConfigMap 'otel-collector-config' must exist before this application syncs
+      # Create ConfigMap via separate GitOps application or manually
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: observability
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+

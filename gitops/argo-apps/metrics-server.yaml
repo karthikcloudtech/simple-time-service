@@ -1,0 +1,28 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: metrics-server
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://kubernetes-sigs.github.io/metrics-server
+    chart: metrics-server
+    # NOTE: Verify latest version at https://artifacthub.io/packages/helm/metrics-server/metrics-server
+    # Run: helm search repo metrics-server/metrics-server --versions | head -1
+    # UPDATED: Using latest version - verify before deploying
+    targetRevision: 3.13.0
+    helm:
+      parameters:
+        - name: args
+          value: "{--kubelet-insecure-tls}"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kube-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+

@@ -1,0 +1,12 @@
+# Fluent-bit Helm Values
+# Used by: gitops/argo-apps/fluent-bit.yaml
+# Chart: fluent/fluent-bit
+
+backend:
+  type: elasticsearch
+  elasticsearch:
+    host: elasticsearch-master.logging.svc.cluster.local
+    port: 9200
+    tls: true
+    tls_verify: false
+
