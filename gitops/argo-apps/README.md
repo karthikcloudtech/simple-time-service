@@ -84,9 +84,38 @@ First, install ArgoCD using the bootstrap script:
 
 **Alternative:** If ArgoCD is already installed, skip this step.
 
-#### 2. Apply ArgoCD Applications
+#### 2. Configure IAM Role Annotations (IMPORTANT: Do this BEFORE applying Applications)
 
-After ArgoCD is installed, apply all ArgoCD Application manifests:
+**Critical:** Some ArgoCD Applications require IAM role annotations on ServiceAccounts. These must be configured BEFORE applying the Applications to prevent CrashLoopBackOff errors.
+
+```bash
+# AWS Load Balancer Controller (REQUIRED before applying aws-load-balancer-controller.yaml)
+ROLE_ARN=$(terraform -chdir=infra/environments/prod output -raw aws_load_balancer_controller_role_arn)
+kubectl annotate serviceaccount aws-load-balancer-controller \
+  -n kube-system \
+  eks.amazonaws.com/role-arn="$ROLE_ARN" \
+  --overwrite
+
+# Cert-Manager (REQUIRED before applying cert-manager.yaml)
+ROLE_ARN=$(terraform -chdir=infra/environments/prod output -raw cert_manager_role_arn)
+kubectl annotate serviceaccount cert-manager \
+  -n cert-manager \
+  eks.amazonaws.com/role-arn="$ROLE_ARN" \
+  --overwrite
+
+# Cluster Autoscaler (REQUIRED before applying cluster-autoscaler.yaml)
+ROLE_ARN=$(terraform -chdir=infra/environments/prod output -raw cluster_autoscaler_role_arn)
+kubectl annotate serviceaccount cluster-autoscaler-aws-cluster-autoscaler \
+  -n kube-system \
+  eks.amazonaws.com/role-arn="$ROLE_ARN" \
+  --overwrite
+```
+
+**Note:** If you already applied the Applications and pods are crashing, see `TROUBLESHOOTING_AWS_LB_CONTROLLER.md` for fix steps.
+
+#### 3. Apply ArgoCD Applications
+
+After IAM role annotations are configured, apply all ArgoCD Application manifests:
 
 ```bash
 # Apply all ArgoCD applications
@@ -115,40 +144,11 @@ kubectl apply -f gitops/argo-apps/logging.yaml
 kubectl apply -f gitops/argo-apps/*.yaml
 ```
 
-#### 3. Configure IAM Role Annotations
-
-Some addons require IAM role annotations on ServiceAccounts. Get role ARNs from Terraform:
-
-```bash
-# AWS Load Balancer Controller
-ROLE_ARN=$(terraform -chdir=infra/environments/prod output -raw aws_load_balancer_controller_role_arn)
-kubectl annotate serviceaccount aws-load-balancer-controller \
-  -n kube-system \
-  eks.amazonaws.com/role-arn="$ROLE_ARN" \
-  --overwrite
-
-# Cert-Manager (for Route53 DNS-01 challenge)
-ROLE_ARN=$(terraform -chdir=infra/environments/prod output -raw cert_manager_role_arn)
-kubectl annotate serviceaccount cert-manager \
-  -n cert-manager \
-  eks.amazonaws.com/role-arn="$ROLE_ARN" \
-  --overwrite
-kubectl rollout restart deployment cert-manager -n cert-manager
-kubectl rollout restart deployment cert-manager-webhook -n cert-manager
-kubectl rollout restart deployment cert-manager-cainjector -n cert-manager
-
-# Cluster Autoscaler
-ROLE_ARN=$(terraform -chdir=infra/environments/prod output -raw cluster_autoscaler_role_arn)
-kubectl annotate serviceaccount cluster-autoscaler-aws-cluster-autoscaler \
-  -n kube-system \
-  eks.amazonaws.com/role-arn="$ROLE_ARN" \
-  --overwrite
-```
-
 **Prerequisites:**
 - Terraform must be applied (IAM roles created)
 - ArgoCD must be installed (bootstrap)
 - EKS cluster must be running
+- IAM role annotations configured (Step 2 above)
 
 After applying, ArgoCD will:
 - Watch the Git repository and Helm chart repositories

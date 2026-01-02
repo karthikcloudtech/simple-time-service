@@ -24,9 +24,15 @@ spec:
           value: us-east-1
         - name: enableServiceMutatorWebhook
           value: "false"
+        # Uncomment and set VPC ID if controller cannot access EC2 metadata (IMDSv2)
+        # Get VPC ID: terraform -chdir=infra/environments/prod output -raw vpc_id
+        # - name: extraArgs
+        #   value: "{--aws-vpc-id=vpc-xxxxxxxxx}"
       # IAM role ARN annotation must be set via ServiceAccount annotation
       # Use Terraform output: terraform output aws_load_balancer_controller_role_arn
       # Then annotate: kubectl annotate serviceaccount aws-load-balancer-controller -n kube-system eks.amazonaws.com/role-arn=<ROLE_ARN>
+      # VPC ID: If you see "failed to introspect vpcID from EC2Metadata" error,
+      #         uncomment extraArgs above and set the VPC ID from: terraform output vpc_id
   destination:
     server: https://kubernetes.default.svc
     namespace: kube-system
