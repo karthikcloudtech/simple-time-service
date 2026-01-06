@@ -53,6 +53,19 @@ The service is deployed as a containerized application on Amazon EKS with the fo
 
 ---
 
+## Quick Start
+
+**For daily practice (destroy/recreate workflow):**
+- See [QUICK_START.md](QUICK_START.md) for the fastest way to get started
+- See [INSTALLATION_BEST_PRACTICES.md](INSTALLATION_BEST_PRACTICES.md) for detailed best practices
+
+**TL;DR:**
+```bash
+cd infra/environments/prod
+terraform apply -auto-approve  # Creates everything
+terraform destroy -auto-approve # Destroys everything
+```
+
 ## Prerequisites
 
 ### Required Tools and Software

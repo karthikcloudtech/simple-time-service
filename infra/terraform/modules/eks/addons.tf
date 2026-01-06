@@ -87,16 +87,7 @@ resource "null_resource" "install_eks_addons" {
         chmod +x "$SCRIPT_PATH"
         CLUSTER_NAME="${aws_eks_cluster.main.name}" \
         AWS_REGION="${var.aws_region}" \
-        PROJECT_NAME="${var.project_name}" \
-        INSTALL_ALB_CONTROLLER="true" \
-        INSTALL_ARGOCD="true" \
-        INSTALL_METRICS_SERVER="true" \
-        INSTALL_CERT_MANAGER="true" \
-        CERT_MANAGER_ROLE_ARN="${aws_iam_role.cert_manager.arn}" \
-        INSTALL_PROMETHEUS="true" \
-        INSTALL_EFK="true" \
-        INSTALL_OTEL_COLLECTOR="true" \
-        INSTALL_CLUSTER_AUTOSCALER="true" \
+        TERRAFORM_DIR="$(pwd)" \
         bash "$SCRIPT_PATH"
       else
         echo "Error: Installation script not found at: $SCRIPT_PATH"

@@ -102,4 +102,3 @@ helm upgrade --install kibana elastic/kibana -n logging \
 ## If You Want Them Back
 
 If you need these files for backward compatibility or manual deployments, I can restore them. However, I recommend using the GitOps paths instead.
-

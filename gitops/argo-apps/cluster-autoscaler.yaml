@@ -30,9 +30,9 @@ spec:
           value: "false"
         - name: extraArgs.skip-nodes-with-system-pods
           value: "false"
-      # IAM role ARN annotation must be set via ServiceAccount annotation
-      # Use Terraform output: terraform output cluster_autoscaler_role_arn
-      # Then annotate: kubectl annotate serviceaccount cluster-autoscaler-aws-cluster-autoscaler -n kube-system eks.amazonaws.com/role-arn=<ROLE_ARN>
+      # ServiceAccount is created separately via gitops/serviceaccounts
+      # Get role ARN: terraform -chdir=infra/environments/prod output -raw cluster_autoscaler_role_arn
+      # Update gitops/serviceaccounts/cluster-autoscaler-sa.yaml with the role ARN
   destination:
     server: https://kubernetes.default.svc
     namespace: kube-system
@@ -42,4 +42,7 @@ spec:
       selfHeal: true
     syncOptions:
       - CreateNamespace=true
+  # Sync after ServiceAccounts are created
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
 

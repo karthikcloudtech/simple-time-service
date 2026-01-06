@@ -18,9 +18,10 @@ spec:
         - name: installCRDs
           value: "true"
       # CRDs will be installed automatically with installCRDs=true
-      # IAM role ARN annotation must be set via ServiceAccount annotation for Route53 DNS-01
-      # Use Terraform output: terraform output cert_manager_role_arn
-      # Then annotate: kubectl annotate serviceaccount cert-manager -n cert-manager eks.amazonaws.com/role-arn=<ROLE_ARN>
+      # ServiceAccount is created separately via gitops/serviceaccounts
+      # Get role ARN: terraform -chdir=infra/environments/prod output -raw cert_manager_role_arn
+      # Update gitops/serviceaccounts/cert-manager-sa.yaml with the role ARN
+      # This annotation enables Route53 DNS-01 challenge for Let's Encrypt certificates
   destination:
     server: https://kubernetes.default.svc
     namespace: cert-manager
@@ -30,6 +31,9 @@ spec:
       selfHeal: true
     syncOptions:
       - CreateNamespace=true
+  # Sync after ServiceAccounts are created
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
   # Ignore differences in status fields (cert-manager updates these)
   ignoreDifferences:
     - group: cert-manager.io

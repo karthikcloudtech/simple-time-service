@@ -28,9 +28,9 @@ spec:
         # Get VPC ID: terraform -chdir=infra/environments/prod output -raw vpc_id
         # - name: extraArgs
         #   value: "{--aws-vpc-id=vpc-xxxxxxxxx}"
-      # IAM role ARN annotation must be set via ServiceAccount annotation
-      # Use Terraform output: terraform output aws_load_balancer_controller_role_arn
-      # Then annotate: kubectl annotate serviceaccount aws-load-balancer-controller -n kube-system eks.amazonaws.com/role-arn=<ROLE_ARN>
+      # ServiceAccount is created separately via gitops/serviceaccounts
+      # Get role ARN: terraform -chdir=infra/environments/prod output -raw aws_load_balancer_controller_role_arn
+      # Update gitops/serviceaccounts/aws-load-balancer-controller-sa.yaml with the role ARN
       # VPC ID: If you see "failed to introspect vpcID from EC2Metadata" error,
       #         uncomment extraArgs above and set the VPC ID from: terraform output vpc_id
   destination:
@@ -42,4 +42,7 @@ spec:
       selfHeal: true
     syncOptions:
       - CreateNamespace=true
+  # Sync after ServiceAccounts are created
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
 
