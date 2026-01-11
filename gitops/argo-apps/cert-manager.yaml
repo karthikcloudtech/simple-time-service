@@ -3,6 +3,9 @@ kind: Application
 metadata:
   name: cert-manager
   namespace: argocd
+  # Sync after ServiceAccounts are created
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
 spec:
   project: default
   source:
@@ -31,9 +34,6 @@ spec:
       selfHeal: true
     syncOptions:
       - CreateNamespace=true
-  # Sync after ServiceAccounts are created
-  annotations:
-    argocd.argoproj.io/sync-wave: "0"
   # Ignore differences in status fields (cert-manager updates these)
   ignoreDifferences:
     - group: cert-manager.io

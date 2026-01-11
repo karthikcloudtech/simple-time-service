@@ -11,6 +11,7 @@ variables:
   DOCKER_BUILDKIT: "1"
   IMAGE_NAME: "docker.io/$DOCKERHUB_USERNAME/$CI_PROJECT_NAME"
 
+
 # ---------------------------
 # 🔍 CODE SECURITY SCANS
 # ---------------------------

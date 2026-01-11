@@ -3,6 +3,9 @@ kind: Application
 metadata:
   name: aws-load-balancer-controller
   namespace: argocd
+  # Sync after ServiceAccounts are created
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
 spec:
   project: default
   source:
@@ -42,7 +45,4 @@ spec:
       selfHeal: true
     syncOptions:
       - CreateNamespace=true
-  # Sync after ServiceAccounts are created
-  annotations:
-    argocd.argoproj.io/sync-wave: "0"
 
