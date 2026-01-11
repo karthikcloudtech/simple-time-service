@@ -6,5 +6,5 @@ metadata:
   annotations:
     # NOTE: Replace ACCOUNT_ID with your AWS account ID
     # Get role ARN: terraform -chdir=infra/environments/prod output -raw cluster_autoscaler_role_arn
-    eks.amazonaws.com/role-arn: "arn:aws:iam::ACCOUNT_ID:role/simple-time-service-cluster-autoscaler-role"
+    eks.amazonaws.com/role-arn: "arn:aws:iam::017019814021:role/simple-time-service-cluster-autoscaler-role"
 

@@ -108,8 +108,9 @@ update_serviceaccount_annotations() {
         
         if [ -n "$alb_role_arn" ] && [ -f "$sa_dir/aws-load-balancer-controller-sa.yaml" ]; then
             log "Updating AWS Load Balancer Controller ServiceAccount YAML..."
-            # Use sed to replace placeholder with actual ARN
-            if sed -i.bak "s|arn:aws:iam::ACCOUNT_ID:role/simple-time-service-aws-load-balancer-controller-role|$alb_role_arn|g" \
+            # Replace any existing ARN or placeholder with actual ARN
+            # Pattern matches: arn:aws:iam::[0-9]*:role/... or arn:aws:iam::ACCOUNT_ID:role/...
+            if sed -i.bak "s|arn:aws:iam::[0-9A-Z_]*:role/simple-time-service-aws-load-balancer-controller-role|$alb_role_arn|g" \
                 "$sa_dir/aws-load-balancer-controller-sa.yaml" 2>/dev/null; then
                 rm -f "$sa_dir/aws-load-balancer-controller-sa.yaml.bak"
                 log_success "Updated AWS Load Balancer Controller ServiceAccount YAML"
@@ -119,7 +120,8 @@ update_serviceaccount_annotations() {
         
         if [ -n "$autoscaler_role_arn" ] && [ -f "$sa_dir/cluster-autoscaler-sa.yaml" ]; then
             log "Updating Cluster Autoscaler ServiceAccount YAML..."
-            if sed -i.bak "s|arn:aws:iam::ACCOUNT_ID:role/simple-time-service-cluster-autoscaler-role|$autoscaler_role_arn|g" \
+            # Replace any existing ARN or placeholder with actual ARN
+            if sed -i.bak "s|arn:aws:iam::[0-9A-Z_]*:role/simple-time-service-cluster-autoscaler-role|$autoscaler_role_arn|g" \
                 "$sa_dir/cluster-autoscaler-sa.yaml" 2>/dev/null; then
                 rm -f "$sa_dir/cluster-autoscaler-sa.yaml.bak"
                 log_success "Updated Cluster Autoscaler ServiceAccount YAML"
@@ -129,7 +131,8 @@ update_serviceaccount_annotations() {
         
         if [ -n "$cert_manager_role_arn" ] && [ -f "$sa_dir/cert-manager-sa.yaml" ]; then
             log "Updating Cert-Manager ServiceAccount YAML..."
-            if sed -i.bak "s|arn:aws:iam::ACCOUNT_ID:role/simple-time-service-cert-manager-role|$cert_manager_role_arn|g" \
+            # Replace any existing ARN or placeholder with actual ARN
+            if sed -i.bak "s|arn:aws:iam::[0-9A-Z_]*:role/simple-time-service-cert-manager-role|$cert_manager_role_arn|g" \
                 "$sa_dir/cert-manager-sa.yaml" 2>/dev/null; then
                 rm -f "$sa_dir/cert-manager-sa.yaml.bak"
                 log_success "Updated Cert-Manager ServiceAccount YAML"
