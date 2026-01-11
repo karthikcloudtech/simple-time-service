@@ -92,10 +92,39 @@ update_serviceaccount_annotations() {
             return 1
         }
         
-        # Get role ARNs
+        # Get role ARNs from Terraform
         local alb_role_arn=$(terraform output -raw aws_load_balancer_controller_role_arn 2>/dev/null || echo "")
         local autoscaler_role_arn=$(terraform output -raw cluster_autoscaler_role_arn 2>/dev/null || echo "")
         local cert_manager_role_arn=$(terraform output -raw cert_manager_role_arn 2>/dev/null || echo "")
+        
+        # Get VPC ID - try multiple methods (VPC name, then EKS cluster)
+        local vpc_id=""
+        if command -v aws &>/dev/null; then
+            # Method 1: Get VPC ID by VPC name/tag (preferred - more explicit)
+            # VPC name format: <project-name>-vpc (e.g., simple-time-service-vpc)
+            local project_name=$(terraform output -raw project_name 2>/dev/null || \
+                echo "${CLUSTER_NAME%-prod}" | sed 's/-prod$//')
+            local vpc_name="${project_name}-vpc"
+            
+            log "Fetching VPC ID by name: $vpc_name..."
+            vpc_id=$(aws ec2 describe-vpcs --region "$AWS_REGION" \
+                --filters "Name=tag:Name,Values=$vpc_name" \
+                --query 'Vpcs[0].VpcId' --output text 2>/dev/null || echo "")
+            
+            if [ -n "$vpc_id" ] && [ "$vpc_id" != "None" ] && [ "$vpc_id" != "null" ]; then
+                log_success "Retrieved VPC ID by name ($vpc_name): $vpc_id"
+            else
+                # Method 2: Fallback to EKS cluster describe
+                log "VPC not found by name, trying EKS cluster..."
+                vpc_id=$(aws eks describe-cluster --name "$CLUSTER_NAME" --region "$AWS_REGION" \
+                    --query 'cluster.resourcesVpcConfig.vpcId' --output text 2>/dev/null || echo "")
+                if [ -n "$vpc_id" ] && [ "$vpc_id" != "None" ]; then
+                    log_success "Retrieved VPC ID from EKS cluster: $vpc_id"
+                else
+                    log_warn "Could not retrieve VPC ID (tried VPC name and EKS cluster)"
+                fi
+            fi
+        fi
         
         # Restore original directory
         cd "$original_dir" || {
@@ -140,8 +169,29 @@ update_serviceaccount_annotations() {
             fi
         fi
         
+        # Update AWS Load Balancer Controller ArgoCD application with VPC ID
+        local alb_app_file="$PROJECT_ROOT/gitops/argo-apps/aws-load-balancer-controller.yaml"
+        if [ -n "$vpc_id" ] && [ "$vpc_id" != "None" ] && [ -f "$alb_app_file" ]; then
+            log "Updating AWS Load Balancer Controller ArgoCD application with VPC ID..."
+            # Replace any existing vpcId value (including placeholder) with actual VPC ID from EKS cluster
+            # Use perl for more reliable regex replacement
+            if command -v perl &>/dev/null; then
+                perl -i.bak -pe "s/(value:\s+[\"'])vpc-[a-zA-Z0-9-]+([\"']\s*#.*)/\${1}${vpc_id}\${2}/g" \
+                    "$alb_app_file" 2>/dev/null && rm -f "$alb_app_file.bak" && \
+                    log_success "Updated AWS Load Balancer Controller ArgoCD application with VPC ID: $vpc_id" && \
+                    yaml_updated=1
+            else
+                # Fallback to sed if perl not available
+                if sed -i.bak "s|vpc-[a-zA-Z0-9-]*|${vpc_id}|g" "$alb_app_file" 2>/dev/null; then
+                    rm -f "$alb_app_file.bak"
+                    log_success "Updated AWS Load Balancer Controller ArgoCD application with VPC ID: $vpc_id"
+                    yaml_updated=1
+                fi
+            fi
+        fi
+        
         if [ $yaml_updated -eq 1 ]; then
-            log_success "ServiceAccount YAML files updated with IAM role ARNs"
+            log_success "ServiceAccount YAML files and ArgoCD applications updated with IAM role ARNs and VPC ID"
             log "Note: Commit these changes to Git so ArgoCD maintains correct values"
         fi
         
@@ -261,6 +311,7 @@ install_argocd_bootstrap() {
     fi
     
     # Update ServiceAccounts with IAM role ARNs from Terraform outputs
+    # Also updates VPC ID dynamically (by VPC name or EKS cluster)
     update_serviceaccount_annotations
     
     # Apply ArgoCD Applications (ArgoCD will manage all addons)

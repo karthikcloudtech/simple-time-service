@@ -27,10 +27,14 @@ spec:
           value: us-east-1
         - name: enableServiceMutatorWebhook
           value: "false"
-        # Uncomment and set VPC ID if controller cannot access EC2 metadata (IMDSv2)
-        # Get VPC ID: terraform -chdir=infra/environments/prod output -raw vpc_id
-        # - name: extraArgs
-        #   value: "{--aws-vpc-id=vpc-xxxxxxxxx}"
+        # VPC ID specified because controller cannot access EC2 metadata (IMDSv2)
+        # Dynamically retrieved by install-eks-addons.sh script (by VPC name or EKS cluster)
+        # The script automatically updates this value before ArgoCD syncs
+        # Get VPC ID manually:
+        #   By name: aws ec2 describe-vpcs --filters "Name=tag:Name,Values=<project-name>-vpc" --query 'Vpcs[0].VpcId' --output text
+        #   By cluster: aws eks describe-cluster --name <cluster-name> --query 'cluster.resourcesVpcConfig.vpcId' --output text
+        - name: vpcId
+          value: "vpc-PLACEHOLDER"  # Automatically replaced by install-eks-addons.sh (do not hardcode - run script before deploying)
       # ServiceAccount is created separately via gitops/serviceaccounts
       # Get role ARN: terraform -chdir=infra/environments/prod output -raw aws_load_balancer_controller_role_arn
       # Update gitops/serviceaccounts/aws-load-balancer-controller-sa.yaml with the role ARN
