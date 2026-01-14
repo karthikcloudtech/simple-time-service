@@ -3,6 +3,11 @@ output "vpc_id" {
   value       = aws_vpc.main.id
 }
 
+output "vpc_name" {
+  description = "VPC Name (tag)"
+  value       = var.environment != "" ? "${var.project_name}-vpc-${var.environment}" : "${var.project_name}-vpc"
+}
+
 output "vpc_cidr" {
   description = "VPC CIDR"
   value       = aws_vpc.main.cidr_block

@@ -42,7 +42,7 @@ error() { echo "[ERROR] $1"; exit 1; }
 # ============================================================================
 
 check_prerequisites() {
-    for cmd in kubectl aws; do
+    for cmd in kubectl aws helm; do
         command -v "$cmd" &>/dev/null || error "$cmd not found. Please install it first."
     done
 }
@@ -74,6 +74,125 @@ wait_for_nodes() {
 }
 
 # ============================================================================
+# INSTALL AWS LOAD BALANCER CONTROLLER
+# ============================================================================
+
+install_aws_load_balancer_controller() {
+    log "Installing AWS Load Balancer Controller via Helm..."
+    
+    # Check if already installed
+    if helm list -n kube-system | grep -q aws-load-balancer-controller; then
+        log "AWS Load Balancer Controller is already installed, skipping..."
+        return 0
+    fi
+    
+    # Get VPC ID and IAM role ARN from Terraform or environment variables
+    local terraform_dir="${TERRAFORM_DIR:-infra/environments/prod}"
+    local original_dir=$(pwd)
+    local vpc_id="${VPC_ID:-}"
+    local alb_role_arn="${AWS_LOAD_BALANCER_CONTROLLER_ROLE_ARN:-}"
+    
+    # Try to get from Terraform if not set via environment variables
+    if [ -z "$vpc_id" ] || [ -z "$alb_role_arn" ]; then
+        if [ -d "$terraform_dir" ] && command -v terraform &>/dev/null; then
+            cd "$terraform_dir" || {
+                log_warn "Could not access Terraform directory: $terraform_dir"
+                return 1
+            }
+            
+            # Get VPC ID - try VPC name first, then EKS cluster
+            if [ -z "$vpc_id" ]; then
+                local project_name=$(terraform output -raw project_name 2>/dev/null || \
+                    echo "${CLUSTER_NAME%-prod}" | sed 's/-prod$//')
+                local environment=$(terraform output -raw environment 2>/dev/null || \
+                    echo "${CLUSTER_NAME##*-}" | sed 's/^.*-//')
+                # Try environment-specific VPC name first, then fallback to non-environment-specific
+                local vpc_name="${project_name}-vpc-${environment}"
+                
+                log "Fetching VPC ID by name: $vpc_name..."
+                vpc_id=$(aws ec2 describe-vpcs --region "$AWS_REGION" \
+                    --filters "Name=tag:Name,Values=$vpc_name" \
+                    --query 'Vpcs[0].VpcId' --output text 2>/dev/null || echo "")
+                
+                # Fallback to non-environment-specific VPC name if not found
+                if [ -z "$vpc_id" ] || [ "$vpc_id" = "None" ] || [ "$vpc_id" = "null" ]; then
+                    local vpc_name_fallback="${project_name}-vpc"
+                    log "VPC not found with environment suffix, trying: $vpc_name_fallback..."
+                    vpc_id=$(aws ec2 describe-vpcs --region "$AWS_REGION" \
+                        --filters "Name=tag:Name,Values=$vpc_name_fallback" \
+                        --query 'Vpcs[0].VpcId' --output text 2>/dev/null || echo "")
+                fi
+                
+                if [ -z "$vpc_id" ] || [ "$vpc_id" = "None" ] || [ "$vpc_id" = "null" ]; then
+                    log "VPC not found by name, trying EKS cluster..."
+                    vpc_id=$(aws eks describe-cluster --name "$CLUSTER_NAME" --region "$AWS_REGION" \
+                        --query 'cluster.resourcesVpcConfig.vpcId' --output text 2>/dev/null || echo "")
+                fi
+            fi
+            
+            # Get IAM role ARN
+            if [ -z "$alb_role_arn" ]; then
+                alb_role_arn=$(terraform output -raw aws_load_balancer_controller_role_arn 2>/dev/null || echo "")
+            fi
+            
+            cd "$original_dir" || true
+        fi
+    fi
+    
+    if [ -z "$vpc_id" ] || [ "$vpc_id" = "None" ] || [ "$vpc_id" = "null" ]; then
+        error "Could not retrieve VPC ID. Set VPC_ID environment variable or ensure Terraform outputs are available."
+    fi
+    
+    if [ -z "$alb_role_arn" ]; then
+        error "Could not retrieve AWS Load Balancer Controller IAM role ARN. Set AWS_LOAD_BALANCER_CONTROLLER_ROLE_ARN environment variable or ensure Terraform outputs are available."
+    fi
+    
+    log "VPC ID: $vpc_id"
+    log "IAM Role ARN: $alb_role_arn"
+    
+    # Ensure ServiceAccount exists with IAM role annotation
+    log "Creating/updating ServiceAccount..."
+    kubectl apply -f - <<EOF
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: aws-load-balancer-controller
+  namespace: kube-system
+  annotations:
+    eks.amazonaws.com/role-arn: $alb_role_arn
+EOF
+    
+    # Add EKS Helm repo if not already added
+    if ! helm repo list | grep -q eks; then
+        log "Adding EKS Helm repository..."
+        helm repo add eks https://aws.github.io/eks-charts || error "Failed to add EKS Helm repository"
+        helm repo update || error "Failed to update Helm repositories"
+    fi
+    
+    # Install AWS Load Balancer Controller via Helm
+    log "Installing AWS Load Balancer Controller Helm chart..."
+    if helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
+        -n kube-system \
+        --set clusterName="$CLUSTER_NAME" \
+        --set serviceAccount.create=false \
+        --set serviceAccount.name=aws-load-balancer-controller \
+        --set region="$AWS_REGION" \
+        --set vpcId="$vpc_id" \
+        --set enableServiceMutatorWebhook=false \
+        --wait \
+        --timeout 5m; then
+        log_success "AWS Load Balancer Controller installed successfully"
+    else
+        error "Failed to install AWS Load Balancer Controller"
+    fi
+    
+    # Wait for controller to be ready
+    log "Waiting for AWS Load Balancer Controller to be ready..."
+    kubectl wait --for=condition=available deployment/aws-load-balancer-controller -n kube-system --timeout=5m || \
+        log_warn "AWS Load Balancer Controller may still be starting"
+}
+
+# ============================================================================
 # UPDATE SERVICEACCOUNT ANNOTATIONS
 # ============================================================================
 
@@ -101,15 +220,27 @@ update_serviceaccount_annotations() {
         local vpc_id=""
         if command -v aws &>/dev/null; then
             # Method 1: Get VPC ID by VPC name/tag (preferred - more explicit)
-            # VPC name format: <project-name>-vpc (e.g., simple-time-service-vpc)
+            # VPC name format: <project-name>-vpc-<environment> (e.g., simple-time-service-vpc-prod)
             local project_name=$(terraform output -raw project_name 2>/dev/null || \
                 echo "${CLUSTER_NAME%-prod}" | sed 's/-prod$//')
-            local vpc_name="${project_name}-vpc"
+            local environment=$(terraform output -raw environment 2>/dev/null || \
+                echo "${CLUSTER_NAME##*-}" | sed 's/^.*-//')
+            # Try environment-specific VPC name first
+            local vpc_name="${project_name}-vpc-${environment}"
             
             log "Fetching VPC ID by name: $vpc_name..."
             vpc_id=$(aws ec2 describe-vpcs --region "$AWS_REGION" \
                 --filters "Name=tag:Name,Values=$vpc_name" \
                 --query 'Vpcs[0].VpcId' --output text 2>/dev/null || echo "")
+            
+            # Fallback to non-environment-specific VPC name if not found
+            if [ -z "$vpc_id" ] || [ "$vpc_id" = "None" ] || [ "$vpc_id" = "null" ]; then
+                local vpc_name_fallback="${project_name}-vpc"
+                log "VPC not found with environment suffix, trying: $vpc_name_fallback..."
+                vpc_id=$(aws ec2 describe-vpcs --region "$AWS_REGION" \
+                    --filters "Name=tag:Name,Values=$vpc_name_fallback" \
+                    --query 'Vpcs[0].VpcId' --output text 2>/dev/null || echo "")
+            fi
             
             if [ -n "$vpc_id" ] && [ "$vpc_id" != "None" ] && [ "$vpc_id" != "null" ]; then
                 log_success "Retrieved VPC ID by name ($vpc_name): $vpc_id"
@@ -169,29 +300,11 @@ update_serviceaccount_annotations() {
             fi
         fi
         
-        # Update AWS Load Balancer Controller ArgoCD application with VPC ID
-        local alb_app_file="$PROJECT_ROOT/gitops/argo-apps/aws-load-balancer-controller.yaml"
-        if [ -n "$vpc_id" ] && [ "$vpc_id" != "None" ] && [ -f "$alb_app_file" ]; then
-            log "Updating AWS Load Balancer Controller ArgoCD application with VPC ID..."
-            # Replace any existing vpcId value (including placeholder) with actual VPC ID from EKS cluster
-            # Use perl for more reliable regex replacement
-            if command -v perl &>/dev/null; then
-                perl -i.bak -pe "s/(value:\s+[\"'])vpc-[a-zA-Z0-9-]+([\"']\s*#.*)/\${1}${vpc_id}\${2}/g" \
-                    "$alb_app_file" 2>/dev/null && rm -f "$alb_app_file.bak" && \
-                    log_success "Updated AWS Load Balancer Controller ArgoCD application with VPC ID: $vpc_id" && \
-                    yaml_updated=1
-            else
-                # Fallback to sed if perl not available
-                if sed -i.bak "s|vpc-[a-zA-Z0-9-]*|${vpc_id}|g" "$alb_app_file" 2>/dev/null; then
-                    rm -f "$alb_app_file.bak"
-                    log_success "Updated AWS Load Balancer Controller ArgoCD application with VPC ID: $vpc_id"
-                    yaml_updated=1
-                fi
-            fi
-        fi
+        # Note: AWS Load Balancer Controller is installed directly via Helm (not via ArgoCD)
+        # This is because it needs VPC ID which cannot be set via VPC name in Helm chart
         
         if [ $yaml_updated -eq 1 ]; then
-            log_success "ServiceAccount YAML files and ArgoCD applications updated with IAM role ARNs and VPC ID"
+            log_success "ServiceAccount YAML files updated with IAM role ARNs"
             log "Note: Commit these changes to Git so ArgoCD maintains correct values"
         fi
         
@@ -229,6 +342,7 @@ apply_argocd_applications() {
     sleep 5
     
     # Apply all ArgoCD Application manifests (idempotent)
+    # Note: AWS Load Balancer Controller is installed directly via Helm (not via ArgoCD)
     log "Applying ArgoCD Application manifests..."
     local applied=0
     local failed=0
@@ -361,6 +475,9 @@ main() {
     check_prerequisites
     verify_setup
     wait_for_nodes
+    
+    # Install AWS Load Balancer Controller first (required for ArgoCD ingress)
+    install_aws_load_balancer_controller
     
     install_argocd_bootstrap
     

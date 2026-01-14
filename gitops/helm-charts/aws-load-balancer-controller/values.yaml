@@ -1,5 +1,6 @@
 # AWS Load Balancer Controller Helm Values
-# Used by: gitops/argo-apps/aws-load-balancer-controller.yaml
+# NOTE: This file is for reference only. AWS Load Balancer Controller is installed directly via Helm
+# in scripts/install-eks-addons.sh (not via ArgoCD Application)
 # Chart: aws/aws-load-balancer-controller
 
 clusterName: simple-time-service-prod

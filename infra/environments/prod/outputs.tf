@@ -1,6 +1,21 @@
+output "project_name" {
+  description = "Project name"
+  value       = var.project_name
+}
+
+output "environment" {
+  description = "Environment"
+  value       = var.environment
+}
+
 output "vpc_id" {
   description = "VPC ID"
   value       = module.vpc.vpc_id
+}
+
+output "vpc_name" {
+  description = "VPC Name"
+  value       = module.vpc.vpc_name
 }
 
 output "private_subnet_ids" {
