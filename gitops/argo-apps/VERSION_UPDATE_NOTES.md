@@ -6,15 +6,7 @@ All Helm chart versions have been updated to more recent versions, but **you mus
 
 ## How to Verify Latest Versions
 
-### Option 1: Use the Check Script (Recommended)
-
-```bash
-./scripts/check-helm-versions.sh
-```
-
-This script will show you the latest available versions for all charts.
-
-### Option 2: Check Artifact Hub
+### Option 1: Check Artifact Hub (Recommended)
 
 Visit https://artifacthub.io and search for each chart:
 - Metrics Server: https://artifacthub.io/packages/helm/metrics-server/metrics-server
@@ -28,7 +20,7 @@ Visit https://artifacthub.io and search for each chart:
 - Cluster Autoscaler: https://artifacthub.io/packages/helm/cluster-autoscaler/cluster-autoscaler
 - ArgoCD: https://artifacthub.io/packages/helm/argo/argo-cd
 
-### Option 3: Use Helm Search
+### Option 2: Use Helm Search
 
 ```bash
 helm repo update
@@ -61,7 +53,7 @@ Before deploying, verify:
 
 ## Update Process
 
-1. Run `./scripts/check-helm-versions.sh` to get latest versions
+1. Check latest versions using Artifact Hub or `helm search repo <repo>/<chart> --versions | head -1`
 2. Compare with versions in `gitops/argo-apps/*.yaml` files
 3. Update `targetRevision` in each Application manifest if needed
 4. Test in staging environment first

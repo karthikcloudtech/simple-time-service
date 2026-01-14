@@ -56,7 +56,7 @@ The service is deployed as a containerized application on Amazon EKS with the fo
 ## Quick Start
 
 **For daily practice (destroy/recreate workflow):**
-- See [QUICK_START.md](QUICK_START.md) for the fastest way to get started
+- See [SETUP.md](SETUP.md) for setup instructions
 - See [INSTALLATION_BEST_PRACTICES.md](INSTALLATION_BEST_PRACTICES.md) for detailed best practices
 
 **TL;DR:**
