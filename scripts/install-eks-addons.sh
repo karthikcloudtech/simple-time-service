@@ -308,13 +308,21 @@ update_serviceaccount_annotations() {
             log "Note: Commit these changes to Git so ArgoCD maintains correct values"
         fi
         
-        # Also apply ServiceAccounts directly to Kubernetes immediately (before ArgoCD syncs)
-        # This ensures they work right away, and ArgoCD will maintain them
-        log "Applying ServiceAccounts directly to Kubernetes..."
+        # Apply ServiceAccounts directly to Kubernetes
+        log "Applying ServiceAccounts..."
         if [ -d "$sa_dir" ]; then
             kubectl apply -k "$sa_dir" &>/dev/null && \
-                log_success "ServiceAccounts applied to Kubernetes" || \
-                log_warn "Some ServiceAccounts may have failed to apply (may already exist)"
+                log_success "ServiceAccounts applied" || \
+                log_warn "Some ServiceAccounts may have failed to apply"
+        fi
+        
+        # Annotate cluster-autoscaler ServiceAccount (created by Helm, needs manual annotation)
+        if [ -n "$autoscaler_role_arn" ]; then
+            kubectl annotate serviceaccount cluster-autoscaler-aws-cluster-autoscaler \
+                -n kube-system eks.amazonaws.com/role-arn="$autoscaler_role_arn" \
+                --overwrite &>/dev/null 2>&1 && \
+                log_success "Cluster Autoscaler annotated" || \
+                log "Cluster Autoscaler ServiceAccount not yet created"
         fi
     else
         log_warn "Terraform directory not found or terraform not available"
