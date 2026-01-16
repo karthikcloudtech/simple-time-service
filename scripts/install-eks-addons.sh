@@ -324,6 +324,15 @@ update_serviceaccount_annotations() {
                 log_success "Cluster Autoscaler annotated" || \
                 log "Cluster Autoscaler ServiceAccount not yet created"
         fi
+        
+        # Annotate cert-manager ServiceAccount (created by Helm, needs manual annotation for Route53)
+        if [ -n "$cert_manager_role_arn" ]; then
+            kubectl annotate serviceaccount cert-manager \
+                -n cert-manager eks.amazonaws.com/role-arn="$cert_manager_role_arn" \
+                --overwrite &>/dev/null 2>&1 && \
+                log_success "Cert-Manager annotated" || \
+                log "Cert-Manager ServiceAccount not yet created"
+        fi
     else
         log_warn "Terraform directory not found or terraform not available"
         log_warn "ServiceAccounts will be created by ArgoCD, but IAM annotations may be missing"
