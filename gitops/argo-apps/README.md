@@ -209,7 +209,7 @@ kubectl get storageclass gp3
 kubectl get clusterissuer
 
 # View sync status in ArgoCD UI
-# https://argocd.trainerkarthik.shop
+# https://argocd.kart24.shop
 ```
 
 ## Sync Policy Details

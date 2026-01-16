@@ -14,7 +14,7 @@ metadata:
 spec:
   ingressClassName: alb
   rules:
-    - host: grafana.trainerkarthik.shop
+    - host: grafana.kart24.shop
       http:
         paths:
           - path: /
@@ -26,6 +26,6 @@ spec:
                   number: 80
   tls:
     - hosts:
-        - grafana.trainerkarthik.shop
+        - grafana.kart24.shop
       secretName: grafana-trainerkarthik-shop-tls
 

@@ -21,7 +21,7 @@ spec:
           # hostedZoneID: Z1234567890ABC
       selector:
         dnsZones:
-          - trainerkarthik.shop
+          - kart24.shop
 ---
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
@@ -41,5 +41,5 @@ spec:
           # Region auto-detected from AWS_REGION/AWS_DEFAULT_REGION (cert-manager 1.16+)
       selector:
         dnsZones:
-          - trainerkarthik.shop
+          - kart24.shop
 

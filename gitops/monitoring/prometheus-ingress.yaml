@@ -14,7 +14,7 @@ metadata:
 spec:
   ingressClassName: alb
   rules:
-    - host: prometheus.trainerkarthik.shop
+    - host: prometheus.kart24.shop
       http:
         paths:
           - path: /
@@ -26,6 +26,6 @@ spec:
                   number: 9090
   tls:
     - hosts:
-        - prometheus.trainerkarthik.shop
+        - prometheus.kart24.shop
       secretName: prometheus-trainerkarthik-shop-tls
 

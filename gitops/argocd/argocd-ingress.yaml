@@ -19,7 +19,7 @@ metadata:
 spec:
   ingressClassName: alb
   rules:
-    - host: argocd.trainerkarthik.shop
+    - host: argocd.kart24.shop
       http:
         paths:
           - path: /
@@ -31,6 +31,6 @@ spec:
                   number: 80
   tls:
     - hosts:
-        - argocd.trainerkarthik.shop
+        - argocd.kart24.shop
       secretName: argocd-trainerkarthik-shop-tls
 

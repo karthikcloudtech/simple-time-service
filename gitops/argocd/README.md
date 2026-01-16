@@ -1,6 +1,6 @@
 # ArgoCD Ingress Configuration
 
-ArgoCD is configured to be accessible via `argocd.trainerkarthik.shop` with Let's Encrypt SSL certificate.
+ArgoCD is configured to be accessible via `argocd.kart24.shop` with Let's Encrypt SSL certificate.
 
 ## Deployment
 
@@ -18,7 +18,7 @@ kubectl get ingress argocd-ingress -n argocd
 ```
 
 Create a CNAME record:
-- **Name:** `argocd` (or `argocd.trainerkarthik.shop` depending on your DNS provider)
+- **Name:** `argocd` (or `argocd.kart24.shop` depending on your DNS provider)
 - **Type:** CNAME
 - **Value:** ALB hostname from ingress status
 
@@ -26,7 +26,7 @@ Create a CNAME record:
 
 After DNS propagation (5-15 minutes):
 
-- **URL:** https://argocd.trainerkarthik.shop
+- **URL:** https://argocd.kart24.shop
 - **Username:** `admin`
 - **Password:** 
   ```bash
@@ -66,5 +66,5 @@ kubectl describe ingress argocd-ingress -n argocd
 ### ArgoCD not accessible
 - Verify ArgoCD pods are running: `kubectl get pods -n argocd`
 - Check ArgoCD service: `kubectl get svc argocd-server -n argocd`
-- Verify DNS resolution: `dig argocd.trainerkarthik.shop`
+- Verify DNS resolution: `dig argocd.kart24.shop`
 

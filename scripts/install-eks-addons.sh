@@ -422,7 +422,7 @@ install_argocd_bootstrap() {
         ALB_HOSTNAME=$(kubectl get ingress argocd-ingress -n argocd -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || echo "")
         if [ -n "$ALB_HOSTNAME" ]; then
             log "ALB created: $ALB_HOSTNAME"
-            log "Configure DNS: Create CNAME record for argocd.trainerkarthik.shop pointing to $ALB_HOSTNAME"
+            log "Configure DNS: Create CNAME record for argocd.kart24.shop pointing to $ALB_HOSTNAME"
         else
             log "ALB is being created. Check status with: kubectl get ingress argocd-ingress -n argocd"
         fi
@@ -451,7 +451,7 @@ install_argocd_bootstrap() {
     log ""
     log "2. Access ArgoCD UI:"
     log "   Option A - Via Ingress (if DNS configured):"
-    log "     https://argocd.trainerkarthik.shop"
+    log "     https://argocd.kart24.shop"
     log "   Option B - Port-forward:"
     log "     kubectl port-forward svc/argocd-server -n argocd 8080:443"
     log ""

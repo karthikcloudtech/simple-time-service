@@ -4,8 +4,8 @@ This directory contains Ingress resources for accessing Prometheus and Grafana v
 
 ## Domains
 
-- **Prometheus**: `prometheus.trainerkarthik.shop`
-- **Grafana**: `grafana.trainerkarthik.shop`
+- **Prometheus**: `prometheus.kart24.shop`
+- **Grafana**: `grafana.kart24.shop`
 
 ## Prerequisites
 
@@ -24,8 +24,8 @@ kubectl create secret tls wildcard-trainerkarthik-shop-tls \
 ```
 
 2. **DNS Configuration**: Point the subdomains to your ALB:
-   - `prometheus.trainerkarthik.shop` → ALB
-   - `grafana.trainerkarthik.shop` → ALB
+   - `prometheus.kart24.shop` → ALB
+   - `grafana.kart24.shop` → ALB
 
 ## Deployment
 
@@ -41,8 +41,8 @@ kubectl apply -f gitops/argo-apps/monitoring.yaml  # Create this if needed
 
 After deployment and DNS propagation:
 
-- **Prometheus**: https://prometheus.trainerkarthik.shop
-- **Grafana**: https://grafana.trainerkarthik.shop
+- **Prometheus**: https://prometheus.kart24.shop
+- **Grafana**: https://grafana.kart24.shop
   - Default username: `admin`
   - Get password: `kubectl get secret prometheus-grafana -n monitoring -o jsonpath="{.data.admin-password}" | base64 -d`
 

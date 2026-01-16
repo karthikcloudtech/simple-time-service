@@ -4,10 +4,10 @@ This guide explains how to access Prometheus, Grafana, and Kibana using Let's En
 
 ## Domains Configured
 
-- **Prometheus**: `prometheus.trainerkarthik.shop`
-- **Grafana**: `grafana.trainerkarthik.shop`
-- **Kibana**: `kibana.trainerkarthik.shop`
-- **Time Service**: `time.trainerkarthik.shop` (already configured)
+- **Prometheus**: `prometheus.kart24.shop`
+- **Grafana**: `grafana.kart24.shop`
+- **Kibana**: `kibana.kart24.shop`
+- **Time Service**: `time.kart24.shop` (already configured)
 
 ## Automatic Certificate Management
 
@@ -23,9 +23,9 @@ The ingresses use `cert-manager.io/cluster-issuer: letsencrypt-prod` annotation,
 
 Point the subdomains to your ALB:
 
-- `prometheus.trainerkarthik.shop` → ALB
-- `grafana.trainerkarthik.shop` → ALB
-- `kibana.trainerkarthik.shop` → ALB
+- `prometheus.kart24.shop` → ALB
+- `grafana.kart24.shop` → ALB
+- `kibana.kart24.shop` → ALB
 
 ## Step 2: Deploy Ingress Resources
 
@@ -42,11 +42,11 @@ kubectl apply -k gitops/logging/
 After DNS propagation (usually a few minutes):
 
 ### Prometheus
-- **URL**: https://prometheus.trainerkarthik.shop
+- **URL**: https://prometheus.kart24.shop
 - **Features**: Query metrics, view targets, alerts
 
 ### Grafana
-- **URL**: https://grafana.trainerkarthik.shop
+- **URL**: https://grafana.kart24.shop
 - **Username**: `admin`
 - **Password**: Get with:
   ```bash
@@ -55,7 +55,7 @@ After DNS propagation (usually a few minutes):
   ```
 
 ### Kibana
-- **URL**: https://kibana.trainerkarthik.shop
+- **URL**: https://kibana.kart24.shop
 - **Features**: View application logs, create dashboards
 
 ## Verification
@@ -96,9 +96,9 @@ kubectl describe ingress -n logging
 
 1. **502 Bad Gateway**: Check DNS resolution:
    ```bash
-   dig prometheus.trainerkarthik.shop
-   dig grafana.trainerkarthik.shop
-   dig kibana.trainerkarthik.shop
+   dig prometheus.kart24.shop
+   dig grafana.kart24.shop
+   dig kibana.kart24.shop
    ```
 
 2. **DNS not resolving**: Verify DNS records point to ALB

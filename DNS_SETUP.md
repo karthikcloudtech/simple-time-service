@@ -5,17 +5,17 @@
 You can configure a **single wildcard DNS record** that will work for all your subdomains:
 
 ```
-*.trainerkarthik.shop → ALB (CNAME or A record)
+*.kart24.shop → ALB (CNAME or A record)
 ```
 
 ## How It Works
 
 1. **DNS Resolution**: All subdomains resolve to the same ALB
-   - `prometheus.trainerkarthik.shop` → ALB
-   - `grafana.trainerkarthik.shop` → ALB
-   - `kibana.trainerkarthik.shop` → ALB
-   - `time.trainerkarthik.shop` → ALB
-   - `staging.time.trainerkarthik.shop` → ALB
+   - `prometheus.kart24.shop` → ALB
+   - `grafana.kart24.shop` → ALB
+   - `kibana.kart24.shop` → ALB
+   - `time.kart24.shop` → ALB
+   - `staging.time.kart24.shop` → ALB
 
 2. **ALB Ingress Controller Routing**: The ALB Ingress Controller uses the `Host` header to route requests:
    - Checks the `host` field in each Ingress resource
@@ -64,24 +64,24 @@ After DNS configuration, verify:
 
 ```bash
 # Check DNS resolution
-dig prometheus.trainerkarthik.shop
-dig grafana.trainerkarthik.shop
-dig kibana.trainerkarthik.shop
-dig time.trainerkarthik.shop
+dig prometheus.kart24.shop
+dig grafana.kart24.shop
+dig kibana.kart24.shop
+dig time.kart24.shop
 
 # All should resolve to the same ALB
 ```
 
 ## How ALB Routes Requests
 
-1. **Request arrives**: `https://prometheus.trainerkarthik.shop`
-2. **DNS resolves**: `*.trainerkarthik.shop` → ALB
-3. **ALB receives request**: With `Host: prometheus.trainerkarthik.shop` header
-4. **Ingress Controller matches**: Finds ingress with `host: prometheus.trainerkarthik.shop`
+1. **Request arrives**: `https://prometheus.kart24.shop`
+2. **DNS resolves**: `*.kart24.shop` → ALB
+3. **ALB receives request**: With `Host: prometheus.kart24.shop` header
+4. **Ingress Controller matches**: Finds ingress with `host: prometheus.kart24.shop`
 5. **Routes to service**: `prometheus-kube-prometheus-prometheus:9090`
 
 Each ingress resource specifies:
-- **host**: The subdomain (e.g., `prometheus.trainerkarthik.shop`)
+- **host**: The subdomain (e.g., `prometheus.kart24.shop`)
 - **backend service**: Where to route (e.g., `prometheus-kube-prometheus-prometheus`)
 
 The ALB Ingress Controller automatically handles the routing based on the `Host` header.
@@ -96,9 +96,9 @@ The ALB Ingress Controller automatically handles the routing based on the `Host`
 
 ## Example: Adding a New Subdomain
 
-To add a new service (e.g., `api.trainerkarthik.shop`):
+To add a new service (e.g., `api.kart24.shop`):
 
-1. Create ingress with `host: api.trainerkarthik.shop`
+1. Create ingress with `host: api.kart24.shop`
 2. Add `cert-manager.io/cluster-issuer: letsencrypt-prod` annotation
 3. Deploy - DNS wildcard already covers it!
 4. Cert-manager automatically issues certificate

@@ -14,10 +14,10 @@ metadata:
 spec:
   tls:
     - hosts:
-        - time.trainerkarthik.shop
+        - time.kart24.shop
       secretName: prod-time-tls  # Let's Encrypt cert secret
   rules:
-    - host: time.trainerkarthik.shop
+    - host: time.kart24.shop
       http:
         paths:
           - path: /

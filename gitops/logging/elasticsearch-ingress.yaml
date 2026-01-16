@@ -15,7 +15,7 @@ metadata:
 spec:
   ingressClassName: alb
   rules:
-    - host: elasticsearch.trainerkarthik.shop
+    - host: elasticsearch.kart24.shop
       http:
         paths:
           - path: /
@@ -27,6 +27,6 @@ spec:
                   number: 9200
   tls:
     - hosts:
-        - elasticsearch.trainerkarthik.shop
+        - elasticsearch.kart24.shop
       secretName: elasticsearch-trainerkarthik-shop-tls
 

@@ -67,7 +67,7 @@ These ClusterIssuers are configured to use DNS-01 challenge with Route53, which 
 
 ### Route53 Hosted Zone
 
-Ensure you have a Route53 hosted zone for `trainerkarthik.shop`. The cert-manager IAM role has permissions to manage DNS records in all hosted zones.
+Ensure you have a Route53 hosted zone for `kart24.shop`. The cert-manager IAM role has permissions to manage DNS records in all hosted zones.
 
 ## Update Email Address
 

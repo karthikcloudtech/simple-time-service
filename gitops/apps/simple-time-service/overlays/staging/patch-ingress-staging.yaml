@@ -7,7 +7,7 @@ metadata:
     cert-manager.io/cluster-issuer: letsencrypt-staging
 spec:
   rules:
-    - host: staging.time.trainerkarthik.shop
+    - host: staging.time.kart24.shop
       http:
         paths:
           - path: /
@@ -19,6 +19,6 @@ spec:
                   number: 80
   tls:
     - hosts:
-        - staging.time.trainerkarthik.shop
+        - staging.time.kart24.shop
       secretName: staging-time-tls
 

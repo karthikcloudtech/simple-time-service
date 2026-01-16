@@ -1,17 +1,17 @@
 # Ingress Configuration Summary
 
-All services are configured to use your domain `trainerkarthik.shop` with Let's Encrypt SSL certificates.
+All services are configured to use your domain `kart24.shop` with Let's Encrypt SSL certificates.
 
 ## Services and Domains
 
 | Service | Domain | Namespace | Port | Status |
 |---------|--------|-----------|------|--------|
-| **ArgoCD** | `argocd.trainerkarthik.shop` | `argocd` | 80 | ✅ Configured |
-| **Prometheus** | `prometheus.trainerkarthik.shop` | `monitoring` | 9090 | ✅ Configured |
-| **Grafana** | `grafana.trainerkarthik.shop` | `monitoring` | 80 | ✅ Configured |
-| **Kibana** | `kibana.trainerkarthik.shop` | `logging` | 5601 | ✅ Configured |
-| **Elasticsearch** | `elasticsearch.trainerkarthik.shop` | `logging` | 9200 | ✅ Configured |
-| **Simple Time Service** | `time.trainerkarthik.shop` | `simple-time-service` | 80 | ✅ Configured |
+| **ArgoCD** | `argocd.kart24.shop` | `argocd` | 80 | ✅ Configured |
+| **Prometheus** | `prometheus.kart24.shop` | `monitoring` | 9090 | ✅ Configured |
+| **Grafana** | `grafana.kart24.shop` | `monitoring` | 80 | ✅ Configured |
+| **Kibana** | `kibana.kart24.shop` | `logging` | 5601 | ✅ Configured |
+| **Elasticsearch** | `elasticsearch.kart24.shop` | `logging` | 9200 | ✅ Configured |
+| **Simple Time Service** | `time.kart24.shop` | `simple-time-service` | 80 | ✅ Configured |
 
 ## Deployment Instructions
 
@@ -70,7 +70,7 @@ kubectl describe certificate <certificate-name> -n <namespace>
 ## Access Credentials
 
 ### ArgoCD
-- **URL:** https://argocd.trainerkarthik.shop
+- **URL:** https://argocd.kart24.shop
 - **Username:** `admin`
 - **Password:** 
   ```bash
@@ -78,21 +78,21 @@ kubectl describe certificate <certificate-name> -n <namespace>
   ```
 
 ### Grafana
-- **URL:** https://grafana.trainerkarthik.shop
+- **URL:** https://grafana.kart24.shop
 - **Default Username:** `admin`
 - **Default Password:** Check Grafana secret or Helm values
 
 ### Prometheus
-- **URL:** https://prometheus.trainerkarthik.shop
+- **URL:** https://prometheus.kart24.shop
 - **No authentication by default** (consider adding authentication)
 
 ### Kibana
-- **URL:** https://kibana.trainerkarthik.shop
+- **URL:** https://kibana.kart24.shop
 - **Default Username:** `elastic`
 - **Password:** Check Elasticsearch secret
 
 ### Elasticsearch
-- **URL:** https://elasticsearch.trainerkarthik.shop
+- **URL:** https://elasticsearch.kart24.shop
 - **Default Username:** `elastic`
 - **Password:** Check Elasticsearch secret
 - **⚠️ Security Note:** Exposing Elasticsearch publicly is not recommended for production. Consider restricting access or using authentication.
@@ -109,11 +109,11 @@ kubectl get ingress -A
 kubectl get certificate -A
 
 # Test endpoints (after DNS is configured)
-curl -I https://argocd.trainerkarthik.shop
-curl -I https://prometheus.trainerkarthik.shop
-curl -I https://grafana.trainerkarthik.shop
-curl -I https://kibana.trainerkarthik.shop
-curl -I https://elasticsearch.trainerkarthik.shop
+curl -I https://argocd.kart24.shop
+curl -I https://prometheus.kart24.shop
+curl -I https://grafana.kart24.shop
+curl -I https://kibana.kart24.shop
+curl -I https://elasticsearch.kart24.shop
 ```
 
 ## Troubleshooting
@@ -138,6 +138,6 @@ kubectl describe certificaterequest -n <namespace>
 
 ### DNS not resolving
 - Verify CNAME records are correct
-- Check DNS propagation: `dig argocd.trainerkarthik.shop`
+- Check DNS propagation: `dig argocd.kart24.shop`
 - Ensure ALB is created and has a hostname
 

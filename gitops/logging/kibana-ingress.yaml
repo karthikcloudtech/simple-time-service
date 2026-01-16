@@ -14,7 +14,7 @@ metadata:
 spec:
   ingressClassName: alb
   rules:
-    - host: kibana.trainerkarthik.shop
+    - host: kibana.kart24.shop
       http:
         paths:
           - path: /
@@ -26,6 +26,6 @@ spec:
                   number: 5601
   tls:
     - hosts:
-        - kibana.trainerkarthik.shop
+        - kibana.kart24.shop
       secretName: kibana-trainerkarthik-shop-tls
 
