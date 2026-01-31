@@ -4,6 +4,7 @@ import logging
 import os
 import socket
 import platform
+import atexit
 from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
 from opentelemetry import trace
 from opentelemetry.instrumentation.flask import FlaskInstrumentor
@@ -12,6 +13,9 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 from opentelemetry.sdk.resources import Resource
+from kafka_producer import get_producer
+from kafka_consumer import get_consumer
+from kafka_config import log_kafka_config
 
 # Configure logging
 logging.basicConfig(
@@ -82,6 +86,40 @@ app = Flask(__name__)
 FlaskInstrumentor().instrument_app(app)
 RequestsInstrumentor().instrument()
 
+# Initialize Kafka
+log_kafka_config()
+kafka_producer = get_producer()
+kafka_consumer = get_consumer()
+
+# Register example event handlers for consumer
+def handle_http_request(event_data):
+    """Handle incoming HTTP request events"""
+    logger.info(f"Consumer received HTTP request event: {event_data}")
+
+def handle_http_response(event_data):
+    """Handle outgoing HTTP response events"""
+    logger.info(f"Consumer received HTTP response event: {event_data}")
+
+def handle_error(event_data):
+    """Handle error events"""
+    logger.warning(f"Consumer received error event: {event_data}")
+
+kafka_consumer.register_handler('http_request', handle_http_request)
+kafka_consumer.register_handler('http_response', handle_http_response)
+kafka_consumer.register_handler('error', handle_error)
+
+# Start consumer in background
+kafka_consumer.start()
+
+# Register cleanup on exit
+def cleanup_kafka():
+    """Clean up Kafka resources on exit"""
+    kafka_consumer.stop()
+    kafka_producer.flush()
+    kafka_producer.close()
+
+atexit.register(cleanup_kafka)
+
 # Prometheus metrics
 REQUEST_COUNT = Counter(
     'http_requests_total',
@@ -106,6 +144,79 @@ def metrics():
     """Prometheus metrics endpoint"""
     return generate_latest(), 200, {'Content-Type': CONTENT_TYPE_LATEST}
 
+@app.route("/kafka/publish", methods=["POST"])
+def kafka_publish():
+    """Publish a custom event to Kafka"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "No JSON data provided"}), 400
+        
+        event_type = data.get('event_type', 'custom_event')
+        event_data = data.get('data', {})
+        topic = data.get('topic', None)
+        
+        success = kafka_producer.send_event(
+            event_type=event_type,
+            data=event_data,
+            topic=topic
+        )
+        
+        if success:
+            return jsonify({
+                "status": "success",
+                "message": f"Event '{event_type}' published to Kafka",
+                "event": {"event_type": event_type, "data": event_data}
+            }), 200
+        else:
+            return jsonify({
+                "status": "error",
+                "message": "Failed to publish event to Kafka"
+            }), 500
+            
+    except Exception as e:
+        logger.error(f"Error publishing to Kafka: {str(e)}", exc_info=True)
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
+
+@app.route("/kafka/status", methods=["GET"])
+def kafka_status():
+    """Get Kafka status and configuration"""
+    try:
+        producer_status = "connected" if kafka_producer.producer else "disconnected"
+        consumer_status = "running" if kafka_consumer.is_running else "stopped"
+        
+        return jsonify({
+            "kafka_producer": producer_status,
+            "kafka_consumer": consumer_status,
+            "consumer_topics": kafka_consumer.topics,
+            "consumer_handlers": list(kafka_consumer.message_handlers.keys())
+        }), 200
+    except Exception as e:
+        logger.error(f"Error getting Kafka status: {str(e)}", exc_info=True)
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
+
+@app.route("/kafka/flush", methods=["POST"])
+def kafka_flush():
+    """Flush pending messages in Kafka producer"""
+    try:
+        kafka_producer.flush()
+        return jsonify({
+            "status": "success",
+            "message": "Kafka producer flushed"
+        }), 200
+    except Exception as e:
+        logger.error(f"Error flushing Kafka producer: {str(e)}", exc_info=True)
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
+
 @app.route("/", methods=["GET"])
 def get_time_and_ip():
     with REQUEST_DURATION.labels(method='GET', endpoint='/').time():
@@ -119,6 +230,15 @@ def get_time_and_ip():
                 else:
                     all_ips = []
                     user_ip = request.remote_addr
+
+                # Send request event to Kafka
+                kafka_producer.send_request_event(
+                    user_ip=user_ip,
+                    method='GET',
+                    endpoint='/',
+                    hostname=hostname,
+                    os=host_os
+                )
 
                 response = {
                     "timestamp": datetime.utcnow().isoformat() + "Z",
@@ -134,11 +254,26 @@ def get_time_and_ip():
                 
                 logger.info(f"Request from {user_ip}", extra={"user_ip": user_ip, "proxy_chain": all_ips})
                 
+                # Send response event to Kafka
+                kafka_producer.send_response_event(
+                    user_ip=user_ip,
+                    status_code=200,
+                    response_time_ms=0  # Would be actual response time in production
+                )
+                
                 REQUEST_COUNT.labels(method='GET', endpoint='/', status='200').inc()
                 return jsonify(response), 200
             except Exception as e:
                 logger.error(f"Error processing request: {str(e)}", exc_info=True)
                 span.record_exception(e)
+                
+                # Send error event to Kafka
+                kafka_producer.send_error_event(
+                    error_message=str(e),
+                    error_type='request_processing_error',
+                    endpoint='/'
+                )
+                
                 REQUEST_COUNT.labels(method='GET', endpoint='/', status='500').inc()
                 return jsonify({"error": "Internal server error"}), 500
 
