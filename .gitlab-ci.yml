@@ -1,6 +1,6 @@
 stages:
   # - scan_code
-  # - build
+  - build
   - docker
   # - scan_image
   - release_version
