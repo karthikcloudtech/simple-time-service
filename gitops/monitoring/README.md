@@ -17,7 +17,7 @@ CERT_FILE=/path/to/your/cert.crt KEY_FILE=/path/to/your/key.key \
   ./scripts/create-wildcard-cert-secret.sh
 
 # Or manually
-kubectl create secret tls wildcard-trainerkarthik-shop-tls \
+kubectl create secret tls wildcard-kart24-shop-tls \
   --cert=/path/to/cert.crt \
   --key=/path/to/key.key \
   -n monitoring
