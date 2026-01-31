@@ -95,19 +95,19 @@ variables:
 # ---------------------------
 # COMMENTED OUT - build stage disabled
 
-# build:
-#   stage: build
-#   image: python:3.11
-#   script:
-#     - echo "Running build validation..."
-#     - pip install -r requirements.txt
-#     - python -m compileall app/
-#   artifacts:
-#     paths:
-#       - app/__pycache__/
-#     expire_in: 1 hour
-#   rules:
-#     - if: '$CI_MERGE_REQUEST_ID'  
+build:
+  stage: build
+  image: python:3.11
+  script:
+    - echo "Running build validation..."
+    - pip install -r requirements.txt
+    - python -m compileall app/
+  artifacts:
+    paths:
+      - app/__pycache__/
+    expire_in: 1 hour
+  rules:
+    - if: '$CI_MERGE_REQUEST_ID'  
 
 # ---------------------------
 # 🐳 DOCKER BUILD & PUSH (Docker Hub)
