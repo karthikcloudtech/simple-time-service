@@ -117,9 +117,6 @@ build:
 # Does not block other stages if skipped
 docker:
   stage: docker
-  tags:
-    - selfhosted
-    - docker 
   variables:
     DOCKER_DRIVER: overlay2
     DOCKER_HOST: unix:///var/run/docker.sock
