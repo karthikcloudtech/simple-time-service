@@ -5,11 +5,14 @@ namespace: simple-time-service
 
 resources:
   - namespace.yaml
-  - deployment.yaml
+  - rollout.yaml
   - service.yaml
   - ingress.yaml
   - servicemonitor.yaml
+  - analysis-template-4xx.yaml
+  - analysis-template-5xx.yaml
   # Note: ClusterIssuer is cluster-scoped and managed separately
   # See: gitops/cluster-issuers/clusterissuer.yaml
+  # deployment.yaml replaced with rollout.yaml for canary deployments
 
 

@@ -4,7 +4,7 @@ metadata:
   name: prometheus-ingress
   namespace: monitoring
   annotations:
-    alb.ingress.kubernetes.io/group.name: trainerkarthik-shop
+    alb.ingress.kubernetes.io/group.name: kart24-shop
     alb.ingress.kubernetes.io/scheme: internet-facing
     alb.ingress.kubernetes.io/target-type: ip
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
@@ -27,5 +27,5 @@ spec:
   tls:
     - hosts:
         - prometheus.kart24.shop
-      secretName: prometheus-trainerkarthik-shop-tls
+      secretName: prometheus-kart24-shop-tls
 

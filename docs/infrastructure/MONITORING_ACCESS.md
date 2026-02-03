@@ -131,10 +131,10 @@ To check certificate status:
 kubectl get certificate -A
 
 # Check specific certificate
-kubectl describe certificate prometheus-trainerkarthik-shop-tls -n monitoring
+kubectl describe certificate prometheus-kart24-shop-tls -n monitoring
 
 # View certificate secret (auto-created)
-kubectl get secret prometheus-trainerkarthik-shop-tls -n monitoring
+kubectl get secret prometheus-kart24-shop-tls -n monitoring
 ```
 
 ## Security Notes

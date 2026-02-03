@@ -40,7 +40,7 @@ The ingress uses cert-manager with Let's Encrypt. Certificate is automatically c
 Check certificate status:
 ```bash
 kubectl get certificate -n argocd
-kubectl describe certificate argocd-trainerkarthik-shop-tls -n argocd
+kubectl describe certificate argocd-kart24-shop-tls -n argocd
 ```
 
 ## Troubleshooting
