@@ -215,7 +215,7 @@ docker_release_version:
         echo "Image $IMAGE_NAME:$CI_COMMIT_SHORT_SHA not found. Building now..."
         docker buildx create --use || true
         docker buildx inspect --bootstrap
-        docker buildx build --platform linux/amd64,linux/arm64 -t "$IMAGE_NAME:$CI_COMMIT_SHORT_SHA" --push .
+        #docker buildx build --platform linux/amd64,linux/arm64 -t "$IMAGE_NAME:$CI_COMMIT_SHORT_SHA" --push .
         docker buildx build --platform linux/amd64 -t "$IMAGE_NAME:$CI_COMMIT_SHORT_SHA" --push .
       else
         echo "Image $IMAGE_NAME:$CI_COMMIT_SHORT_SHA exists. Using existing image."
