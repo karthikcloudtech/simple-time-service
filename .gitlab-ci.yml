@@ -42,15 +42,9 @@ docker:
         exit 0
       fi
 
-    - docker buildx create --use --name ci-builder
-    - docker buildx inspect --bootstrap
 
-    - docker buildx build \
-        --platform linux/amd64 \
-        -t "$IMAGE_NAME:$CI_COMMIT_SHORT_SHA" \
-        --push .
+    - docker buildx build --platform linux/amd64 -t "$IMAGE_NAME:$CI_COMMIT_SHORT_SHA" --push .
 
-    - docker buildx rm ci-builder || true
   rules:
     - if: '$CI_MERGE_REQUEST_ID'
       changes:
