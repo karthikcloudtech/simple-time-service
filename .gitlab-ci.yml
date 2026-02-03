@@ -157,7 +157,8 @@ docker:
         TAGS="$TAGS -t $IMAGE_NAME:$CI_COMMIT_TAG"
       fi
       
-      docker buildx build --platform linux/amd64,linux/arm64 $TAGS --push .
+      #docker buildx build --platform linux/amd64,linux/arm64 $TAGS --push .
+      docker buildx build --platform linux/amd64 $TAGS --push .
   rules:
     # Only build on MR if application code changed
     - if: '$CI_MERGE_REQUEST_ID'
