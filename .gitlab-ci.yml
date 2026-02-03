@@ -98,16 +98,16 @@ variables:
 build:
   stage: build
   image: python:3.11
+  variables:
+    PYTHONDONTWRITEBYTECODE: "1"
   script:
     - echo "Running build validation..."
     - pip install -r requirements.txt
     - python -m compileall app/
-  artifacts:
-    paths:
-      - app/__pycache__/
-    expire_in: 1 hour
+  artifacts: {}
   rules:
-    - if: '$CI_MERGE_REQUEST_ID'  
+    - if: '$CI_MERGE_REQUEST_ID'
+
 
 # ---------------------------
 # 🐳 DOCKER BUILD & PUSH (Docker Hub)
