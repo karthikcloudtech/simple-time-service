@@ -1,209 +1,113 @@
-"""Kafka Consumer for simple-time-service"""
+"""Simplified Kafka Consumer - writes events to database"""
 import json
 import logging
 import threading
-import time
-from typing import Callable, Optional, List
 from kafka import KafkaConsumer
-from kafka.errors import KafkaError
-from prometheus_client import Counter, Histogram
-from kafka_config import KAFKA_CONSUMER_CONFIG, KAFKA_TOPIC_EVENTS, KAFKA_TOPIC_REQUESTS
+from kafka_config import KAFKA_BROKERS, KAFKA_TOPIC_EVENTS, KAFKA_CONSUMER_GROUP
+from database import insert_request, insert_response, insert_error
 
 logger = logging.getLogger(__name__)
 
-# Metrics for consumer
-KAFKA_MESSAGES_RECEIVED = Counter(
-    'kafka_messages_received_total',
-    'Total Kafka messages received',
-    ['topic', 'event_type', 'status']
-)
-
-KAFKA_CONSUMER_LAG = Histogram(
-    'kafka_consumer_lag_ms',
-    'Kafka consumer lag in milliseconds',
-    ['topic']
-)
-
-KAFKA_MESSAGE_PROCESS_TIME = Histogram(
-    'kafka_message_process_time_seconds',
-    'Time to process a Kafka message',
-    ['topic', 'event_type']
-)
-
 
 class KafkaConsumerService:
-    """Service for consuming messages from Kafka"""
+    """Simple Kafka consumer service - persists events to DB"""
     
-    def __init__(self, topics: Optional[List[str]] = None):
-        """
-        Initialize the Kafka consumer
-        
-        Args:
-            topics: List of topics to subscribe to
-        """
-        self.topics = topics or [KAFKA_TOPIC_EVENTS, KAFKA_TOPIC_REQUESTS]
+    def __init__(self, topics=None):
+        self.topics = topics or [KAFKA_TOPIC_EVENTS]
         self.consumer = None
         self.is_running = False
         self.consumer_thread = None
         self.message_handlers = {}
         self._lock = threading.Lock()
         
-        self._initialize_consumer()
-    
-    def _initialize_consumer(self) -> bool:
-        """Initialize the Kafka consumer"""
         try:
             self.consumer = KafkaConsumer(
                 *self.topics,
-                **KAFKA_CONSUMER_CONFIG,
+                bootstrap_servers=KAFKA_BROKERS,
+                group_id=KAFKA_CONSUMER_GROUP,
+                auto_offset_reset='earliest',
+                enable_auto_commit=True,
                 value_deserializer=lambda m: json.loads(m.decode('utf-8'))
             )
-            logger.info(f"Kafka Consumer initialized successfully. Topics: {self.topics}")
-            return True
+            logger.info(f"Kafka Consumer initialized. Topics: {self.topics}")
         except Exception as e:
-            logger.error(f"Failed to initialize Kafka Consumer: {str(e)}", exc_info=True)
+            logger.warning(f"Kafka Consumer init failed: {str(e)}")
             self.consumer = None
-            return False
     
-    def register_handler(
-        self,
-        event_type: str,
-        handler: Callable[[dict], None]
-    ) -> None:
-        """
-        Register a handler for a specific event type
-        
-        Args:
-            event_type: Type of event to handle
-            handler: Callable that processes the event
-        """
+    def register_handler(self, event_type: str, handler):
+        """Register a handler for event type"""
         with self._lock:
             self.message_handlers[event_type] = handler
-            logger.info(f"Registered handler for event type: {event_type}")
+            logger.info(f"Registered handler: {event_type}")
     
-    def unregister_handler(self, event_type: str) -> None:
-        """Unregister a handler"""
-        with self._lock:
-            if event_type in self.message_handlers:
-                del self.message_handlers[event_type]
-                logger.info(f"Unregistered handler for event type: {event_type}")
-    
-    def start(self) -> None:
-        """Start consuming messages in a background thread"""
-        if self.is_running:
-            logger.warning("Consumer is already running")
-            return
-        
-        if not self.consumer:
-            logger.error("Consumer not initialized")
+    def start(self):
+        """Start consuming in background thread"""
+        if self.is_running or not self.consumer:
             return
         
         self.is_running = True
         self.consumer_thread = threading.Thread(target=self._consume_loop, daemon=True)
         self.consumer_thread.start()
-        logger.info("Kafka Consumer started")
+        logger.info("Kafka Consumer started - events persisted to database")
     
-    def stop(self) -> None:
-        """Stop consuming messages"""
+    def stop(self):
+        """Stop consumer"""
         self.is_running = False
         if self.consumer_thread:
-            self.consumer_thread.join(timeout=10)
-        self._close_consumer()
+            self.consumer_thread.join(timeout=5)
+        if self.consumer:
+            try:
+                self.consumer.close()
+            except Exception as e:
+                logger.warning(f"Close error: {str(e)}")
         logger.info("Kafka Consumer stopped")
     
-    def _consume_loop(self) -> None:
-        """Main consume loop"""
-        while self.is_running:
+    def _consume_loop(self):
+        """Main consume loop - persists events to database"""
+        while self.is_running and self.consumer:
             try:
                 for message in self.consumer:
                     if not self.is_running:
                         break
                     
                     try:
-                        self._process_message(message)
-                    except Exception as e:
-                        logger.error(f"Error processing message: {str(e)}", exc_info=True)
-                        KAFKA_MESSAGES_RECEIVED.labels(
-                            topic=message.topic,
-                            event_type='unknown',
-                            status='error'
-                        ).inc()
+                        value = message.value
+                        event_type = value.get('event_type', 'unknown')
+                        data = value.get('data', {})
                         
-            except KafkaError as e:
-                logger.error(f"Kafka consumer error: {str(e)}", exc_info=True)
-                if self.is_running:
-                    time.sleep(5)  # Backoff before reconnecting
+                        # Persist to database based on event type
+                        if event_type == 'http_request':
+                            insert_request(
+                                user_ip=data.get('user_ip'),
+                                method=data.get('method'),
+                                endpoint=data.get('endpoint'),
+                                hostname=data.get('hostname'),
+                                os=data.get('os')
+                            )
+                        elif event_type == 'http_response':
+                            insert_response(
+                                user_ip=data.get('user_ip'),
+                                status_code=data.get('status_code'),
+                                response_time_ms=data.get('response_time_ms', 0)
+                            )
+                        elif event_type == 'error':
+                            insert_error(
+                                error_message=data.get('error_message'),
+                                error_type=data.get('error_type'),
+                                endpoint=data.get('endpoint')
+                            )
+                        
+                        logger.debug(f"Persisted: {event_type} to database")
+                    except Exception as e:
+                        logger.warning(f"Error processing message: {str(e)}")
+                        
             except Exception as e:
-                logger.error(f"Unexpected error in consume loop: {str(e)}", exc_info=True)
+                logger.warning(f"Consumer error: {str(e)}")
                 if self.is_running:
-                    time.sleep(5)
-    
-    def _process_message(self, message) -> None:
-        """Process a single message"""
-        start_time = time.time()
-        
-        try:
-            value = message.value
-            topic = message.topic
-            
-            # Extract event type
-            event_type = value.get('event_type', 'unknown')
-            
-            # Calculate lag
-            if message.timestamp:
-                lag_ms = (time.time() * 1000) - (message.timestamp / 1000)
-                KAFKA_CONSUMER_LAG.labels(topic=topic).observe(lag_ms)
-            
-            # Get handler for this event type
-            with self._lock:
-                handler = self.message_handlers.get(event_type)
-            
-            if handler:
-                handler(value)
-                status = 'success'
-            else:
-                logger.debug(f"No handler registered for event type: {event_type}")
-                status = 'no_handler'
-            
-            # Track metrics
-            process_time = time.time() - start_time
-            KAFKA_MESSAGE_PROCESS_TIME.labels(topic=topic, event_type=event_type).observe(process_time)
-            KAFKA_MESSAGES_RECEIVED.labels(
-                topic=topic,
-                event_type=event_type,
-                status=status
-            ).inc()
-            
-            logger.debug(
-                f"Processed message - Topic: {topic}, Event: {event_type}, "
-                f"Offset: {message.offset}, Time: {process_time:.3f}s"
-            )
-            
-        except Exception as e:
-            logger.error(f"Error processing message value: {str(e)}", exc_info=True)
-            raise
-    
-    def _close_consumer(self) -> None:
-        """Close the consumer connection"""
-        if self.consumer:
-            try:
-                self.consumer.close(timeout_ms=10000)
-                self.consumer = None
-                logger.info("Kafka Consumer closed")
-            except Exception as e:
-                logger.error(f"Error closing Kafka Consumer: {str(e)}", exc_info=True)
+                    import time
+                    time.sleep(2)
 
 
-# Global consumer instance (for singleton pattern with optional use)
-_consumer_instance = None
-_consumer_lock = threading.Lock()
-
-
-def get_consumer(topics: Optional[List[str]] = None) -> KafkaConsumerService:
-    """Get or create the Kafka consumer instance"""
-    global _consumer_instance
-    
-    with _consumer_lock:
-        if _consumer_instance is None:
-            _consumer_instance = KafkaConsumerService(topics=topics)
-        return _consumer_instance
+def get_consumer(topics=None) -> KafkaConsumerService:
+    """Get consumer instance"""
+    return KafkaConsumerService(topics=topics)
