@@ -98,9 +98,12 @@ variables:
 build:
   stage: build
   image: python:3.11
+  cache:
+    paths:
+      - .cache/pip
   script:
     - echo "Running build validation..."
-    - pip install -r requirements.txt
+    - pip install --cache-dir .cache/pip -r requirements.txt
     - python -m compileall app/
   artifacts:
     paths:
@@ -112,50 +115,51 @@ build:
 # ---------------------------
 # 🐳 DOCKER BUILD & PUSH (Docker Hub)
 # ---------------------------
-# Only build when application code changes (app/, Dockerfile, requirements.txt)
-# Skips build if image already exists for this commit SHA
-# Does not block other stages if skipped
+# Using Docker buildx for multi-platform support (amd64, arm64)
+# Requires privileged mode on runner
 docker:
   stage: docker
+  image: docker:latest
+  services:
+    - docker:dind
   variables:
     DOCKER_DRIVER: overlay2
     DOCKER_HOST: unix:///var/run/docker.sock
     DOCKER_TLS_CERTDIR: ""
-  image: docker:29.1.3
-  services:
-    - docker:dind
+  before_script:
+    - apk add --no-cache base64
   script:
     - |
+      # Wait for Docker daemon
       timeout=60
       counter=0
       until docker info > /dev/null 2>&1; do
         if [ $counter -ge $timeout ]; then
           echo "ERROR: Docker daemon did not become ready within ${timeout} seconds"
-          echo "This usually means privileged mode is not enabled in the runner config."
-          echo "Please check /etc/gitlab-runner/config.toml and ensure privileged = true"
           exit 1
         fi
         sleep 1
         counter=$((counter + 1))
       done
       
-      echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+      # Login to Docker Hub
+      echo "${DOCKERHUB_TOKEN}" | docker login -u "${DOCKERHUB_USERNAME}" --password-stdin
       
-      # Check if image already exists for this commit SHA
-      if docker manifest inspect "$IMAGE_NAME:$CI_COMMIT_SHORT_SHA" >/dev/null 2>&1; then
-        echo "Image $IMAGE_NAME:$CI_COMMIT_SHORT_SHA already exists. Skipping build."
-        exit 0
-      fi
-      
-      docker buildx create --use || true
+      # Setup buildx for multi-platform builds
+      docker buildx create --use --driver docker-container || true
       docker buildx inspect --bootstrap
       
-      TAGS="-t $IMAGE_NAME:$CI_COMMIT_SHORT_SHA"
-      if [ -n "$CI_COMMIT_TAG" ]; then
-        TAGS="$TAGS -t $IMAGE_NAME:$CI_COMMIT_TAG"
+      # Build and push for both amd64 and arm64
+      TAGS="--tag ${IMAGE_NAME}:${CI_COMMIT_SHORT_SHA} --tag ${IMAGE_NAME}:latest"
+      if [ -n "${CI_COMMIT_TAG}" ]; then
+        TAGS="${TAGS} --tag ${IMAGE_NAME}:${CI_COMMIT_TAG}"
       fi
       
-      docker buildx build --platform linux/amd64,linux/arm64 $TAGS --push .
+      docker buildx build \
+        --platform linux/amd64,linux/arm64 \
+        ${TAGS} \
+        --push \
+        .
   rules:
     # Only build on MR if application code changed
     - if: '$CI_MERGE_REQUEST_ID'
@@ -173,7 +177,6 @@ docker:
         - .dockerignore
     # Always build on semantic version tags (for prod releases)
     - if: '$CI_COMMIT_TAG =~ /^v?[0-9]+\.[0-9]+\.[0-9]+/'
-  # Allow failure so it doesn't block other stages
   allow_failure: true  
 # ---------------------------
 # 🧫 IMAGE SECURITY SCAN
@@ -200,29 +203,45 @@ docker:
 
 docker_release_version:
   stage: release_version
-  image: docker:29.1.3
+  image: docker:latest
   services:
     - docker:dind
   variables:
     DOCKER_DRIVER: overlay2
+    DOCKER_HOST: unix:///var/run/docker.sock
+    DOCKER_TLS_CERTDIR: ""
+  before_script:
+    - apk add --no-cache base64
   script:
-    - echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
     - |
-      # Check if image exists, if not try to build it
-      if ! docker manifest inspect "$IMAGE_NAME:$CI_COMMIT_SHORT_SHA" >/dev/null 2>&1; then
-        echo "Image $IMAGE_NAME:$CI_COMMIT_SHORT_SHA not found. Building now..."
-        docker buildx create --use || true
-        docker buildx inspect --bootstrap
-        docker buildx build --platform linux/amd64,linux/arm64 -t "$IMAGE_NAME:$CI_COMMIT_SHORT_SHA" --push .
-      else
-        echo "Image $IMAGE_NAME:$CI_COMMIT_SHORT_SHA exists. Using existing image."
-        docker pull "$IMAGE_NAME:$CI_COMMIT_SHORT_SHA"
-      fi
-    - docker tag "$IMAGE_NAME:$CI_COMMIT_SHORT_SHA" "$IMAGE_NAME:$CI_COMMIT_TAG"
-    - docker push "$IMAGE_NAME:$CI_COMMIT_TAG"
+      # Wait for Docker daemon
+      timeout=60
+      counter=0
+      until docker info > /dev/null 2>&1; do
+        if [ $counter -ge $timeout ]; then
+          echo "ERROR: Docker daemon did not become ready within ${timeout} seconds"
+          exit 1
+        fi
+        sleep 1
+        counter=$((counter + 1))
+      done
+      
+      # Login to Docker Hub
+      echo "${DOCKERHUB_TOKEN}" | docker login -u "${DOCKERHUB_USERNAME}" --password-stdin
+      
+      # Setup buildx for multi-platform builds
+      docker buildx create --use --driver docker-container || true
+      docker buildx inspect --bootstrap
+      
+      # Build and push for both amd64 and arm64 with release tag
+      docker buildx build \
+        --platform linux/amd64,linux/arm64 \
+        --tag ${IMAGE_NAME}:${CI_COMMIT_SHORT_SHA} \
+        --tag ${IMAGE_NAME}:${CI_COMMIT_TAG} \
+        --push \
+        .
   rules:
     - if: '$CI_COMMIT_TAG'
-  # Allow failure so it doesn't block infrastructure stages
   allow_failure: true
 
 # Include Terraform CI configuration
