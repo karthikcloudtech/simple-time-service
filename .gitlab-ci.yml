@@ -1,100 +1,15 @@
 stages:
-  # - scan_code
   - build
   - docker
-  # - scan_image
   - release_version
   - terraform
   - install_addons
-
 
 variables:
   DOCKER_BUILDKIT: "1"
   IMAGE_NAME: "docker.io/$DOCKERHUB_USERNAME/$CI_PROJECT_NAME"
 
-
-# ---------------------------
-# 🔍 CODE SECURITY SCANS
-# ---------------------------
-# COMMENTED OUT - scan_code stage disabled
-
-# # SAST — Multi-language static analysis
-# semgrep_scan:
-#   stage: scan_code
-#   image: returntocorp/semgrep:latest
-#   script:
-#     - echo "Running Semgrep SAST scan..."
-#     - semgrep --config p/ci --error --exclude tests/ .
-#   allow_failure: true
-#   rules:
-#     - if: '$CI_MERGE_REQUEST_ID'
-# # Secret Detection — API keys, tokens, creds
-# gitleaks_scan:
-#   stage: scan_code
-#   image:
-#     name: zricethezav/gitleaks:latest
-#     entrypoint: [""]
-#   script:
-#     - echo "Scanning for secrets with Gitleaks..."
-#     - gitleaks detect --source . --no-banner --exit-code 1
-#   allow_failure: false
-#   rules:
-#     - if: '$CI_MERGE_REQUEST_ID'  
-
-# # Dockerfile Lint — security & efficiency
-# hadolint_scan:
-#   stage: scan_code
-#   image: hadolint/hadolint:latest-debian
-#   script:
-#     - hadolint --ignore DL3041 Dockerfile
-#   rules:
-#     - if: '$CI_MERGE_REQUEST_ID'  
-
-# # Infrastructure as Code Security — Terraform scanning
-# terrascan_scan:
-#   stage: scan_code
-#   image:
-#     name: tenable/terrascan:latest
-#     entrypoint: [""]
-#   script:
-#     - echo "Initializing Terrascan policies..."
-#     - terrascan init || echo "Init completed (some policy warnings may occur)"
-#     - echo "Scanning Terraform files for security issues..."
-#     - terrascan scan -i terraform -d infra/ || echo "Scan completed with warnings"
-#   allow_failure: true
-#   rules:
-#     - if: '$CI_MERGE_REQUEST_ID'
-
-# # Dependency Vulnerability Scan — OWASP Dependency-Check
-# owasp_dependency_check:
-#   stage: scan_code
-#   needs: []
-#   image:
-#     name: owasp/dependency-check:latest
-#     entrypoint: [""]
-#   script:
-#     - echo "Scanning Python dependencies for known vulnerabilities..."
-#     - mkdir -p reports
-#     - |
-#       if [ -n "$NVD_API_KEY" ]; then
-#         /usr/share/dependency-check/bin/dependency-check.sh --scan . --format JSON --format HTML --out reports --enableExperimental --failOnCVSS 7 --project "simple-time-service" --nvdApiKey "$NVD_API_KEY" || true
-#       else
-#         echo "Warning: NVD_API_KEY not set. Download will be slower. Get a free key at https://nvd.nist.gov/developers/request-an-api-key"
-#         /usr/share/dependency-check/bin/dependency-check.sh --scan . --format JSON --format HTML --out reports --enableExperimental --failOnCVSS 7 --project "simple-time-service" || true
-#       fi
-#   artifacts:
-#     paths:
-#       - reports/
-#     expire_in: 1 week
-#   allow_failure: true
-#   rules:
-#     - if: '$CI_MERGE_REQUEST_ID'
-
-# ---------------------------
-# 🧱 BUILD STAGE
-# ---------------------------
-# COMMENTED OUT - build stage disabled
-
+# ---------------- BUILD ----------------
 build:
   stage: build
   image: python:3.11
@@ -102,134 +17,71 @@ build:
     PYTHONDONTWRITEBYTECODE: "1"
   script:
     - echo "Running build validation..."
-    - pip install -r requirements.txt
+    - pip install --no-cache-dir -r requirements.txt
     - python -m compileall app/
-  artifacts: {}
   rules:
     - if: '$CI_MERGE_REQUEST_ID'
 
-
-# ---------------------------
-# 🐳 DOCKER BUILD & PUSH (Docker Hub)
-# ---------------------------
-# Only build when application code changes (app/, Dockerfile, requirements.txt)
-# Skips build if image already exists for this commit SHA
-# Does not block other stages if skipped
+# ---------------- DOCKER BUILD ----------------
 docker:
   stage: docker
   tags:
     - selfhosted
+  image: docker:29.1.3
   variables:
-    DOCKER_DRIVER: overlay2
     DOCKER_HOST: unix:///var/run/docker.sock
     DOCKER_TLS_CERTDIR: ""
-  image: docker:29.1.3
-  services:
-    - docker:dind
   script:
+    - docker info
+    - echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+
+    # Skip build if image already exists
     - |
-      timeout=60
-      counter=0
-      until docker info > /dev/null 2>&1; do
-        if [ $counter -ge $timeout ]; then
-          echo "ERROR: Docker daemon did not become ready within ${timeout} seconds"
-          echo "This usually means privileged mode is not enabled in the runner config."
-          echo "Please check /etc/gitlab-runner/config.toml and ensure privileged = true"
-          exit 1
-        fi
-        sleep 1
-        counter=$((counter + 1))
-      done
-      
-      echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-      
-      # Check if image already exists for this commit SHA
       if docker manifest inspect "$IMAGE_NAME:$CI_COMMIT_SHORT_SHA" >/dev/null 2>&1; then
-        echo "Image $IMAGE_NAME:$CI_COMMIT_SHORT_SHA already exists. Skipping build."
+        echo "Image already exists, skipping build"
         exit 0
       fi
-      
-      docker buildx create --use || true
-      docker buildx inspect --bootstrap
-      
-      TAGS="-t $IMAGE_NAME:$CI_COMMIT_SHORT_SHA"
-      if [ -n "$CI_COMMIT_TAG" ]; then
-        TAGS="$TAGS -t $IMAGE_NAME:$CI_COMMIT_TAG"
-      fi
-      
-      #docker buildx build --platform linux/amd64,linux/arm64 $TAGS --push .
-      docker buildx build --platform linux/amd64 $TAGS --push .
+
+    - docker buildx create --use --name ci-builder
+    - docker buildx inspect --bootstrap
+
+    - docker buildx build \
+        --platform linux/amd64 \
+        -t "$IMAGE_NAME:$CI_COMMIT_SHORT_SHA" \
+        --push .
+
+    - docker buildx rm ci-builder || true
   rules:
-    # Only build on MR if application code changed
     - if: '$CI_MERGE_REQUEST_ID'
       changes:
         - app/**/*
         - Dockerfile
         - requirements.txt
         - .dockerignore
-    # Only build on main if application code changed
     - if: '$CI_COMMIT_BRANCH == "main"'
       changes:
         - app/**/*
         - Dockerfile
         - requirements.txt
         - .dockerignore
-    # Always build on semantic version tags (for prod releases)
     - if: '$CI_COMMIT_TAG =~ /^v?[0-9]+\.[0-9]+\.[0-9]+/'
-  # Allow failure so it doesn't block other stages
-  allow_failure: true  
-# ---------------------------
-# 🧫 IMAGE SECURITY SCAN
-# ---------------------------
-# COMMENTED OUT - scan_image stage disabled
 
-# trivy_scan:
-#   stage: scan_image
-#   image:
-#     name: docker.io/aquasec/trivy:latest
-#     entrypoint: [""]
-#   script:
-#     - echo "Scanning Docker image for vulnerabilities..."
-#     - trivy image --exit-code 0 "$IMAGE_NAME:$CI_COMMIT_SHORT_SHA" || true
-#     - trivy config --exit-code 0 . || true
-#   allow_failure: true
-#   rules:
-#     # Scan on merge requests
-#     - if: '$CI_MERGE_REQUEST_ID'
-#     # Scan on merge to main
-#     - if: '$CI_COMMIT_BRANCH == "main"'
-#     # Scan on semantic version tags
-#     - if: '$CI_COMMIT_TAG =~ /^v?[0-9]+\.[0-9]+\.[0-9]+/'  
-
+# ---------------- RELEASE TAG ----------------
 docker_release_version:
   stage: release_version
   image: docker:29.1.3
-  services:
-    - docker:dind
   variables:
-    DOCKER_DRIVER: overlay2
+    DOCKER_HOST: unix:///var/run/docker.sock
+    DOCKER_TLS_CERTDIR: ""
   script:
     - echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-    - |
-      # Check if image exists, if not try to build it
-      if ! docker manifest inspect "$IMAGE_NAME:$CI_COMMIT_SHORT_SHA" >/dev/null 2>&1; then
-        echo "Image $IMAGE_NAME:$CI_COMMIT_SHORT_SHA not found. Building now..."
-        docker buildx create --use || true
-        docker buildx inspect --bootstrap
-        #docker buildx build --platform linux/amd64,linux/arm64 -t "$IMAGE_NAME:$CI_COMMIT_SHORT_SHA" --push .
-        docker buildx build --platform linux/amd64 -t "$IMAGE_NAME:$CI_COMMIT_SHORT_SHA" --push .
-      else
-        echo "Image $IMAGE_NAME:$CI_COMMIT_SHORT_SHA exists. Using existing image."
-        docker pull "$IMAGE_NAME:$CI_COMMIT_SHORT_SHA"
-      fi
+    - docker pull "$IMAGE_NAME:$CI_COMMIT_SHORT_SHA"
     - docker tag "$IMAGE_NAME:$CI_COMMIT_SHORT_SHA" "$IMAGE_NAME:$CI_COMMIT_TAG"
     - docker push "$IMAGE_NAME:$CI_COMMIT_TAG"
   rules:
     - if: '$CI_COMMIT_TAG'
-  # Allow failure so it doesn't block infrastructure stages
-  allow_failure: true
 
-# Include Terraform CI configuration
+# ---------------- INFRA ----------------
 include:
   - local: 'infra/.gitlab-ci.yml'
   - local: '.gitlab-ci-addons.yml'
