@@ -10,7 +10,7 @@ metadata:
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
     alb.ingress.kubernetes.io/ssl-redirect: '443'
     alb.ingress.kubernetes.io/ssl-policy: ELBSecurityPolicy-TLS13-1-2-2021-06
-    cert-manager.io/cluster-issuer: letsencrypt-prod
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:017019814021:certificate/86635547-c7f7-41e2-b9b1-79549a963084
 spec:
   ingressClassName: alb
   rules:
@@ -24,8 +24,3 @@ spec:
                 name: kibana-kibana
                 port:
                   number: 5601
-  tls:
-    - hosts:
-        - kibana.kart24.shop
-      secretName: kibana-kart24-shop-tls
-

@@ -10,12 +10,8 @@ metadata:
     alb.ingress.kubernetes.io/target-type: ip
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80,"HTTPS":443}]'
     alb.ingress.kubernetes.io/ssl-redirect: '443'
-    cert-manager.io/cluster-issuer: letsencrypt-prod
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:017019814021:certificate/86635547-c7f7-41e2-b9b1-79549a963084
 spec:
-  tls:
-    - hosts:
-        - time.kart24.shop
-      secretName: prod-time-tls  # Let's Encrypt cert secret
   rules:
     - host: time.kart24.shop
       http:
