@@ -16,10 +16,12 @@ terraform_plan:
     name: hashicorp/terraform:latest
     entrypoint: [""]
   tags:
-    - project-specific
+    - selfhosted
   variables:
     TF_ROOT: "infra/environments/prod"
     AWS_DEFAULT_REGION: "us-east-1"
+    DOCKER_HOST: unix:///var/run/docker.sock
+    DOCKER_TLS_CERTDIR: ""
   before_script:
     - cd $TF_ROOT
     - terraform --version
@@ -47,10 +49,12 @@ terraform_apply:
     name: hashicorp/terraform:latest
     entrypoint: [""]
   tags:
-    - project-specific
+    - selfhosted
   variables:
     TF_ROOT: "infra/environments/prod"
     AWS_DEFAULT_REGION: "us-east-1"
+    DOCKER_HOST: unix:///var/run/docker.sock
+    DOCKER_TLS_CERTDIR: ""
   needs:
     - job: terraform_plan
       optional: true

@@ -1,11 +1,12 @@
 stages:
   # - scan_code
-  # - build
+  - build
   - docker
   # - scan_image
   - release_version
   - terraform
   - install_addons
+
 
 variables:
   DOCKER_BUILDKIT: "1"
@@ -94,19 +95,19 @@ variables:
 # ---------------------------
 # COMMENTED OUT - build stage disabled
 
-# build:
-#   stage: build
-#   image: python:3.11
-#   script:
-#     - echo "Running build validation..."
-#     - pip install -r requirements.txt
-#     - python -m compileall app/
-#   artifacts:
-#     paths:
-#       - app/__pycache__/
-#     expire_in: 1 hour
-#   rules:
-#     - if: '$CI_MERGE_REQUEST_ID'  
+build:
+  stage: build
+  image: python:3.11
+  variables:
+    PYTHONDONTWRITEBYTECODE: "1"
+  script:
+    - echo "Running build validation..."
+    - pip install -r requirements.txt
+    - python -m compileall app/
+  artifacts: {}
+  rules:
+    - if: '$CI_MERGE_REQUEST_ID'
+
 
 # ---------------------------
 # 🐳 DOCKER BUILD & PUSH (Docker Hub)
@@ -116,13 +117,14 @@ variables:
 # Does not block other stages if skipped
 docker:
   stage: docker
+  tags:
+    - selfhosted
   variables:
     DOCKER_DRIVER: overlay2
     DOCKER_HOST: unix:///var/run/docker.sock
     DOCKER_TLS_CERTDIR: ""
   image: docker:29.1.3
-  services:
-    - docker:dind
+  services: []
   script:
     - |
       timeout=60
@@ -154,7 +156,8 @@ docker:
         TAGS="$TAGS -t $IMAGE_NAME:$CI_COMMIT_TAG"
       fi
       
-      docker buildx build --platform linux/amd64,linux/arm64 $TAGS --push .
+      #docker buildx build --platform linux/amd64,linux/arm64 $TAGS --push .
+      docker buildx build --platform linux/amd64 $TAGS --push .
   rules:
     # Only build on MR if application code changed
     - if: '$CI_MERGE_REQUEST_ID'
@@ -200,10 +203,11 @@ docker:
 docker_release_version:
   stage: release_version
   image: docker:29.1.3
-  services:
-    - docker:dind
+  services: []
   variables:
     DOCKER_DRIVER: overlay2
+    DOCKER_HOST: unix:///var/run/docker.sock
+    DOCKER_TLS_CERTDIR: ""
   script:
     - echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
     - |
@@ -212,7 +216,8 @@ docker_release_version:
         echo "Image $IMAGE_NAME:$CI_COMMIT_SHORT_SHA not found. Building now..."
         docker buildx create --use || true
         docker buildx inspect --bootstrap
-        docker buildx build --platform linux/amd64,linux/arm64 -t "$IMAGE_NAME:$CI_COMMIT_SHORT_SHA" --push .
+        #docker buildx build --platform linux/amd64,linux/arm64 -t "$IMAGE_NAME:$CI_COMMIT_SHORT_SHA" --push .
+        docker buildx build --platform linux/amd64 -t "$IMAGE_NAME:$CI_COMMIT_SHORT_SHA" --push .
       else
         echo "Image $IMAGE_NAME:$CI_COMMIT_SHORT_SHA exists. Using existing image."
         docker pull "$IMAGE_NAME:$CI_COMMIT_SHORT_SHA"

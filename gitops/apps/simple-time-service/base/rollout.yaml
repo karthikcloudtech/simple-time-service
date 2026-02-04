@@ -1,0 +1,81 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: simple-time-service
+  labels:
+    app: simple-time-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: simple-time-service
+  template:
+    metadata:
+      labels:
+        app: simple-time-service
+    spec:
+      containers:
+        - name: simple-time-service
+          image: karthikbm2k25/simple-time-service:1.1.2
+          ports:
+            - containerPort: 8080
+              name: http
+              protocol: TCP
+          env:
+            - name: PORT
+              value: "8080"
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "http://otel-collector.observability.svc.cluster.local:4317"
+            - name: OTEL_SERVICE_NAME
+              value: "simple-time-service"
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: "service.name=simple-time-service,service.version=1.1.2"
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+  strategy:
+    canary:
+      steps:
+        - setWeight: 20
+        - pause:
+            duration: 5m
+        - setWeight: 50
+        - pause:
+            duration: 5m
+        - setWeight: 100
+      analysis:
+        interval: 30s
+        threshold: 2
+        maxWeight: 50
+        startingWeight: 0
+      metrics:
+        - name: canary-4xx-regression
+          weightPercentage: 50
+        - name: canary-5xx-regression
+          weightPercentage: 50
+      canaryService: simple-time-service-canary
+      stableService: simple-time-service-stable
+      trafficRouting:
+        alb:
+          ingress: simple-time-service-ingress
+          servicePort: 80
