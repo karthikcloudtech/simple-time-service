@@ -20,6 +20,8 @@ terraform_plan:
   variables:
     TF_ROOT: "infra/environments/prod"
     AWS_DEFAULT_REGION: "us-east-1"
+    DOCKER_HOST: unix:///var/run/docker.sock
+    DOCKER_TLS_CERTDIR: ""
   before_script:
     - cd $TF_ROOT
     - terraform --version
@@ -51,6 +53,8 @@ terraform_apply:
   variables:
     TF_ROOT: "infra/environments/prod"
     AWS_DEFAULT_REGION: "us-east-1"
+    DOCKER_HOST: unix:///var/run/docker.sock
+    DOCKER_TLS_CERTDIR: ""
   needs:
     - job: terraform_plan
       optional: true
