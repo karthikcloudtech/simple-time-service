@@ -2,6 +2,7 @@
 # 🏗️ TERRAFORM INFRASTRUCTURE
 # ---------------------------
 
+
 variables:
   TF_ROOT: "infra/environments/prod"
   AWS_DEFAULT_REGION: "us-east-1"
