@@ -7,14 +7,17 @@ metadata:
     alb.ingress.kubernetes.io/group.name: kart24-shop
     alb.ingress.kubernetes.io/scheme: internet-facing
     alb.ingress.kubernetes.io/target-type: ip
-    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80},{"HTTPS":443}]'
     alb.ingress.kubernetes.io/ssl-redirect: '443'
     alb.ingress.kubernetes.io/ssl-policy: ELBSecurityPolicy-TLS13-1-2-2021-06
-    # ArgoCD requires gRPC and WebSocket support
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:017019814021:certificate/86635547-c7f7-41e2-b9b1-79549a963084
+
+    # ✅ IMPORTANT: backend is HTTP, not HTTPS
     alb.ingress.kubernetes.io/backend-protocol: HTTP
     alb.ingress.kubernetes.io/healthcheck-path: /healthz
     alb.ingress.kubernetes.io/healthcheck-protocol: HTTP
-    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:017019814021:certificate/86635547-c7f7-41e2-b9b1-79549a963084
+    alb.ingress.kubernetes.io/success-codes: "200"
 spec:
   ingressClassName: alb
   rules:
