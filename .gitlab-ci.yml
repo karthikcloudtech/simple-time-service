@@ -161,18 +161,7 @@ docker:
   rules:
     # Only build on MR if application code changed
     - if: '$CI_MERGE_REQUEST_ID'
-      changes:
-        - app/**/*
-        - Dockerfile
-        - requirements.txt
-        - .dockerignore
-    # Only build on main if application code changed
-    - if: '$CI_COMMIT_BRANCH == "main"'
-      changes:
-        - app/**/*
-        - Dockerfile
-        - requirements.txt
-        - .dockerignore
+
     # Always build on semantic version tags (for prod releases)
     - if: '$CI_COMMIT_TAG =~ /^v?[0-9]+\.[0-9]+\.[0-9]+/'
   # Allow failure so it doesn't block other stages
