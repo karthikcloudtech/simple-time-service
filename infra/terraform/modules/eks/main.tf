@@ -123,6 +123,7 @@ resource "aws_eks_cluster" "main" {
   name     = var.cluster_name
   role_arn = aws_iam_role.eks_cluster_role.arn
   version  = "1.34"
+  bootstrap_self_managed_addons = false
   vpc_config {
     subnet_ids = var.subnet_ids
     security_group_ids = [aws_security_group.eks_cluster.id]
