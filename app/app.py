@@ -18,6 +18,7 @@ from kafka_consumer import get_consumer
 from kafka_config import log_kafka_config
 from database import init_db
 
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
