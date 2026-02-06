@@ -35,15 +35,6 @@ resource "aws_instance" "gitlab_runner_spot_instance" {
   vpc_security_group_ids      = [data.aws_security_group.default.id]
   associate_public_ip_address = true
   key_name                    = "us_east"
-  instance_market_options {
-    market_type = "spot"
-
-    spot_options {
-      spot_instance_type             = "one-time"
-      instance_interruption_behavior = "terminate"
-    }
-  }
-
   tags = {
     Name = "gitlab_runner_spot_instance"
   }
