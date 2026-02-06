@@ -34,7 +34,7 @@ resource "aws_instance" "gitlab_runner_spot_instance" {
   subnet_id                   = data.aws_subnets.public.ids[0]
   vpc_security_group_ids      = [data.aws_security_group.default.id]
   associate_public_ip_address = true
-  key_name                    = "us-east"
+  key_name                    = "us_east"
   instance_market_options {
     market_type = "spot"
 
