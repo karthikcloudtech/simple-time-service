@@ -29,7 +29,7 @@ data "aws_subnets" "public" {
 
 
 resource "aws_instance" "gitlab_runner_spot_instance" {
-  ami                         = "ami-00ac61dcca1e166d0"
+  ami                         = "ami-065c4918ececc33bf"
   instance_type               = "m7i-flex.large"
   subnet_id                   = data.aws_subnets.public.ids[0]
   vpc_security_group_ids      = [data.aws_security_group.default.id]
