@@ -58,3 +58,8 @@ module "eks" {
   # skip_addons_install = false
   subnet_ids   = module.vpc.private_subnet_ids
 }
+
+module "ec2" {
+  source = "../../terraform/modules/ec2"
+
+}
