@@ -1,0 +1,9 @@
+# Default values for storage-class
+storageClass:
+  name: gp3
+  isDefault: true
+  provisioner: ebs.csi.aws.com
+  volumeBindingMode: WaitForFirstConsumer
+  parameters:
+    type: gp3
+    fsType: ext4

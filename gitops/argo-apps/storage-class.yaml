@@ -8,7 +8,10 @@ spec:
   source:
     repoURL: https://gitlab.com/karthikbm2k25/simple-time-service.git
     targetRevision: main
-    path: gitops/storage-class
+    path: gitops/helm-charts/storage-class
+    helm:
+      valueFiles:
+        - values.yaml
   destination:
     server: https://kubernetes.default.svc
     namespace: default  # StorageClass is cluster-scoped

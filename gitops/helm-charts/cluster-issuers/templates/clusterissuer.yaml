@@ -1,0 +1,39 @@
+{{- if .Values.prod.enabled }}
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: {{ .Values.prod.name }}
+spec:
+  acme:
+    server: {{ .Values.prod.server }}
+    email: {{ .Values.letsencrypt.email }}
+    privateKeySecretRef:
+      name: {{ .Values.prod.secretName }}
+    solvers:
+    - dns01:
+        route53:
+          region: {{ .Values.letsencrypt.region }}
+      selector:
+        dnsZones:
+          - {{ .Values.letsencrypt.dnsZone }}
+{{- end }}
+---
+{{- if .Values.staging.enabled }}
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: {{ .Values.staging.name }}
+spec:
+  acme:
+    server: {{ .Values.staging.server }}
+    email: {{ .Values.letsencrypt.email }}
+    privateKeySecretRef:
+      name: {{ .Values.staging.secretName }}
+    solvers:
+    - dns01:
+        route53:
+          region: {{ .Values.letsencrypt.region }}
+      selector:
+        dnsZones:
+          - {{ .Values.letsencrypt.dnsZone }}
+{{- end }}

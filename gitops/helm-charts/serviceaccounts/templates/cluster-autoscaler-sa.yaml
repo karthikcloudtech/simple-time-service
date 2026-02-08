@@ -1,0 +1,9 @@
+{{- if .Values.clusterAutoscaler.enabled }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ .Values.clusterAutoscaler.name }}
+  namespace: {{ .Values.clusterAutoscaler.namespace }}
+  annotations:
+    eks.amazonaws.com/role-arn: {{ .Values.clusterAutoscaler.roleArn | quote }}
+{{- end }}

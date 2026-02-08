@@ -1,0 +1,9 @@
+{{- if .Values.certManager.enabled }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ .Values.certManager.name }}
+  namespace: {{ .Values.certManager.namespace }}
+  annotations:
+    eks.amazonaws.com/role-arn: {{ .Values.certManager.roleArn | quote }}
+{{- end }}
