@@ -6,31 +6,40 @@
 gitops/
 │
 ├── 📦 argo-apps/              # ArgoCD Application Manifests (WHAT to deploy)
-│   ├── simple-time-service-prod.yaml    → References apps/
-│   ├── metrics-server.yaml              → References Helm chart
-│   ├── prometheus-stack.yaml            → References Helm chart
+│   ├── simple-time-service-prod.yaml    → References helm-charts/
+│   ├── metrics-server.yaml              → References external Helm chart
+│   ├── prometheus-stack.yaml            → References external Helm chart
 │   └── ...
 │
-├── 🚀 apps/                  # Application Manifests (Raw Kubernetes)
-│   └── simple-time-service/
-│       ├── base/             # Base manifests
-│       └── overlays/         # Environment overlays
+├── 🚀 apps/                  # [DEPRECATED] Application Manifests (Migrated to Helm)
+│   └── simple-time-service/  # Now using helm-charts/simple-time-service
+│       ├── base/             # Base manifests (kept for reference)
+│       └── overlays/         # Environment overlays (kept for reference)
 │
-├── 📊 helm-charts/           # Helm Values Files (Infrastructure ONLY)
-│   ├── metrics-server/values.yaml
-│   ├── prometheus-stack/values.yaml
-│   └── ...
-│
-├── 🔧 Infrastructure Components (Raw Manifests)
-│   ├── argocd/               # ArgoCD ingress
-│   ├── monitoring/           # Monitoring ingresses
-│   ├── logging/              # Logging ingresses
-│   ├── cluster-issuers/      # Cert-Manager ClusterIssuers
+├── 📊 helm-charts/           # Helm Charts (Applications + Infrastructure)
+│   ├── simple-time-service/  # Application Helm chart
+│   ├── monitoring-ingress/   # Monitoring ingresses
+│   ├── logging-ingress/      # Logging ingresses
+│   ├── otel-collector-config/# OpenTelemetry ConfigMap
+│   ├── serviceaccounts/      # AWS IRSA service accounts
 │   ├── storage-class/        # StorageClass
-│   └── otel-collector/       # OpenTelemetry ConfigMap
+│   ├── cluster-issuers/      # Cert-Manager ClusterIssuers
+│   ├── argocd-ingress/       # ArgoCD ingress
+│   ├── metrics-server/values.yaml       # External chart values
+│   ├── prometheus-stack/values.yaml     # External chart values
+│   └── ...
+│
+├── 🔧 [DEPRECATED] Infrastructure Components (Migrated to Helm)
+│   ├── argocd/               # ArgoCD ingress (now helm-charts/argocd-ingress)
+│   ├── monitoring/           # Monitoring ingresses (now helm-charts/monitoring-ingress)
+│   ├── logging/              # Logging ingresses (now helm-charts/logging-ingress)
+│   ├── cluster-issuers/      # ClusterIssuers (now helm-charts/cluster-issuers)
+│   ├── storage-class/        # StorageClass (now helm-charts/storage-class)
+│   └── otel-collector/       # ConfigMap (now helm-charts/otel-collector-config)
 │
 └── 📄 Documentation
     ├── INGRESS_SUMMARY.md
+    ├── HELM_MIGRATION.md
     └── [Various README files]
 ```
 
@@ -48,38 +57,59 @@ gitops/
 
 **Total:** 19 ArgoCD Application manifests
 
-### 2. Application Manifests (`apps/`)
+### 2. Application Manifests (`apps/`) - [DEPRECATED]
 
-**Purpose:** Raw Kubernetes manifests for applications
+**Purpose:** Raw Kubernetes manifests for applications (MIGRATED TO HELM)
 
-**Structure:**
+**Status:** DEPRECATED - All applications have been migrated to Helm charts in `helm-charts/` directory
+
+**Previous Structure:**
 - Base manifests (deployment, service, ingress)
 - Environment overlays (prod, staging)
 - Uses Kustomize for patching
 
-**Current:** 1 application (`simple-time-service`)
+**Migration:** See `HELM_MIGRATION.md` for details
 
 ### 3. Helm Charts (`helm-charts/`)
 
-**Purpose:** Helm values files for infrastructure/addon charts
+**Purpose:** Helm charts for applications AND infrastructure components
 
 **Contents:**
-- 9 Helm chart value files
-- Documentation (README, best practices, migration guides)
+- **Application Helm Charts:**
+  - `simple-time-service/` - Main application with environment-specific values
+- **Infrastructure Helm Charts:**
+  - `monitoring-ingress/` - Prometheus and Grafana ingresses
+  - `logging-ingress/` - Elasticsearch and Kibana ingresses
+  - `otel-collector-config/` - OpenTelemetry ConfigMap
+  - `serviceaccounts/` - AWS IRSA service accounts
+  - `storage-class/` - EBS GP3 StorageClass
+  - `cluster-issuers/` - Cert-Manager ClusterIssuers
+  - `argocd-ingress/` - ArgoCD ingress
+- **External Chart Values:**
+  - `metrics-server/values.yaml`
+  - `prometheus-stack/values.yaml`
+  - `cert-manager/values.yaml`
+  - And more...
+- **Documentation:**
+  - README, best practices, migration guides
 
-**Note:** Currently created but not actively used (Applications use inline parameters)
+**Migration:** All Kustomize-based apps migrated to Helm (see `HELM_MIGRATION.md`)
 
-### 4. Infrastructure Components
+### 4. Infrastructure Components - [DEPRECATED]
 
-**Purpose:** Raw Kubernetes manifests for infrastructure
+**Purpose:** Raw Kubernetes manifests for infrastructure (MIGRATED TO HELM)
 
-**Components:**
-- `argocd/` - ArgoCD ingress configuration
-- `monitoring/` - Prometheus/Grafana ingresses
-- `logging/` - Kibana/Elasticsearch ingresses
-- `cluster-issuers/` - Cert-Manager ClusterIssuers
-- `storage-class/` - EBS GP3 StorageClass
-- `otel-collector/` - OpenTelemetry ConfigMap
+**Status:** DEPRECATED - All components have been migrated to Helm charts in `helm-charts/` directory
+
+**Previous Components:**
+- `argocd/` - ArgoCD ingress (now `helm-charts/argocd-ingress/`)
+- `monitoring/` - Prometheus/Grafana ingresses (now `helm-charts/monitoring-ingress/`)
+- `logging/` - Kibana/Elasticsearch ingresses (now `helm-charts/logging-ingress/`)
+- `cluster-issuers/` - ClusterIssuers (now `helm-charts/cluster-issuers/`)
+- `storage-class/` - StorageClass (now `helm-charts/storage-class/`)
+- `otel-collector/` - ConfigMap (now `helm-charts/otel-collector-config/`)
+
+**Migration:** See `HELM_MIGRATION.md` for details
 
 ## File Count Summary
 
@@ -93,20 +123,20 @@ gitops/
 
 ## ArgoCD Application Types
 
-### Type 1: Application Deployments
-- Reference: `gitops/apps/simple-time-service/overlays/{env}`
-- Format: Raw Kubernetes manifests (Kustomize)
-- Examples: `simple-time-service-prod.yaml`, `simple-time-service-staging.yaml`
+### Type 1: Local Helm Chart Applications
+- Reference: `gitops/helm-charts/{component}/`
+- Format: Helm charts with environment-specific values files
+- Examples: `simple-time-service-prod.yaml`, `simple-time-service-staging.yaml`, `monitoring.yaml`, `logging.yaml`, `storage-class.yaml`, `cluster-issuers.yaml`
 
-### Type 2: Helm Chart Applications
-- Reference: Helm chart repositories
+### Type 2: External Helm Chart Applications
+- Reference: External Helm chart repositories (e.g., `https://argoproj.github.io/argo-helm`)
 - Format: Helm charts with inline parameters OR values files
-- Examples: `metrics-server.yaml`, `prometheus-stack.yaml`, `cert-manager.yaml`
+- Examples: `metrics-server.yaml`, `prometheus-stack.yaml`, `cert-manager.yaml`, `argocd.yaml`
 
-### Type 3: Raw Manifest Applications
-- Reference: `gitops/{component}/`
-- Format: Raw Kubernetes manifests (Kustomize)
-- Examples: `storage-class.yaml`, `cluster-issuers.yaml`, `monitoring.yaml`
+### Type 3: [DEPRECATED] Raw Manifest Applications
+- **Status:** DEPRECATED - All have been migrated to Type 1 (Local Helm Charts)
+- Previous Reference: `gitops/{component}/` or `gitops/apps/{app}/overlays/{env}`
+- Previous Format: Raw Kubernetes manifests (Kustomize)
 
 ## Dependencies
 
@@ -138,17 +168,20 @@ gitops/
 
 ## Verification Checklist
 
-- ✅ Applications use raw manifests (not Helm)
-- ✅ Infrastructure uses Helm charts
-- ✅ Helm-charts folder only contains infrastructure values
-- ✅ ArgoCD Applications properly reference sources
-- ✅ Environment separation via Kustomize overlays
-- ✅ Documentation in place
+- ✅ All applications migrated to Helm charts
+- ✅ All infrastructure components migrated to Helm charts
+- ✅ Helm-charts folder contains both application and infrastructure charts
+- ✅ ArgoCD Applications properly reference Helm chart sources
+- ✅ Environment separation via Helm values files (values-prod.yaml, values-staging.yaml)
+- ✅ Documentation updated to reflect migration
+- ✅ All Helm charts validated with `helm template`
 
-## Notes
+## Migration Notes (2026-02-08)
 
-- **Helm Charts Folder:** Contains values files but Applications currently use inline parameters
-- **Migration:** Can migrate to values files later if needed
-- **Structure:** Follows GitOps best practices
-- **Organization:** Clear separation between apps and infrastructure
+- **Migration Completed:** All Kustomize-based applications and infrastructure migrated to Helm
+- **Old Directories:** Kept for reference but no longer used by ArgoCD
+- **Benefits:** Better templating, easier environment management, industry standard approach
+- **Documentation:** See `HELM_MIGRATION.md` for complete migration details
+- **Structure:** Follows GitOps and Helm best practices
+- **Organization:** Unified approach for both apps and infrastructure
 
