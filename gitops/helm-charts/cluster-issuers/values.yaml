@@ -1,0 +1,17 @@
+# Default values for cluster-issuers
+letsencrypt:
+  email: karthik.cloudtech@gmail.com
+  region: us-east-1
+  dnsZone: kart24.shop
+
+prod:
+  enabled: true
+  name: letsencrypt-prod
+  server: https://acme-v02.api.letsencrypt.org/directory
+  secretName: letsencrypt-prod
+
+staging:
+  enabled: true
+  name: letsencrypt-staging
+  server: https://acme-staging-v02.api.letsencrypt.org/directory
+  secretName: letsencrypt-staging

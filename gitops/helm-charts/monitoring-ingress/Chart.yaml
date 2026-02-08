@@ -1,0 +1,6 @@
+apiVersion: v2
+name: monitoring-ingress
+description: Helm chart for monitoring ingresses (Prometheus and Grafana)
+type: application
+version: 1.0.0
+appVersion: "1.0.0"

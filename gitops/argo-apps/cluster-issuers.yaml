@@ -8,7 +8,10 @@ spec:
   source:
     repoURL: https://gitlab.com/karthikbm2k25/simple-time-service.git
     targetRevision: main
-    path: gitops/cluster-issuers
+    path: gitops/helm-charts/cluster-issuers
+    helm:
+      valueFiles:
+        - values.yaml
   destination:
     server: https://kubernetes.default.svc
     namespace: cert-manager  # ClusterIssuers are cluster-scoped, but namespace helps organize

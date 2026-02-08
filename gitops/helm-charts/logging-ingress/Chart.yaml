@@ -1,0 +1,6 @@
+apiVersion: v2
+name: logging-ingress
+description: Helm chart for logging ingresses (Elasticsearch and Kibana)
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
