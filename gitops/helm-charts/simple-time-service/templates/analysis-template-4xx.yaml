@@ -1,0 +1,45 @@
+{{- if .Values.analysisTemplates.enabled }}
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: {{ .Values.analysisTemplates.metrics4xx.name }}
+  namespace: {{ .Values.namespace.name }}
+spec:
+  metrics:
+  - name: canary-4xx-rate
+    interval: {{ .Values.analysisTemplates.metrics4xx.interval }}
+    failureLimit: 1
+    count: {{ .Values.analysisTemplates.metrics4xx.count }}
+    successCondition: result < 10
+    failureCondition: result >= 50
+    provider:
+      prometheus:
+        address: http://prometheus.monitoring:9090
+        query: |
+          (
+            sum(rate(http_requests_total{status=~"4..",namespace="{{ .Values.namespace.name }}"}[2m]))
+            /
+            sum(rate(http_requests_total{namespace="{{ .Values.namespace.name }}"}[2m]))
+          ) * 100
+  - name: canary-4xx-percentage-difference
+    interval: {{ .Values.analysisTemplates.metrics4xx.interval }}
+    failureLimit: 1
+    count: {{ .Values.analysisTemplates.metrics4xx.count }}
+    successCondition: result <= 5
+    failureCondition: result > 10
+    provider:
+      prometheus:
+        address: http://prometheus.monitoring:9090
+        query: |
+          (
+            (sum(rate(http_requests_total{status=~"4..",version="canary",namespace="{{ .Values.namespace.name }}"}[2m]))
+            /
+            sum(rate(http_requests_total{version="canary",namespace="{{ .Values.namespace.name }}"}[2m]))
+            * 100)
+            -
+            (sum(rate(http_requests_total{status=~"4..",version="stable",namespace="{{ .Values.namespace.name }}"}[2m]))
+            /
+            sum(rate(http_requests_total{version="stable",namespace="{{ .Values.namespace.name }}"}[2m]))
+            * 100)
+          )
+{{- end }}

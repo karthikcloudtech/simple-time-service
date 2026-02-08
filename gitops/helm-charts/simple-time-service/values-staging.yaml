@@ -1,0 +1,27 @@
+# Staging-specific values for simple-time-service
+# Override default values for staging environment
+
+namespace:
+  name: simple-time-service-staging
+
+# Staging uses latest or commit SHA tags
+image:
+  tag: "latest"
+
+# Standard replicas for staging
+rollout:
+  replicas: 2
+
+# Staging ingress configuration
+ingress:
+  className: alb
+  annotations:
+    alb.ingress.kubernetes.io/group.name: kart24-shop
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80},{"HTTPS":443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: '443'
+    alb.ingress.kubernetes.io/ssl-policy: ELBSecurityPolicy-TLS13-1-2-2021-06
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:017019814021:certificate/86635547-c7f7-41e2-b9b1-79549a963084
+    alb.ingress.kubernetes.io/backend-protocol: HTTP
+  host: staging.time.kart24.shop

@@ -1,0 +1,123 @@
+# Default values for simple-time-service
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# Namespace configuration
+namespace:
+  name: simple-time-service
+  create: true
+
+# Image configuration
+image:
+  repository: karthikbm2k25/simple-time-service
+  tag: "1.1.2"
+  pullPolicy: IfNotPresent
+
+# Rollout configuration
+rollout:
+  replicas: 2
+  strategy:
+    canary:
+      enabled: true
+      steps:
+        - setWeight: 20
+          pause: 5m
+        - setWeight: 50
+          pause: 5m
+        - setWeight: 100
+      analysis:
+        interval: 30s
+        threshold: 2
+        maxWeight: 50
+        startingWeight: 0
+      metrics:
+        - name: canary-4xx-regression
+          weightPercentage: 50
+        - name: canary-5xx-regression
+          weightPercentage: 50
+      trafficRouting:
+        alb:
+          enabled: true
+          servicePort: 80
+
+# Container configuration
+container:
+  name: simple-time-service
+  port: 8080
+  env:
+    - name: PORT
+      value: "8080"
+    - name: OTEL_EXPORTER_OTLP_ENDPOINT
+      value: "http://otel-collector.observability.svc.cluster.local:4317"
+    - name: OTEL_SERVICE_NAME
+      value: "simple-time-service"
+    - name: OTEL_RESOURCE_ATTRIBUTES
+      value: "service.name=simple-time-service,service.version=1.1.2"
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "500m"
+  livenessProbe:
+    httpGet:
+      path: /healthz
+      port: http
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+  readinessProbe:
+    httpGet:
+      path: /healthz
+      port: http
+    initialDelaySeconds: 10
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3
+
+# Service configuration
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8080
+  metricsPort: 8080
+
+# Ingress configuration
+ingress:
+  enabled: true
+  className: alb
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/group.name: kart24-shop
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80,"HTTPS":443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: '443'
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:017019814021:certificate/86635547-c7f7-41e2-b9b1-79549a963084
+  host: time.kart24.shop
+  path: /
+  pathType: Prefix
+
+# ServiceMonitor for Prometheus
+serviceMonitor:
+  enabled: true
+  interval: 30s
+  path: /metrics
+  labels:
+    release: prometheus
+
+# Analysis Templates for canary deployments
+analysisTemplates:
+  enabled: true
+  metrics4xx:
+    name: canary-4xx-regression
+    interval: 30s
+    count: 5
+    failureLimit: 3
+  metrics5xx:
+    name: canary-5xx-regression
+    interval: 30s
+    count: 5
+    failureLimit: 3
