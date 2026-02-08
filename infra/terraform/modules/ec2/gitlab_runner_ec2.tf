@@ -35,6 +35,7 @@ resource "aws_instance" "gitlab_runner_spot_instance" {
   vpc_security_group_ids      = [data.aws_security_group.default.id]
   associate_public_ip_address = true
   key_name                    = "us_east"
+
   tags = {
     Name = "gitlab_runner_spot_instance"
   }
