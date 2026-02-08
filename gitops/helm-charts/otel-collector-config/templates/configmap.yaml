@@ -4,4 +4,5 @@ metadata:
   name: {{ .Values.configMap.name }}
   namespace: {{ .Values.namespace.name }}
 data:
-  config: {{ .Values.configMap.config | nindent 4 }}
+  config: |
+{{ .Values.configMap.config | indent 4 }}
