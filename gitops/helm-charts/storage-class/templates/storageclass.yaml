@@ -10,5 +10,5 @@ provisioner: {{ .Values.storageClass.provisioner }}
 volumeBindingMode: {{ .Values.storageClass.volumeBindingMode }}
 parameters:
   {{- range $key, $value := .Values.storageClass.parameters }}
-  {{ $key }}: {{ $value }}
+  {{ $key }}: {{ $value | quote }}
   {{- end }}
