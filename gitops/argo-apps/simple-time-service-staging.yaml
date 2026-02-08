@@ -10,7 +10,11 @@ spec:
     # Staging watches develop branch - feature branches merge to develop
     # Uses commit SHA tags from merged feature branches
     targetRevision: develop
-    path: gitops/apps/simple-time-service/overlays/staging
+    path: gitops/helm-charts/simple-time-service
+    helm:
+      valueFiles:
+        - values.yaml
+        - values-staging.yaml
   destination:
     server: https://kubernetes.default.svc
     namespace: simple-time-service-staging
