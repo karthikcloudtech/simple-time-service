@@ -6,7 +6,7 @@ Complete implementation of ArgoCD Rollouts with Prometheus-based canary deployme
 
 ### 1. Deploy to Kubernetes
 ```bash
-kubectl apply -k gitops/apps/simple-time-service/overlays/prod/
+helm template simple-time-service gitops/helm-charts/simple-time-service -f gitops/helm-charts/simple-time-service/values-prod.yaml | kubectl apply -f -
 ```
 
 ### 2. Trigger Canary Deployment
@@ -34,14 +34,15 @@ kubectl get pods -n simple-time-service -L version
 
 | Component | File | Purpose |
 |-----------|------|---------|
-| **Rollout** | `base/rollout.yaml` | Canary deployment strategy (20% → 50% → 100%) |
-| **4xx Analysis** | `base/analysis-template-4xx.yaml` | Monitors client errors, rolls back if >50% |
-| **5xx Analysis** | `base/analysis-template-5xx.yaml` | Monitors server errors, rolls back if >10% |
-| **Services** | `base/service.yaml` | Main + stable + canary services |
+| **Rollout** | `templates/rollout.yaml` | Canary deployment strategy (20% → 50% → 100%) |
+| **4xx Analysis** | `templates/analysis-template-4xx.yaml` | Monitors client errors, rolls back if >50% |
+| **5xx Analysis** | `templates/analysis-template-5xx.yaml` | Monitors server errors, rolls back if >10% |
+| **Services** | `templates/service.yaml` | Main + stable + canary services |
 
-### Updated Files
-- `base/kustomization.yaml` - Added rollout & analysis templates
-- `overlays/prod/patch-prod.yaml` - Updated to patch Rollout (3 replicas)
+### Environment-Specific Values
+- `values.yaml` - Base configuration
+- `values-staging.yaml` - Staging overrides (branch: develop)
+- `values-prod.yaml` - Production overrides (branch: main, 3 replicas)
 
 ## Canary Strategy
 
@@ -216,22 +217,19 @@ Three services handle traffic routing:
 ## File Structure
 
 ```
-gitops/apps/simple-time-service/
-├── base/
+gitops/helm-charts/simple-time-service/
+├── templates/
 │   ├── rollout.yaml ..................... Canary deployment strategy
 │   ├── analysis-template-4xx.yaml ....... 4xx error analysis
 │   ├── analysis-template-5xx.yaml ....... 5xx error analysis
 │   ├── service.yaml ..................... Three services
 │   ├── ingress.yaml
 │   ├── servicemonitor.yaml
-│   ├── namespace.yaml
-│   ├── kustomization.yaml ............... Updated with rollout & templates
-│   └── deployment.yaml .................. (kept for reference)
-│
-└── overlays/prod/
-    ├── patch-prod.yaml .................. 3 replicas, specific image
-    ├── patch-ingress-prod.yaml
-    └── kustomization.yaml
+│   └── namespace.yaml
+├── Chart.yaml ........................... Helm chart metadata
+├── values.yaml .......................... Base values
+├── values-staging.yaml .................. Staging environment overrides
+└── values-prod.yaml ..................... Production environment overrides
 ```
 
 ## Common Scenarios

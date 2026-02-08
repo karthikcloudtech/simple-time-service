@@ -129,14 +129,14 @@ kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.pas
 
 ## Deploying Your Application
 
-### Option 1: Direct kubectl
+### Option 1: Direct Helm Template
 
 ```bash
 # Staging
-kubectl apply -k gitops/apps/simple-time-service/overlays/staging
+helm template simple-time-service gitops/helm-charts/simple-time-service -f gitops/helm-charts/simple-time-service/values-staging.yaml | kubectl apply -f -
 
 # Production
-kubectl apply -k gitops/apps/simple-time-service/overlays/prod
+helm template simple-time-service gitops/helm-charts/simple-time-service -f gitops/helm-charts/simple-time-service/values-prod.yaml | kubectl apply -f -
 ```
 
 ### Option 2: ArgoCD (Recommended)
