@@ -15,25 +15,26 @@ All services are configured to use your domain `kart24.shop` with Let's Encrypt 
 
 ## Deployment Instructions
 
+All ingresses are managed by Helm charts and deployed via ArgoCD. To manually deploy:
+
 ### 1. Deploy ArgoCD Ingress
 ```bash
-kubectl apply -k gitops/argocd/
+helm template argocd-ingress gitops/helm-charts/argocd-ingress | kubectl apply -f -
 ```
 
 ### 2. Deploy Monitoring Ingresses (Prometheus + Grafana)
 ```bash
-kubectl apply -k gitops/monitoring/
+helm template monitoring-ingress gitops/helm-charts/monitoring-ingress | kubectl apply -f -
 ```
 
 ### 3. Deploy Logging Ingresses (Kibana + Elasticsearch)
 ```bash
-kubectl apply -k gitops/logging/
+helm template logging-ingress gitops/helm-charts/logging-ingress | kubectl apply -f -
 ```
 
 ### 4. Deploy Application Ingress
 ```bash
-# Already configured in gitops/apps/simple-time-service/overlays/prod/
-kubectl apply -k gitops/apps/simple-time-service/overlays/prod/
+helm template simple-time-service gitops/helm-charts/simple-time-service -f gitops/helm-charts/simple-time-service/values-prod.yaml | kubectl apply -f -
 ```
 
 ## DNS Configuration

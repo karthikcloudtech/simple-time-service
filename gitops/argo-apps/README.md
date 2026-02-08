@@ -8,31 +8,31 @@ This directory contains ArgoCD Application manifests that define what gets autom
 
 | Application | Path/Chart | Namespace | Auto-Sync | Status |
 |-------------|------------|-----------|-----------|--------|
-| **simple-time-service-prod** | `gitops/apps/simple-time-service/overlays/prod` | `simple-time-service` | ✅ Yes | ✅ Configured |
-| **simple-time-service-staging** | `gitops/apps/simple-time-service/overlays/staging` | `simple-time-service-staging` | ✅ Yes | ✅ Configured |
+| **simple-time-service-prod** | `gitops/helm-charts/simple-time-service` | `simple-time-service` | ✅ Yes | ✅ Configured |
+| **simple-time-service-staging** | `gitops/helm-charts/simple-time-service` | `simple-time-service-staging` | ✅ Yes | ✅ Configured |
 
 ### Infrastructure Ingresses
 
 | Application | Path | Namespace | Auto-Sync | Status |
 |-------------|------|-----------|-----------|--------|
-| **monitoring-ingress** | `gitops/monitoring` | `monitoring` | ✅ Yes | ✅ Configured |
-| **logging-ingress** | `gitops/logging` | `logging` | ✅ Yes | ✅ Configured |
-| **argocd-ingress** | `gitops/argocd` | `argocd` | ✅ Yes | ✅ Configured (applied by bootstrap script) |
+| **monitoring-ingress** | `gitops/helm-charts/monitoring-ingress` | `monitoring` | ✅ Yes | ✅ Configured |
+| **logging-ingress** | `gitops/helm-charts/logging-ingress` | `logging` | ✅ Yes | ✅ Configured |
+| **argocd-ingress** | `gitops/helm-charts/argocd-ingress` | `argocd` | ✅ Yes | ✅ Configured (applied by bootstrap script) |
 
 ### EKS Addons (Helm Charts via ArgoCD)
 
 | Application | Helm Chart | Namespace | Auto-Sync | Prerequisites |
 |-------------|------------|-----------|-----------|---------------|
-| **storage-class** | `gitops/storage-class` | `default` | ✅ Yes | None (cluster-scoped) |
+| **storage-class** | `gitops/helm-charts/storage-class` | `default` | ✅ Yes | None (cluster-scoped) |
 | **metrics-server** | `metrics-server` (v3.12.0) | `kube-system` | ✅ Yes | None |
 | **aws-load-balancer-controller** | `aws-load-balancer-controller` (v1.7.2) | `kube-system` | ✅ Yes | IAM role + ServiceAccount annotation |
 | **cert-manager** | `cert-manager` (v1.13.3) | `cert-manager` | ✅ Yes | None |
-| **cluster-issuers** | `gitops/cluster-issuers` | `cert-manager` | ✅ Yes | cert-manager installed |
+| **cluster-issuers** | `gitops/helm-charts/cluster-issuers` | `cert-manager` | ✅ Yes | cert-manager installed |
 | **prometheus-stack** | `kube-prometheus-stack` (v58.0.0) | `monitoring` | ✅ Yes | StorageClass `gp3` |
 | **elasticsearch** | `elasticsearch` (v8.11.0) | `logging` | ✅ Yes | StorageClass `gp3` |
 | **kibana** | `kibana` (v8.11.0) | `logging` | ✅ Yes | Elasticsearch installed |
 | **fluent-bit** | `fluent-bit` (v0.40.0) | `logging` | ✅ Yes | Elasticsearch installed |
-| **otel-collector-config** | `gitops/otel-collector` | `observability` | ✅ Yes | None |
+| **otel-collector-config** | `gitops/helm-charts/otel-collector-config` | `observability` | ✅ Yes | None |
 | **otel-collector** | `opentelemetry-collector` (v0.99.0) | `observability` | ✅ Yes | ConfigMap `otel-collector-config` |
 | **cluster-autoscaler** | `cluster-autoscaler` (v9.29.2) | `kube-system` | ✅ Yes | IAM role + ServiceAccount annotation |
 | **argocd** | `argo-cd` (v7.0.0) | `argocd` | ✅ Yes | Initial bootstrap via script |
