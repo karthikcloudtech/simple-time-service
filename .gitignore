@@ -66,3 +66,14 @@ override.tf.json
 *.tfstate
 *.tfstate.*
 backend.tfbackend
+
+# ==========================
+# Helm
+# ==========================
+# Dependency charts
+gitops/helm-charts/**/charts/
+gitops/helm-charts/**/Chart.lock
+*.tgz
+
+# Helm package files
+*.tgz.prov
