@@ -1,5 +1,5 @@
 # Metrics Server Helm Values
-# Used by: gitops/argo-apps/metrics-server.yaml
+# Used by: gitops/argo-apps/platform/metrics-server.yaml
 # Chart: kubernetes-sigs/metrics-server
 
 args:

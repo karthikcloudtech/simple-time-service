@@ -1,5 +1,5 @@
 # Kibana Helm Values
-# Used by: gitops/argo-apps/kibana.yaml
+# Used by: gitops/argo-apps/observability/kibana.yaml
 # Chart: elastic/kibana
 
 elasticsearchHosts: https://elasticsearch-master.logging.svc.cluster.local:9200

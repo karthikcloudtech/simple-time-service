@@ -1,5 +1,5 @@
 # OpenTelemetry Collector Helm Values
-# Used by: gitops/argo-apps/otel-collector.yaml
+# Used by: gitops/argo-apps/observability/otel-collector.yaml
 # Chart: open-telemetry/opentelemetry-collector
 
 mode: deployment

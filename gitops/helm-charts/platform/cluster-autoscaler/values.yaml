@@ -1,5 +1,5 @@
 # Cluster Autoscaler Helm Values
-# Used by: gitops/argo-apps/cluster-autoscaler.yaml
+# Used by: gitops/argo-apps/platform/cluster-autoscaler.yaml
 # Chart: kubernetes/autoscaler
 
 autoDiscovery:

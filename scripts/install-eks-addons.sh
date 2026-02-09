@@ -4,11 +4,11 @@
 # PRIMARY MODE (GitOps): Bootstraps ArgoCD, which then manages all addons via GitOps
 # 
 # All addons are now managed via ArgoCD Applications:
-#   - gitops/argo-apps/*.yaml (ArgoCD Application manifests)
-#   - gitops/helm-charts/*/values.yaml (Helm values)
+#   - gitops/argo-apps/{apps,observability,platform}/*.yaml (ArgoCD Application manifests)
+#   - gitops/helm-charts/{apps,observability,platform}/*/values.yaml (Helm values)
 #
 # IAM roles are created by Terraform (infra/terraform/modules/eks/iam_roles.tf)
-# See gitops/argo-apps/README.md for details on ArgoCD Applications
+# See gitops/argo-apps/apps/README.md for details on ArgoCD Applications
 
 set -uo pipefail
 
@@ -364,17 +364,25 @@ apply_argocd_applications() {
     local applied=0
     local failed=0
     
-    for app_file in "$apps_dir"/*.yaml; do
-        if [ -f "$app_file" ]; then
-            local app_name=$(basename "$app_file" .yaml)
-            if kubectl apply -f "$app_file" &>/dev/null; then
-                log_success "Applied: $app_name"
-                applied=$((applied + 1))
-            else
-                log_warn "Failed to apply: $app_name"
-                failed=$((failed + 1))
-            fi
+    # Apply apps from all categories: apps, observability, platform
+    for category_dir in "$apps_dir"/{apps,observability,platform}; do
+        if [ ! -d "$category_dir" ]; then
+            continue
         fi
+        
+        for app_file in "$category_dir"/*.yaml; do
+            if [ -f "$app_file" ]; then
+                local app_name=$(basename "$app_file" .yaml)
+                local category=$(basename "$category_dir")
+                if kubectl apply -f "$app_file" &>/dev/null; then
+                    log_success "Applied: $category/$app_name"
+                    applied=$((applied + 1))
+                else
+                    log_warn "Failed to apply: $category/$app_name"
+                    failed=$((failed + 1))
+                fi
+            fi
+        done
     done
     
     if [ $applied -gt 0 ]; then
@@ -470,7 +478,7 @@ install_argocd_bootstrap() {
     log ""
     log "4. ArgoCD will automatically sync and manage all addons via GitOps"
     log ""
-    log "See gitops/argo-apps/README.md for details on ArgoCD Applications"
+    log "See gitops/argo-apps/apps/README.md for details on ArgoCD Applications"
     log "═══════════════════════════════════════════════════════════════"
 }
 
@@ -485,7 +493,7 @@ main() {
     log "═══════════════════════════════════════════════════════════════"
     log ""
     log "This script bootstraps ArgoCD only."
-    log "All addons are managed via ArgoCD GitOps (gitops/argo-apps/)"
+    log "All addons are managed via ArgoCD GitOps (gitops/argo-apps/{apps,observability,platform}/)"
     log ""
     [ "$VERBOSE" = "true" ] && log "Verbose mode enabled"
     
@@ -502,7 +510,9 @@ main() {
     success "Bootstrap completed! ArgoCD will manage all addons via GitOps."
     log ""
     log "To apply ArgoCD Applications:"
-    log "  kubectl apply -f gitops/argo-apps/*.yaml"
+    log "  kubectl apply -f gitops/argo-apps/{apps,observability,platform}/*.yaml"
+    log "  # Or apply recursively:"
+    log "  kubectl apply -f gitops/argo-apps/ --recursive"
 }
 
 main "$@"

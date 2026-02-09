@@ -1,5 +1,5 @@
 # Cert-Manager Helm Values
-# Used by: gitops/argo-apps/cert-manager.yaml
+# Used by: gitops/argo-apps/observability/cert-manager.yaml
 # Chart: jetstack/cert-manager
 
 installCRDs: true

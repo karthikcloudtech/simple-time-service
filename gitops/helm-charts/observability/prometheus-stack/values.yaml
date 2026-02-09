@@ -1,5 +1,5 @@
 # Prometheus Stack Helm Values
-# Used by: gitops/argo-apps/prometheus-stack.yaml
+# Used by: gitops/argo-apps/observability/prometheus-stack.yaml
 # Chart: prometheus-community/kube-prometheus-stack
 
 prometheus:
