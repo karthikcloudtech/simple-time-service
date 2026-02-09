@@ -8,7 +8,7 @@ spec:
   source:
     repoURL: https://github.com/karthikcloudtech/simple-time-service.git
     # Prod watches main branch
-    targetRevision: main
+    targetRevision: time-ip
     path: gitops/helm-charts/apps/simple-time-service
     helm:
       valueFiles:
