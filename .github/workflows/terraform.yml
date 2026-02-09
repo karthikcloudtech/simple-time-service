@@ -52,7 +52,7 @@ jobs:
 
   apply:
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'workflow_dispatch' }}
+    if: ${{ github.event_name == 'pull_request' }}
     environment: ${{ github.event.inputs.environment || 'prod' }}
     env:
       TF_ROOT: infra/environments/${{ github.event.inputs.environment || 'prod' }}
