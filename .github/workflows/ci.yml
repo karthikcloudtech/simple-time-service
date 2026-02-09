@@ -51,7 +51,6 @@ jobs:
   docker:
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
-    needs: pr-build
     steps:
       - uses: actions/checkout@v4
 
