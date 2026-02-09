@@ -19,22 +19,22 @@ All ingresses are managed by Helm charts and deployed via ArgoCD. To manually de
 
 ### 1. Deploy ArgoCD Ingress
 ```bash
-helm template argocd-ingress gitops/helm-charts/argocd-ingress | kubectl apply -f -
+helm template argocd-ingress gitops/helm-charts/platform/argocd-ingress | kubectl apply -f -
 ```
 
 ### 2. Deploy Monitoring Ingresses (Prometheus + Grafana)
 ```bash
-helm template monitoring-ingress gitops/helm-charts/monitoring-ingress | kubectl apply -f -
+helm template monitoring-ingress gitops/helm-charts/observability/monitoring-ingress | kubectl apply -f -
 ```
 
 ### 3. Deploy Logging Ingresses (Kibana + Elasticsearch)
 ```bash
-helm template logging-ingress gitops/helm-charts/logging-ingress | kubectl apply -f -
+helm template logging-ingress gitops/helm-charts/observability/logging-ingress | kubectl apply -f -
 ```
 
 ### 4. Deploy Application Ingress
 ```bash
-helm template simple-time-service gitops/helm-charts/simple-time-service -f gitops/helm-charts/simple-time-service/values-prod.yaml | kubectl apply -f -
+helm template simple-time-service gitops/helm-charts/apps/simple-time-service -f gitops/helm-charts/apps/simple-time-service/values-prod.yaml | kubectl apply -f -
 ```
 
 ## DNS Configuration

@@ -54,7 +54,7 @@ Before deploying, verify:
 ## Update Process
 
 1. Check latest versions using Artifact Hub or `helm search repo <repo>/<chart> --versions | head -1`
-2. Compare with versions in `gitops/argo-apps/*.yaml` files
+2. Compare with versions in `gitops/argo-apps/**/*.yaml` files
 3. Update `targetRevision` in each Application manifest if needed
 4. Test in staging environment first
 5. Deploy to production

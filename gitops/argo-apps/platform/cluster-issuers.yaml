@@ -8,7 +8,7 @@ spec:
   source:
     repoURL: https://gitlab.com/karthikbm2k25/simple-time-service.git
     targetRevision: main
-    path: gitops/helm-charts/cluster-issuers
+    path: gitops/helm-charts/platform/cluster-issuers
     helm:
       valueFiles:
         - values.yaml

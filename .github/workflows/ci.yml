@@ -1,0 +1,79 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - "app/**"
+      - "Dockerfile"
+      - "requirements.txt"
+      - ".github/workflows/ci.yml"
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch: {}
+
+env:
+  IMAGE_NAME: docker.io/${{ secrets.DOCKERHUB_USERNAME }}/simple-time-service
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'pull_request' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Compile Python
+        run: python -m compileall app/
+
+  docker:
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/') }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Resolve image tags
+        id: tags
+        run: |
+          echo "sha_tag=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            echo "release_tag=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Skip build if SHA image exists
+        id: check
+        run: |
+          if docker manifest inspect "${IMAGE_NAME}:${{ steps.tags.outputs.sha_tag }}" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build and push multi-arch image
+        if: ${{ steps.check.outputs.exists != 'true' }}
+        run: |
+          TAGS="-t ${IMAGE_NAME}:${{ steps.tags.outputs.sha_tag }}"
+          if [[ -n "${{ steps.tags.outputs.release_tag }}" ]]; then
+            TAGS="$TAGS -t ${IMAGE_NAME}:${{ steps.tags.outputs.release_tag }}"
+          fi
+          docker buildx build --platform linux/amd64,linux/arm64 $TAGS --push .
+
+      - name: Tag existing SHA image for release
+        if: ${{ steps.check.outputs.exists == 'true' && steps.tags.outputs.release_tag != '' }}
+        run: |
+          docker pull "${IMAGE_NAME}:${{ steps.tags.outputs.sha_tag }}"
+          docker tag "${IMAGE_NAME}:${{ steps.tags.outputs.sha_tag }}" "${IMAGE_NAME}:${{ steps.tags.outputs.release_tag }}"
+          docker push "${IMAGE_NAME}:${{ steps.tags.outputs.release_tag }}"

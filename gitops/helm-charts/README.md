@@ -1,60 +1,27 @@
 # Helm Charts Configuration
 
-This directory contains Helm values files for **infrastructure/addon Helm charts** managed by ArgoCD.
-
-**Note:** This folder is for infrastructure components (metrics-server, cert-manager, prometheus, etc.), NOT for application Helm charts. Applications use raw Kubernetes manifests in `gitops/apps/`.
-
-## Structure
+Minimal structure for Helm charts used by ArgoCD.
 
 ```
 gitops/helm-charts/
-├── metrics-server/
-│   └── values.yaml
-├── aws-load-balancer-controller/
-│   └── values.yaml
-├── cert-manager/
-│   └── values.yaml
-├── prometheus-stack/
-│   └── values.yaml
-├── elasticsearch/
-│   └── values.yaml
-├── kibana/
-│   └── values.yaml
-├── fluent-bit/
-│   └── values.yaml
-├── otel-collector/
-│   └── values.yaml
-└── cluster-autoscaler/
-    └── values.yaml
+├── apps/
+│   └── simple-time-service/
+├── observability/
+│   ├── monitoring-ingress/
+│   ├── logging-ingress/
+│   ├── prometheus-stack/
+│   ├── elasticsearch/
+│   ├── kibana/
+│   ├── fluent-bit/
+│   ├── otel-collector/
+│   └── otel-collector-config/
+└── platform/
+    ├── argocd-ingress/
+    ├── aws-load-balancer-controller/
+    ├── cert-manager/
+    ├── cluster-autoscaler/
+    ├── cluster-issuers/
+    ├── metrics-server/
+    ├── serviceaccounts/
+    └── storage-class/
 ```
-
-## Benefits
-
-1. **Separation of Concerns:** Values files separate from Application manifests
-2. **Easier Maintenance:** Update values without touching Application manifests
-3. **Version Control:** Track value changes independently
-4. **Reusability:** Share values across environments if needed
-5. **Better Organization:** Clear structure for Helm-related configurations
-
-## Usage
-
-ArgoCD Applications reference these values files:
-
-```yaml
-spec:
-  source:
-    helm:
-      valueFiles:
-        - $values/gitops/helm-charts/prometheus-stack/values.yaml
-```
-
-## Migration from Inline Parameters
-
-Current Application manifests use inline `helm.parameters`. To migrate to values files:
-
-1. Extract parameters to `values.yaml` files
-2. Update Application manifests to reference `valueFiles`
-3. Test sync in ArgoCD
-
-This is optional but recommended for complex configurations.
-

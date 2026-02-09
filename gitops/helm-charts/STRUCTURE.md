@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The `gitops/helm-charts/` folder contains **Helm values files for infrastructure/addon components only**.
+The `gitops/helm-charts/` folder contains **Helm charts for both applications and infrastructure/addon components**.
 
 ## What Goes Here
 
@@ -20,46 +20,40 @@ These are third-party Helm charts from public repositories:
 - **Cluster Autoscaler** - Node autoscaling
 - **ArgoCD** - GitOps tool (self-management)
 
+### ✅ Application Components
+
+- **simple-time-service** - Main application chart (Rollouts, ingress, services)
+
 ### ❌ What Does NOT Go Here
 
-1. **Application Helm Charts**
-   - Applications use raw Kubernetes manifests in `gitops/apps/`
-   - Example: `simple-time-service` uses `deployment.yaml`, `service.yaml` (not Helm)
-
-2. **Custom Helm Charts**
+1. **Custom Helm Charts**
    - If you create custom Helm charts, put them in `charts/` directory
    - Not needed for this project
 
-3. **ArgoCD Applications**
+2. **ArgoCD Applications**
    - Application manifests go in `gitops/argo-apps/`
-   - These reference Helm charts OR raw manifests
+   - These reference Helm charts
 
 ## Current Project Structure
 
 ```
 gitops/
-├── helm-charts/              # Infrastructure Helm values ONLY
-│   ├── metrics-server/
-│   │   └── values.yaml       # ✅ Infrastructure component
-│   ├── cert-manager/
-│   │   └── values.yaml       # ✅ Infrastructure component
-│   └── prometheus-stack/
-│       └── values.yaml       # ✅ Infrastructure component
-│
-├── apps/                     # Application manifests (NOT Helm)
-│   └── simple-time-service/
-│       ├── base/
-│       │   ├── deployment.yaml    # ✅ Raw Kubernetes manifest
-│       │   ├── service.yaml        # ✅ Raw Kubernetes manifest
-│       │   └── ingress.yaml       # ✅ Raw Kubernetes manifest
-│       └── overlays/
-│           ├── prod/
-│           └── staging/
+├── helm-charts/              # Helm charts (apps + infrastructure)
+│   ├── apps/
+│   │   └── simple-time-service/
+│   ├── observability/
+│   │   ├── monitoring-ingress/
+│   │   ├── logging-ingress/
+│   │   └── ...
+│   └── platform/
+│       ├── cert-manager/
+│       ├── metrics-server/
+│       └── ...
 │
 └── argo-apps/                # ArgoCD Application manifests
-    ├── metrics-server.yaml    # References Helm chart
-    ├── prometheus-stack.yaml  # References Helm chart
-    └── simple-time-service-prod.yaml  # References raw manifests (Kustomize)
+   ├── apps/
+   ├── observability/
+   └── platform/
 ```
 
 ## Why This Structure?
@@ -70,31 +64,17 @@ gitops/
 - ✅ Easy to update chart versions
 - ✅ Standard practice for infrastructure
 
-### Applications → Raw Manifests (Kustomize)
-- ✅ Simple, straightforward deployments
-- ✅ Full control over Kubernetes resources
-- ✅ Easy to understand and modify
-- ✅ No Helm chart dependency
-- ✅ Kustomize for environment overlays
-
-## When Would You Use Helm for Applications?
-
-You might use Helm for applications if:
-
-1. **Multiple Similar Services** - Template-based deployment
-2. **Complex Configurations** - Many values to manage
-3. **Chart Reusability** - Share charts across projects
-4. **Team Preference** - Team prefers Helm over raw manifests
-
-**For this project:** Raw manifests with Kustomize is simpler and sufficient.
+### Applications → Helm Charts
+- ✅ Shared conventions across environments
+- ✅ Clear overrides via values files
+- ✅ Easier reuse and consistency
 
 ## Summary
 
 | Component Type | Location | Format |
 |----------------|----------|--------|
-| **Infrastructure/Addons** | `gitops/helm-charts/` | Helm values files |
-| **Applications** | `gitops/apps/` | Raw Kubernetes manifests |
-| **ArgoCD Apps** | `gitops/argo-apps/` | ArgoCD Application manifests |
+| **Helm Charts** | `gitops/helm-charts/` | Helm charts (apps + infrastructure) |
+| **ArgoCD Apps** | `gitops/argo-apps/` | ArgoCD Application manifests grouped by category |
 
-**Answer:** No, `helm-charts/` is NOT used for applications. It's only for infrastructure/addon Helm charts.
+**Answer:** `helm-charts/` is used for both applications and infrastructure, while ArgoCD manifests are grouped into `apps`, `observability`, and `platform`.
 

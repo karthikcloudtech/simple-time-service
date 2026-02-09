@@ -11,37 +11,37 @@ All Kustomize-based ArgoCD applications have been migrated to use Helm charts. T
 ### 1. Application Services
 - **simple-time-service** (prod and staging)
   - Migrated from: `gitops/apps/simple-time-service/overlays/{env}`
-  - Migrated to: `gitops/helm-charts/simple-time-service`
+  - Migrated to: `gitops/helm-charts/apps/simple-time-service`
   - Values files: `values.yaml`, `values-prod.yaml`, `values-staging.yaml`
 
 ### 2. Infrastructure Components
 - **monitoring-ingress** (Prometheus and Grafana ingresses)
   - Migrated from: `gitops/monitoring`
-  - Migrated to: `gitops/helm-charts/monitoring-ingress`
+  - Migrated to: `gitops/helm-charts/observability/monitoring-ingress`
 
 - **logging-ingress** (Elasticsearch and Kibana ingresses)
   - Migrated from: `gitops/logging`
-  - Migrated to: `gitops/helm-charts/logging-ingress`
+  - Migrated to: `gitops/helm-charts/observability/logging-ingress`
 
 - **otel-collector-config** (OpenTelemetry ConfigMap)
   - Migrated from: `gitops/otel-collector`
-  - Migrated to: `gitops/helm-charts/otel-collector-config`
+  - Migrated to: `gitops/helm-charts/observability/otel-collector-config`
 
 - **serviceaccounts** (AWS IRSA service accounts)
   - Migrated from: `gitops/serviceaccounts`
-  - Migrated to: `gitops/helm-charts/serviceaccounts`
+  - Migrated to: `gitops/helm-charts/platform/serviceaccounts`
 
 - **storage-class** (EBS GP3 StorageClass)
   - Migrated from: `gitops/storage-class`
-  - Migrated to: `gitops/helm-charts/storage-class`
+  - Migrated to: `gitops/helm-charts/platform/storage-class`
 
 - **cluster-issuers** (Cert-Manager ClusterIssuers)
   - Migrated from: `gitops/cluster-issuers`
-  - Migrated to: `gitops/helm-charts/cluster-issuers`
+  - Migrated to: `gitops/helm-charts/platform/cluster-issuers`
 
 - **argocd-ingress** (ArgoCD ingress)
   - Migrated from: `gitops/argocd`
-  - Migrated to: `gitops/helm-charts/argocd-ingress`
+  - Migrated to: `gitops/helm-charts/platform/argocd-ingress`
 
 ## Benefits of Helm Migration
 
@@ -57,7 +57,7 @@ All Kustomize-based ArgoCD applications have been migrated to use Helm charts. T
 ### Helm Chart Structure
 Each migrated component follows this structure:
 ```
-gitops/helm-charts/{component}/
+gitops/helm-charts/{category}/{component}/
 ├── Chart.yaml                 # Chart metadata
 ├── values.yaml                # Default values
 ├── values-{env}.yaml          # Environment-specific overrides (if applicable)
@@ -85,7 +85,7 @@ spec:
   source:
     repoURL: https://gitlab.com/karthikbm2k25/simple-time-service.git
     targetRevision: main
-    path: gitops/helm-charts/simple-time-service
+    path: gitops/helm-charts/apps/simple-time-service
     helm:
       valueFiles:
         - values.yaml
@@ -96,14 +96,14 @@ spec:
 
 | Chart Name | Description | Templates |
 |------------|-------------|-----------|
-| simple-time-service | Main application with Argo Rollouts | Namespace, Rollout, Service, Ingress, ServiceMonitor, AnalysisTemplates |
-| monitoring-ingress | Prometheus and Grafana ingresses | Namespace, Prometheus Ingress, Grafana Ingress |
-| logging-ingress | Elasticsearch and Kibana ingresses | Namespace, Elasticsearch Ingress, Kibana Ingress |
-| otel-collector-config | OpenTelemetry Collector ConfigMap | ConfigMap |
-| serviceaccounts | AWS IRSA service accounts | ServiceAccounts, Namespace |
-| storage-class | EBS GP3 StorageClass | StorageClass |
-| cluster-issuers | Cert-Manager ClusterIssuers | ClusterIssuers |
-| argocd-ingress | ArgoCD ingress | Namespace, Ingress |
+| apps/simple-time-service | Main application with Argo Rollouts | Namespace, Rollout, Service, Ingress, ServiceMonitor, AnalysisTemplates |
+| observability/monitoring-ingress | Prometheus and Grafana ingresses | Namespace, Prometheus Ingress, Grafana Ingress |
+| observability/logging-ingress | Elasticsearch and Kibana ingresses | Namespace, Elasticsearch Ingress, Kibana Ingress |
+| observability/otel-collector-config | OpenTelemetry Collector ConfigMap | ConfigMap |
+| platform/serviceaccounts | AWS IRSA service accounts | ServiceAccounts, Namespace |
+| platform/storage-class | EBS GP3 StorageClass | StorageClass |
+| platform/cluster-issuers | Cert-Manager ClusterIssuers | ClusterIssuers |
+| platform/argocd-ingress | ArgoCD ingress | Namespace, Ingress |
 
 ## Validation
 
@@ -111,10 +111,10 @@ All Helm charts have been validated using `helm template` to ensure they render 
 
 ```bash
 # Example validation commands
-cd gitops/helm-charts/simple-time-service
+cd gitops/helm-charts/apps/simple-time-service
 helm template test . -f values.yaml -f values-prod.yaml
 
-cd ../monitoring-ingress
+cd ../../observability/monitoring-ingress
 helm template test . -f values.yaml
 
 # ... etc for all charts

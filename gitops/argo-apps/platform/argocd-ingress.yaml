@@ -8,7 +8,7 @@ spec:
   source:
     repoURL: https://gitlab.com/karthikbm2k25/simple-time-service.git
     targetRevision: main
-    path: gitops/helm-charts/argocd-ingress
+    path: gitops/helm-charts/platform/argocd-ingress
     helm:
       valueFiles:
         - values.yaml
