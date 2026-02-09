@@ -61,5 +61,4 @@ module "eks" {
 
 module "ec2" {
   source = "../../terraform/modules/ec2"
-
 }

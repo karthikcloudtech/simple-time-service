@@ -4,6 +4,7 @@ resource "aws_eks_node_group" "main" {
   node_role_arn = aws_iam_role.eks_node_role.arn
   subnet_ids     = var.subnet_ids
   instance_types = ["m7i-flex.large"]
+  capacity_type  = "SPOT"
   ami_type       = "AL2023_x86_64_STANDARD"  # EKS-optimized Amazon Linux 2023 AMI for x86_64
   scaling_config {
     desired_size = 2
