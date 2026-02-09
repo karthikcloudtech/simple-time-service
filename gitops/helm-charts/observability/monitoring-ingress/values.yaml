@@ -28,5 +28,5 @@ prometheus:
 grafana:
   enabled: true
   host: grafana.kart24.shop
-  serviceName: prometheus-grafana
+  serviceName: prometheus-stack-grafana
   servicePort: 80
