@@ -9,6 +9,8 @@ server:
     enabled: false
     # NOTE: Ingress is managed separately in argocd-ingress chart
     # This prevents circular dependencies
+  podLabels:
+    app.kubernetes.io/instance: argocd
 
 global:
   podLabels:
