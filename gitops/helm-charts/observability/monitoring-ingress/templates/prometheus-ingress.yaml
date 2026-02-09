@@ -8,6 +8,8 @@ metadata:
     {{- range $key, $value := .Values.ingress.annotations }}
     {{ $key }}: {{ $value | quote }}
     {{- end }}
+    # Override healthcheck path for Prometheus
+    alb.ingress.kubernetes.io/healthcheck-path: /-/healthy
 spec:
   {{- if .Values.ingress.className }}
   ingressClassName: {{ .Values.ingress.className }}
