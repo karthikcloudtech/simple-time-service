@@ -6,11 +6,16 @@ on:
     paths:
       - "infra/**"
       - ".github/workflows/terraform.yml"
-  push:
-    branches: [main]
-    paths:
-      - "infra/**"
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Environment to apply"
+        required: true
+        default: "prod"
+        type: choice
+        options:
+          - prod
+          - staging
 
 env:
   TF_ROOT: infra/environments/prod
@@ -47,8 +52,10 @@ jobs:
 
   apply:
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-    environment: prod
+    if: ${{ github.event_name == 'workflow_dispatch' }}
+    environment: ${{ github.event.inputs.environment || 'prod' }}
+    env:
+      TF_ROOT: infra/environments/${{ github.event.inputs.environment || 'prod' }}
     steps:
       - uses: actions/checkout@v4
       - uses: hashicorp/setup-terraform@v3

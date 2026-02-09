@@ -25,13 +25,11 @@ env:
   IMAGE_NAME: docker.io/${{ secrets.DOCKERHUB_USERNAME }}/simple-time-service
 
 # --------------------
-# PR BUILD (NO DOCKER PUSH)
+# BUILD & VALIDATE (PRs and Pushes)
 # --------------------
 jobs:
-  pr-build:
+  build:
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
-
     steps:
       - uses: actions/checkout@v4
 
@@ -46,11 +44,11 @@ jobs:
         run: python -m compileall app/
 
 # --------------------
-# DOCKER BUILD & PUSH (MERGE / TAG ONLY)
+# DOCKER BUILD & PUSH
 # --------------------
   docker:
     runs-on: ubuntu-latest
-    if: github.event_name == 'push'
+    needs: build
     steps:
       - uses: actions/checkout@v4
 
@@ -71,7 +69,17 @@ jobs:
             echo "release_tag=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Build and push Docker image (PR)
+        if: github.event_name == 'pull_request'
+        run: |
+          docker buildx build \
+            --platform linux/amd64,linux/arm64 \
+            -t ${IMAGE_NAME}:pr-${{ steps.tags.outputs.sha_tag }} \
+            --push \
+            .
+
       - name: Skip build if SHA image exists
+        if: github.event_name != 'pull_request'
         id: check
         run: |
           if docker manifest inspect "${IMAGE_NAME}:${{ steps.tags.outputs.sha_tag }}" >/dev/null 2>&1; then
@@ -81,7 +89,7 @@ jobs:
           fi
 
       - name: Build and push multi-arch image
-        if: steps.check.outputs.exists != 'true'
+        if: github.event_name != 'pull_request' && steps.check.outputs.exists != 'true'
         run: |
           TAGS="-t ${IMAGE_NAME}:${{ steps.tags.outputs.sha_tag }}"
           if [[ -n "${{ steps.tags.outputs.release_tag }}" ]]; then
@@ -93,7 +101,7 @@ jobs:
             --push .
 
       - name: Tag existing SHA image for release
-        if: steps.check.outputs.exists == 'true' && steps.tags.outputs.release_tag != ''
+        if: github.event_name != 'pull_request' && steps.check.outputs.exists == 'true' && steps.tags.outputs.release_tag != ''
         run: |
           docker pull "${IMAGE_NAME}:${{ steps.tags.outputs.sha_tag }}"
           docker tag "${IMAGE_NAME}:${{ steps.tags.outputs.sha_tag }}" "${IMAGE_NAME}:${{ steps.tags.outputs.release_tag }}"
