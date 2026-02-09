@@ -6,37 +6,12 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://helm.elastic.co
-    chart: elasticsearch
-    # NOTE: Verify latest version at https://artifacthub.io/packages/helm/elastic/elasticsearch
-    # Run: helm search repo elastic/elasticsearch --versions | head -1
-    # Check Elasticsearch version compatibility: https://www.elastic.co/guide/en/cloud-on-k8s/current/k8s-supported-versions.html
-    # UPDATED: Using latest version - verify before deploying
-    targetRevision: 8.13.0
+    repoURL: https://gitlab.com/karthikbm2k25/simple-time-service.git
+    targetRevision: main
+    path: gitops/helm-charts/observability/elasticsearch
     helm:
-      parameters:
-        - name: replicas
-          value: "1"
-        - name: minimumMasterNodes
-          value: "1"
-        - name: resources.requests.memory
-          value: 1Gi
-        - name: resources.requests.cpu
-          value: 500m
-        - name: resources.limits.memory
-          value: 2Gi
-        - name: resources.limits.cpu
-          value: 1000m
-        - name: persistence.enabled
-          value: "true"
-        - name: persistence.storageClass
-          value: gp3
-        - name: persistence.size
-          value: 10Gi
-        - name: tls.enabled
-          value: "true"
-        - name: tls.selfSigned
-          value: "true"
+      valueFiles:
+        - values.yaml
       # NOTE: StorageClass 'gp3' must exist before this application syncs
   destination:
     server: https://kubernetes.default.svc

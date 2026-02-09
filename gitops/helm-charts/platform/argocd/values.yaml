@@ -1,0 +1,11 @@
+# Default values for ArgoCD
+# This wrapper chart points to the upstream argo-cd Helm chart
+# All configuration should be done via values-staging.yaml and values-prod.yaml
+
+server:
+  service:
+    type: ClusterIP
+  ingress:
+    enabled: false
+    # NOTE: Ingress is managed separately in argocd-ingress chart
+    # This prevents circular dependencies

@@ -6,20 +6,12 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://open-telemetry.github.io/opentelemetry-helm-charts
-    chart: opentelemetry-collector
-    # NOTE: Verify latest version at https://artifacthub.io/packages/helm/open-telemetry/opentelemetry-collector
-    # Run: helm search repo open-telemetry/opentelemetry-collector --versions | head -1
-    # UPDATED: Using latest version - verify before deploying
-    targetRevision: 1.0.0
+    repoURL: https://gitlab.com/karthikbm2k25/simple-time-service.git
+    targetRevision: main
+    path: gitops/helm-charts/observability/otel-collector
     helm:
-      parameters:
-        - name: mode
-          value: deployment
-        - name: configMap.create
-          value: "false"
-        - name: configMap.name
-          value: otel-collector-config
+      valueFiles:
+        - values.yaml
       # NOTE: ConfigMap 'otel-collector-config' must exist before this application syncs
       # Create ConfigMap via separate GitOps application or manually
   destination:

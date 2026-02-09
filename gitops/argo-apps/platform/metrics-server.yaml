@@ -6,16 +6,12 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://kubernetes-sigs.github.io/metrics-server
-    chart: metrics-server
-    # NOTE: Verify latest version at https://artifacthub.io/packages/helm/metrics-server/metrics-server
-    # Run: helm search repo metrics-server/metrics-server --versions | head -1
-    # UPDATED: Using latest version - verify before deploying
-    targetRevision: 3.13.0
+    repoURL: https://gitlab.com/karthikbm2k25/simple-time-service.git
+    targetRevision: main
+    path: gitops/helm-charts/platform/metrics-server
     helm:
-      parameters:
-        - name: args
-          value: "{--kubelet-insecure-tls}"
+      valueFiles:
+        - values.yaml
   destination:
     server: https://kubernetes.default.svc
     namespace: kube-system

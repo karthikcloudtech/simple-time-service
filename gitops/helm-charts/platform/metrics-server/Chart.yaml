@@ -1,0 +1,11 @@
+apiVersion: v2
+name: metrics-server
+description: Wrapper chart for metrics-server/metrics-server
+type: application
+version: 1.0.0
+appVersion: "3.12.0"
+dependencies:
+  - name: metrics-server
+    version: 3.12.0
+    repository: https://kubernetes-sigs.github.io/metrics-server
+    alias: metrics-server
