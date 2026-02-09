@@ -4,22 +4,25 @@
 
 ```
 gitops/helm-charts/
-├── metrics-server/
-│   └── values.yaml          # Helm values only
-├── prometheus-stack/
-│   └── values.yaml          # Helm values only
-└── ...
+├── apps/
+│   └── simple-time-service/
+├── observability/
+│   ├── prometheus-stack/
+│   └── ...
+└── platform/
+  ├── metrics-server/
+  └── ...
 ```
 
 ## Is This Best Practice? ✅ YES
 
-**Yes, having a dedicated `helm-charts/` folder for values files is considered best practice** in GitOps workflows. Here's why:
+**Yes, having a dedicated `helm-charts/` folder for Helm charts is considered best practice** in GitOps workflows. Here's why:
 
 ### ✅ Benefits
 
 1. **Separation of Concerns**
    - Application manifests (`argo-apps/*.yaml`) define WHAT to deploy
-   - Values files (`helm-charts/*/values.yaml`) define HOW to configure it
+  - Chart values (`helm-charts/*/values.yaml`) define HOW to configure it
    - Clear separation makes code easier to understand
 
 2. **Easier Maintenance**
@@ -52,48 +55,43 @@ gitops/helm-charts/
    - Feature flags and toggles
 
 2. **Environment-Specific Values** (optional)
-   ```
-   helm-charts/
-   ├── prometheus-stack/
-   │   ├── values.yaml          # Base values
-   │   ├── values-prod.yaml     # Production overrides
-   │   └── values-staging.yaml  # Staging overrides
-   ```
+  ```
+  helm-charts/observability/prometheus-stack/
+  ├── values.yaml          # Base values
+  ├── values-prod.yaml     # Production overrides
+  └── values-staging.yaml  # Staging overrides
+  ```
 
 3. **Documentation** (optional)
    ```
-   helm-charts/
-   ├── prometheus-stack/
-   │   ├── values.yaml
-   │   └── README.md            # Chart-specific docs
-   ```
+  helm-charts/observability/prometheus-stack/
+  ├── values.yaml
+  └── README.md            # Chart-specific docs
+  ```
 
 ### ❌ What NOT to Put Here
 
-1. **Application Helm Charts** - Applications use raw Kubernetes manifests in `apps/`
-2. **Custom Helm Charts** - Put in separate `charts/` directory if you create custom charts
-3. **ArgoCD Applications** - Keep in `argo-apps/`
-4. **Raw Kubernetes Manifests** - Use `apps/` or component-specific folders
-5. **Terraform Configs** - Keep in `infra/`
+1. **Custom Helm Charts** - Put in separate `charts/` directory if you create reusable charts outside GitOps
+2. **ArgoCD Applications** - Keep in `argo-apps/`
+3. **Raw Kubernetes Manifests** - Use chart templates instead
+4. **Terraform Configs** - Keep in `infra/`
 
 ### 📋 Current Structure
 
 ```
 gitops/
-├── helm-charts/           # ✅ Infrastructure/addon Helm values (THIS FOLDER)
-│   ├── metrics-server/
-│   ├── cert-manager/
-│   └── prometheus-stack/
-├── apps/                  # ✅ Application manifests (NOT Helm)
-│   └── simple-time-service/
-│       ├── base/
-│       └── overlays/
-└── argo-apps/            # ✅ ArgoCD Application manifests
-    ├── metrics-server.yaml
-    └── simple-time-service-prod.yaml
+├── helm-charts/           # ✅ Helm charts (apps + infrastructure)
+│   ├── simple-time-service/
+│   ├── monitoring-ingress/
+│   ├── logging-ingress/
+│   └── ...
+└── argo-apps/             # ✅ ArgoCD Application manifests
+  ├── apps/
+  ├── observability/
+  └── platform/
 ```
 
-**Key Point:** Applications (`simple-time-service`) use raw Kubernetes manifests with Kustomize, NOT Helm. Only infrastructure components use Helm charts.
+**Key Point:** Applications and infrastructure both use Helm charts. ArgoCD apps are grouped by category.
 
 ## Current State vs Best Practice
 
@@ -101,7 +99,7 @@ gitops/
 
 **ArgoCD Applications use inline parameters:**
 ```yaml
-# gitops/argo-apps/prometheus-stack.yaml
+# gitops/argo-apps/observability/prometheus-stack.yaml
 spec:
   source:
     helm:
@@ -112,7 +110,7 @@ spec:
 
 **Values files exist but aren't used:**
 ```yaml
-# gitops/helm-charts/prometheus-stack/values.yaml
+# gitops/helm-charts/observability/prometheus-stack/values.yaml
 grafana:
   enabled: true
 ```
@@ -121,12 +119,12 @@ grafana:
 
 **ArgoCD Applications reference values files:**
 ```yaml
-# gitops/argo-apps/prometheus-stack.yaml
+# gitops/argo-apps/observability/prometheus-stack.yaml
 spec:
   source:
     helm:
       valueFiles:           # Reference values file
-        - $values/gitops/helm-charts/prometheus-stack/values.yaml
+        - $values/gitops/helm-charts/observability/prometheus-stack/values.yaml
 ```
 
 ## When to Use Each Approach
@@ -156,7 +154,7 @@ helm:
 ```yaml
 helm:
   valueFiles:
-    - $values/gitops/helm-charts/prometheus-stack/values.yaml
+    - $values/gitops/helm-charts/observability/prometheus-stack/values.yaml
 ```
 
 ## Recommended Structure

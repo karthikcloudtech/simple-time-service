@@ -6,7 +6,7 @@ Complete implementation of ArgoCD Rollouts with Prometheus-based canary deployme
 
 ### 1. Deploy to Kubernetes
 ```bash
-helm template simple-time-service gitops/helm-charts/simple-time-service -f gitops/helm-charts/simple-time-service/values-prod.yaml | kubectl apply -f -
+helm template simple-time-service gitops/helm-charts/apps/simple-time-service -f gitops/helm-charts/apps/simple-time-service/values-prod.yaml | kubectl apply -f -
 ```
 
 ### 2. Trigger Canary Deployment
@@ -217,7 +217,7 @@ Three services handle traffic routing:
 ## File Structure
 
 ```
-gitops/helm-charts/simple-time-service/
+gitops/helm-charts/apps/simple-time-service/
 ├── templates/
 │   ├── rollout.yaml ..................... Canary deployment strategy
 │   ├── analysis-template-4xx.yaml ....... 4xx error analysis

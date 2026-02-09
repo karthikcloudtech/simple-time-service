@@ -1,26 +1,26 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: serviceaccounts
+  name: storage-class
   namespace: argocd
-  annotations:
-    argocd.argoproj.io/sync-wave: "-1"  # Sync before Helm charts
 spec:
   project: default
   source:
     repoURL: https://gitlab.com/karthikbm2k25/simple-time-service.git
     targetRevision: main
-    path: gitops/helm-charts/serviceaccounts
+    path: gitops/helm-charts/platform/storage-class
     helm:
       valueFiles:
         - values.yaml
   destination:
     server: https://kubernetes.default.svc
-    namespace: kube-system  # Base namespace, ServiceAccounts specify their own namespaces
+    namespace: default  # StorageClass is cluster-scoped
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
     syncOptions:
-      - CreateNamespace=true
+      - CreateNamespace=false  # StorageClass is cluster-scoped, no namespace needed
+  # NOTE: This StorageClass must be created before Helm charts that use it
+  # Consider using sync waves or ensuring this syncs before prometheus-stack and elasticsearch
 

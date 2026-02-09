@@ -1,20 +1,23 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: monitoring-ingress
+  name: simple-time-service-staging
   namespace: argocd
 spec:
   project: default
   source:
     repoURL: https://gitlab.com/karthikbm2k25/simple-time-service.git
-    targetRevision: main
-    path: gitops/helm-charts/monitoring-ingress
+    # Staging watches develop branch - feature branches merge to develop
+    # Uses commit SHA tags from merged feature branches
+    targetRevision: develop
+    path: gitops/helm-charts/apps/simple-time-service
     helm:
       valueFiles:
         - values.yaml
+        - values-staging.yaml
   destination:
     server: https://kubernetes.default.svc
-    namespace: monitoring
+    namespace: simple-time-service-staging
   syncPolicy:
     automated:
       prune: true

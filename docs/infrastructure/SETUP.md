@@ -133,18 +133,18 @@ kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.pas
 
 ```bash
 # Staging
-helm template simple-time-service gitops/helm-charts/simple-time-service -f gitops/helm-charts/simple-time-service/values-staging.yaml | kubectl apply -f -
+helm template simple-time-service gitops/helm-charts/apps/simple-time-service -f gitops/helm-charts/apps/simple-time-service/values-staging.yaml | kubectl apply -f -
 
 # Production
-helm template simple-time-service gitops/helm-charts/simple-time-service -f gitops/helm-charts/simple-time-service/values-prod.yaml | kubectl apply -f -
+helm template simple-time-service gitops/helm-charts/apps/simple-time-service -f gitops/helm-charts/apps/simple-time-service/values-prod.yaml | kubectl apply -f -
 ```
 
 ### Option 2: ArgoCD (Recommended)
 
 1. Apply ArgoCD Application manifests:
    ```bash
-   kubectl apply -f gitops/argo-apps/simple-time-service-staging.yaml
-   kubectl apply -f gitops/argo-apps/simple-time-service-prod.yaml
+   kubectl apply -f gitops/argo-apps/apps/simple-time-service-staging.yaml
+   kubectl apply -f gitops/argo-apps/apps/simple-time-service-prod.yaml
    ```
 
 2. Check status:

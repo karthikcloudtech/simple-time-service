@@ -11,16 +11,16 @@ All Kustomize-based configurations have been removed from the repository. The pr
 
 ### Application Kustomizations
 - `gitops/apps/simple-time-service/` (base and overlays for staging/prod)
-  - Replaced by: `gitops/helm-charts/simple-time-service`
+  - Replaced by: `gitops/helm-charts/apps/simple-time-service`
 
 ### Infrastructure Kustomizations
-- `gitops/argocd/` → `gitops/helm-charts/argocd-ingress`
-- `gitops/monitoring/` → `gitops/helm-charts/monitoring-ingress`
-- `gitops/logging/` → `gitops/helm-charts/logging-ingress`
-- `gitops/cluster-issuers/` → `gitops/helm-charts/cluster-issuers`
-- `gitops/storage-class/` → `gitops/helm-charts/storage-class`
-- `gitops/otel-collector/` → `gitops/helm-charts/otel-collector-config`
-- `gitops/serviceaccounts/` → `gitops/helm-charts/serviceaccounts`
+- `gitops/argocd/` → `gitops/helm-charts/platform/argocd-ingress`
+- `gitops/monitoring/` → `gitops/helm-charts/observability/monitoring-ingress`
+- `gitops/logging/` → `gitops/helm-charts/observability/logging-ingress`
+- `gitops/cluster-issuers/` → `gitops/helm-charts/platform/cluster-issuers`
+- `gitops/storage-class/` → `gitops/helm-charts/platform/storage-class`
+- `gitops/otel-collector/` → `gitops/helm-charts/observability/otel-collector-config`
+- `gitops/serviceaccounts/` → `gitops/helm-charts/platform/serviceaccounts`
 
 **Total:** 10 kustomization.yaml files removed
 
@@ -42,27 +42,27 @@ kubectl apply -k gitops/apps/simple-time-service/overlays/prod
 
 ### New (Helm)
 ```bash
-helm template simple-time-service gitops/helm-charts/simple-time-service \
-  -f gitops/helm-charts/simple-time-service/values-prod.yaml | kubectl apply -f -
+helm template simple-time-service gitops/helm-charts/apps/simple-time-service \
+  -f gitops/helm-charts/apps/simple-time-service/values-prod.yaml | kubectl apply -f -
 ```
 
 Or via ArgoCD (recommended):
 ```bash
-kubectl apply -f gitops/argo-apps/simple-time-service-prod.yaml
+kubectl apply -f gitops/argo-apps/apps/simple-time-service-prod.yaml
 ```
 
 ## ArgoCD Applications
 
 All ArgoCD Application manifests already reference Helm charts:
-- ✅ simple-time-service-prod → `gitops/helm-charts/simple-time-service`
-- ✅ simple-time-service-staging → `gitops/helm-charts/simple-time-service`
-- ✅ monitoring-ingress → `gitops/helm-charts/monitoring-ingress`
-- ✅ logging-ingress → `gitops/helm-charts/logging-ingress`
-- ✅ argocd-ingress → `gitops/helm-charts/argocd-ingress`
-- ✅ storage-class → `gitops/helm-charts/storage-class`
-- ✅ cluster-issuers → `gitops/helm-charts/cluster-issuers`
-- ✅ otel-collector-config → `gitops/helm-charts/otel-collector-config`
-- ✅ serviceaccounts → `gitops/helm-charts/serviceaccounts`
+- ✅ simple-time-service-prod → `gitops/helm-charts/apps/simple-time-service`
+- ✅ simple-time-service-staging → `gitops/helm-charts/apps/simple-time-service`
+- ✅ monitoring-ingress → `gitops/helm-charts/observability/monitoring-ingress`
+- ✅ logging-ingress → `gitops/helm-charts/observability/logging-ingress`
+- ✅ argocd-ingress → `gitops/helm-charts/platform/argocd-ingress`
+- ✅ storage-class → `gitops/helm-charts/platform/storage-class`
+- ✅ cluster-issuers → `gitops/helm-charts/platform/cluster-issuers`
+- ✅ otel-collector-config → `gitops/helm-charts/observability/otel-collector-config`
+- ✅ serviceaccounts → `gitops/helm-charts/platform/serviceaccounts`
 
 ## Benefits
 
@@ -77,13 +77,13 @@ All ArgoCD Application manifests already reference Helm charts:
 All Helm charts have been tested and render successfully:
 ```bash
 # Application
-helm template simple-time-service gitops/helm-charts/simple-time-service -f gitops/helm-charts/simple-time-service/values-prod.yaml
+helm template simple-time-service gitops/helm-charts/apps/simple-time-service -f gitops/helm-charts/apps/simple-time-service/values-prod.yaml
 
 # Infrastructure
-helm template monitoring-ingress gitops/helm-charts/monitoring-ingress
-helm template logging-ingress gitops/helm-charts/logging-ingress
-helm template storage-class gitops/helm-charts/storage-class
-helm template cluster-issuers gitops/helm-charts/cluster-issuers
+helm template monitoring-ingress gitops/helm-charts/observability/monitoring-ingress
+helm template logging-ingress gitops/helm-charts/observability/logging-ingress
+helm template storage-class gitops/helm-charts/platform/storage-class
+helm template cluster-issuers gitops/helm-charts/platform/cluster-issuers
 ```
 
 ## Migration Context
