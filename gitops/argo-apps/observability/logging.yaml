@@ -6,7 +6,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://gitlab.com/karthikbm2k25/simple-time-service.git
+    repoURL: https://github.com/karthikcloudtech/simple-time-service.git
     targetRevision: main
     path: gitops/helm-charts/observability/logging-ingress
     helm:
