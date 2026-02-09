@@ -2,16 +2,40 @@
 # This wrapper chart points to the upstream argo-cd Helm chart
 # All configuration should be done via values-staging.yaml and values-prod.yaml
 
-server:
-  service:
-    type: ClusterIP
-  ingress:
-    enabled: false
-    # NOTE: Ingress is managed separately in argocd-ingress chart
-    # This prevents circular dependencies
-  podLabels:
-    app.kubernetes.io/instance: argocd
-
-global:
-  podLabels:
-    app.kubernetes.io/instance: argocd
+argocd:
+  server:
+    service:
+      type: ClusterIP
+    secretKey: argocd-secret-key-do-not-use-in-prod-generate-random
+    ingress:
+      enabled: false
+      # NOTE: Ingress is managed separately in argocd-ingress chart
+      # This prevents circular dependencies
+  
+  global:
+    podLabels:
+      app.kubernetes.io/instance: argocd
+  
+  controller:
+    podLabels:
+      app.kubernetes.io/instance: argocd
+  
+  dex:
+    podLabels:
+      app.kubernetes.io/instance: argocd
+  
+  redis:
+    podLabels:
+      app.kubernetes.io/instance: argocd
+  
+  repoServer:
+    podLabels:
+      app.kubernetes.io/instance: argocd
+  
+  applicationSet:
+    podLabels:
+      app.kubernetes.io/instance: argocd
+  
+  notifications:
+    podLabels:
+      app.kubernetes.io/instance: argocd

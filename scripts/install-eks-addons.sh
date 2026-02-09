@@ -485,7 +485,7 @@ apply_argocd_applications() {
 
 install_argocd_bootstrap() {
     # Check if ArgoCD is already installed
-    if kubectl get deployment argocd-server -n argocd &>/dev/null 2>&1; then
+    if helm list -n argocd 2>/dev/null | grep -q argocd; then
         log "ArgoCD is already installed, skipping bootstrap..."
         return 0
     fi
@@ -496,17 +496,36 @@ install_argocd_bootstrap() {
     # Create namespace
     kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f - &>/dev/null
     
-    # Install ArgoCD from official manifest
-    log "Installing ArgoCD from official manifest..."
-    if [ "$VERBOSE" = "true" ]; then
-        kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+    # Add ArgoCD Helm repo
+    if ! helm repo list 2>/dev/null | grep -q argoproj; then
+        log "Adding ArgoCD Helm repository..."
+        helm repo add argo https://argoproj.github.io/argo-helm || error "Failed to add ArgoCD Helm repository"
+        helm repo update 2>/dev/null || log_warn "Failed to update Helm repositories"
+    fi
+    
+    # Install ArgoCD via Helm using local chart
+    log "Installing ArgoCD via Helm..."
+    local argocd_chart="$PROJECT_ROOT/gitops/helm-charts/platform/argocd"
+    
+    # Update chart dependencies first
+    if [ -f "$argocd_chart/Chart.yaml" ]; then
+        log "Updating ArgoCD chart dependencies..."
+        helm dependency update "$argocd_chart" &>/dev/null
+    fi
+    
+    if helm install argocd "$argocd_chart" \
+        -n argocd \
+        --create-namespace \
+        --wait \
+        --timeout 10m; then
+        success "ArgoCD installed successfully via Helm!"
     else
-        kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml &>/dev/null
+        error "Failed to install ArgoCD via Helm"
     fi
     
     # Wait for ArgoCD server to be available
-    log "Waiting for ArgoCD server to be ready (this may take a few minutes)..."
-    if kubectl wait --for=condition=available deployment/argocd-server -n argocd --timeout=10m &>/dev/null; then
+    log "Waiting for ArgoCD server to be ready..."
+    if kubectl wait --for=condition=available deployment/argocd-server -n argocd --timeout=5m 2>/dev/null; then
         success "ArgoCD bootstrap completed!"
     else
         warn "ArgoCD server may still be starting. Check with: kubectl get pods -n argocd"
