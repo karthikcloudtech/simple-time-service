@@ -1,0 +1,11 @@
+apiVersion: v2
+name: elasticsearch
+description: Wrapper chart for elastic/elasticsearch
+type: application
+version: 1.0.0
+appVersion: "8.13.0"
+dependencies:
+  - name: elasticsearch
+    version: 8.13.0
+    repository: https://helm.elastic.co
+    alias: elasticsearch

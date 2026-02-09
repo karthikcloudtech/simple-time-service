@@ -6,31 +6,12 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://helm.elastic.co
-    chart: kibana
-    # NOTE: Verify latest version at https://artifacthub.io/packages/helm/elastic/kibana
-    # Run: helm search repo elastic/kibana --versions | head -1
-    # IMPORTANT: Kibana version must match Elasticsearch version
-    # UPDATED: Using latest version - verify before deploying
-    targetRevision: 8.13.0
+    repoURL: https://gitlab.com/karthikbm2k25/simple-time-service.git
+    targetRevision: main
+    path: gitops/helm-charts/observability/kibana
     helm:
-      parameters:
-        - name: elasticsearchHosts
-          value: https://elasticsearch-master.logging.svc.cluster.local:9200
-        - name: resources.requests.memory
-          value: 512Mi
-        - name: resources.requests.cpu
-          value: 500m
-        - name: lifecycleHooks.preInstall.enabled
-          value: "false"
-        - name: lifecycleHooks.preUpgrade.enabled
-          value: "false"
-        - name: lifecycleHooks.preRollback.enabled
-          value: "false"
-        - name: lifecycleHooks.preDelete.enabled
-          value: "false"
-        - name: elasticsearch.serviceAccountTokenSecret
-          value: "null"
+      valueFiles:
+        - values.yaml
       # NOTE: Elasticsearch must be installed and ready before Kibana syncs
       # Consider using sync waves or manual sync for Kibana
   destination:

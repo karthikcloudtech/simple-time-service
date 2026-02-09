@@ -6,24 +6,12 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://fluent.github.io/helm-charts
-    chart: fluent-bit
-    # NOTE: Verify latest version at https://artifacthub.io/packages/helm/fluent/fluent-bit
-    # Run: helm search repo fluent/fluent-bit --versions | head -1
-    # UPDATED: Using latest version - verify before deploying
-    targetRevision: 0.41.0
+    repoURL: https://gitlab.com/karthikbm2k25/simple-time-service.git
+    targetRevision: main
+    path: gitops/helm-charts/observability/fluent-bit
     helm:
-      parameters:
-        - name: backend.type
-          value: elasticsearch
-        - name: backend.elasticsearch.host
-          value: elasticsearch-master.logging.svc.cluster.local
-        - name: backend.elasticsearch.port
-          value: "9200"
-        - name: backend.elasticsearch.tls
-          value: "true"
-        - name: backend.elasticsearch.tls_verify
-          value: "false"
+      valueFiles:
+        - values.yaml
       # NOTE: Elasticsearch must be installed before Fluent-bit syncs
   destination:
     server: https://kubernetes.default.svc

@@ -1,0 +1,11 @@
+apiVersion: v2
+name: kibana
+description: Wrapper chart for elastic/kibana
+type: application
+version: 1.0.0
+appVersion: "8.13.0"
+dependencies:
+  - name: kibana
+    version: 8.13.0
+    repository: https://helm.elastic.co
+    alias: kibana

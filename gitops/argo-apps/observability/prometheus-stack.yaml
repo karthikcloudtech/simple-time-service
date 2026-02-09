@@ -6,30 +6,12 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://prometheus-community.github.io/helm-charts
-    chart: kube-prometheus-stack
-    # NOTE: Verify latest version at https://artifacthub.io/packages/helm/prometheus-community/kube-prometheus-stack
-    # Run: helm search repo prometheus-community/kube-prometheus-stack --versions | head -1
-    # UPDATED: Using latest version - verify before deploying
-    targetRevision: 62.0.0
+    repoURL: https://gitlab.com/karthikbm2k25/simple-time-service.git
+    targetRevision: main
+    path: gitops/helm-charts/observability/prometheus-stack
     helm:
-      parameters:
-        - name: prometheus.prometheusSpec.retention
-          value: "30d"
-        - name: prometheus.prometheusSpec.storageSpec.volumeClaimTemplate.spec.storageClassName
-          value: gp3
-        - name: prometheus.prometheusSpec.storageSpec.volumeClaimTemplate.spec.resources.requests.storage
-          value: 20Gi
-        - name: prometheus.prometheusSpec.resources.requests.memory
-          value: 512Mi
-        - name: prometheus.prometheusSpec.resources.requests.cpu
-          value: 250m
-        - name: prometheus.prometheusSpec.resources.limits.memory
-          value: 1Gi
-        - name: prometheus.prometheusSpec.resources.limits.cpu
-          value: 500m
-        - name: grafana.enabled
-          value: "true"
+      valueFiles:
+        - values.yaml
       # NOTE: StorageClass 'gp3' must exist before this application syncs
       # Ensure StorageClass is created via Terraform or GitOps first
   destination:

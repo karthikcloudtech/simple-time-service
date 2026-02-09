@@ -9,19 +9,12 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://charts.jetstack.io
-    chart: cert-manager
-    # NOTE: Verify latest version at https://artifacthub.io/packages/helm/cert-manager/cert-manager
-    # Run: helm search repo jetstack/cert-manager --versions | head -1
-    # Check Kubernetes version compatibility: https://cert-manager.io/docs/installation/supported-releases/
-    # UPDATED: Using latest version - verify before deploying
-    targetRevision: v1.15.0
+    repoURL: https://gitlab.com/karthikbm2k25/simple-time-service.git
+    targetRevision: main
+    path: gitops/helm-charts/platform/cert-manager
     helm:
-      parameters:
-        - name: installCRDs
-          value: "true"
-        - name: serviceAccount.annotations.eks\.amazonaws\.com/role-arn
-          value: "arn:aws:iam::017019814021:role/simple-time-service-cert-manager-role"
+      valueFiles:
+        - values.yaml
       # CRDs will be installed automatically with installCRDs=true
       # ServiceAccount is created by Helm with IAM role annotation for Route53 DNS-01 challenge
       # Get role ARN: terraform -chdir=infra/environments/prod output -raw cert_manager_role_arn

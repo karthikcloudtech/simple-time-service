@@ -1,0 +1,11 @@
+apiVersion: v2
+name: aws-load-balancer-controller
+description: Wrapper chart for eks/aws-load-balancer-controller
+type: application
+version: 1.0.0
+appVersion: "2.8.0"
+dependencies:
+  - name: aws-load-balancer-controller
+    version: 2.8.0
+    repository: https://aws.github.io/eks-charts
+    alias: aws-load-balancer-controller

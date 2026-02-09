@@ -6,20 +6,12 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://argoproj.github.io/argo-helm
-    chart: argo-cd
-    # NOTE: Verify latest version at https://artifacthub.io/packages/helm/argo/argo-cd
-    # Run: helm search repo argo/argo-cd --versions | head -1
-    # Check ArgoCD version compatibility: https://argo-cd.readthedocs.io/en/stable/operator-manual/installation/
-    # This is for self-management - ArgoCD manages itself via GitOps
-    # UPDATED: Using latest version - verify before deploying
-    targetRevision: 8.0.0
+    repoURL: https://gitlab.com/karthikbm2k25/simple-time-service.git
+    targetRevision: main
+    path: gitops/helm-charts/platform/argocd
     helm:
-      parameters:
-        - name: server.service.type
-          value: ClusterIP
-        - name: server.ingress.enabled
-          value: "false"
+      valueFiles:
+        - values.yaml
         # NOTE: Ingress configuration should be managed separately via gitops/argocd/ingress
         # This prevents circular dependencies
   destination:
