@@ -7,7 +7,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/karthikcloudtech/simple-time-service.git
-    targetRevision: main
+    targetRevision: time-ip
     path: gitops/helm-charts/observability/prometheus-stack
     helm:
       valueFiles:
