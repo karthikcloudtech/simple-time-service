@@ -163,10 +163,10 @@ metadata:
 EOF
     
     # Add EKS Helm repo if not already added
-    if ! helm repo list | grep -q eks; then
+    if ! helm repo list 2>/dev/null | grep -q eks; then
         log "Adding EKS Helm repository..."
         helm repo add eks https://aws.github.io/eks-charts || error "Failed to add EKS Helm repository"
-        helm repo update || error "Failed to update Helm repositories"
+        helm repo update 2>/dev/null || error "Failed to update Helm repositories"
     fi
     
     # Install AWS Load Balancer Controller via Helm
@@ -183,13 +183,40 @@ EOF
         --timeout 5m; then
         log_success "AWS Load Balancer Controller installed successfully"
     else
-        error "Failed to install AWS Load Balancer Controller"
+        log_warn "Helm install command failed, but continuing..."
     fi
     
-    # Wait for controller to be ready
+    # Wait for controller to be ready with better diagnostics
     log "Waiting for AWS Load Balancer Controller to be ready..."
-    kubectl wait --for=condition=available deployment/aws-load-balancer-controller -n kube-system --timeout=5m || \
-        log_warn "AWS Load Balancer Controller may still be starting"
+    for i in {1..30}; do
+        if kubectl get deployment aws-load-balancer-controller -n kube-system &>/dev/null; then
+            if kubectl wait --for=condition=available deployment/aws-load-balancer-controller -n kube-system --timeout=10s 2>/dev/null; then
+                log_success "AWS Load Balancer Controller is running"
+                return 0
+            fi
+        fi
+        if [ $((i % 5)) -eq 0 ]; then
+            local pod_status=$(kubectl get pods -n kube-system -l app.kubernetes.io/name=aws-load-balancer-controller -o jsonpath='{.items[0].status.phase}' 2>/dev/null || echo "NotFound")
+            log "Waiting for controller (attempt $i/30)... Pod status: $pod_status"
+        fi
+        sleep 5
+    done
+    
+    # Check final status and logs if failed
+    if ! kubectl get deployment aws-load-balancer-controller -n kube-system &>/dev/null; then
+        log_warn "AWS Load Balancer Controller deployment not found"
+        return 1
+    fi
+    
+    local ready=$(kubectl get deployment aws-load-balancer-controller -n kube-system -o jsonpath='{.status.readyReplicas}' 2>/dev/null || echo "0")
+    if [ "$ready" -eq 0 ]; then
+        log_warn "AWS Load Balancer Controller deployment exists but pods are not ready"
+        log_warn "Pod status:"
+        kubectl get pods -n kube-system -l app.kubernetes.io/name=aws-load-balancer-controller
+        log_warn "Recent pod logs:"
+        kubectl logs -n kube-system -l app.kubernetes.io/name=aws-load-balancer-controller --tail=20 2>/dev/null || true
+        return 1
+    fi
 }
 
 # ============================================================================
@@ -341,7 +368,63 @@ update_serviceaccount_annotations() {
 }
 
 # ============================================================================
-# APPLY ARGOCD APPLICATIONS
+# UPDATE HELM DEPENDENCIES
+# ============================================================================
+
+update_helm_dependencies() {
+    log "Adding Helm repositories and updating chart dependencies..."
+    
+    # Add all necessary Helm repositories
+    local repos=(
+        "elastic:https://helm.elastic.co"
+        "fluent:https://fluent.github.io/helm-charts"
+        "prometheus-community:https://prometheus-community.github.io/helm-charts"
+        "open-telemetry:https://open-telemetry.github.io/helm-charts"
+        "eks:https://aws.github.io/eks-charts"
+        "jetstack:https://charts.jetstack.io"
+        "autoscaler:https://kubernetes.github.io/autoscaler"
+        "metrics-server:https://kubernetes-sigs.github.io/metrics-server"
+        "argoproj:https://argoproj.github.io/argo-helm"
+    )
+    
+    for repo_entry in "${repos[@]}"; do
+        local repo_name=$(echo "$repo_entry" | cut -d: -f1)
+        local repo_url=$(echo "$repo_entry" | cut -d: -f2)
+        
+        if helm repo add "$repo_name" "$repo_url" 2>/dev/null; then
+            log "Added Helm repo: $repo_name"
+        fi
+    done
+    
+    # Update all repos
+    if helm repo update &>/dev/null; then
+        log_success "Helm repositories updated"
+    else
+        log_warn "Failed to update some Helm repositories"
+    fi
+    
+    # Update dependencies for all charts with external dependencies
+    log "Updating Helm chart dependencies..."
+    local charts_updated=0
+    
+    for chart_dir in "$PROJECT_ROOT"/gitops/helm-charts/*/*/Chart.yaml; do
+        local chart_path=$(dirname "$chart_dir")
+        if [ -f "$chart_path/Chart.yaml" ] && grep -q "dependencies:" "$chart_path/Chart.yaml"; then
+            if helm dependency update "$chart_path" &>/dev/null 2>&1; then
+                charts_updated=$((charts_updated + 1))
+                log "Updated dependencies: $(basename "$chart_path")"
+            else
+                log_warn "Failed to update dependencies: $(basename "$chart_path")"
+            fi
+        fi
+    done
+    
+    if [ $charts_updated -gt 0 ]; then
+        log_success "Updated dependencies for $charts_updated chart(s)"
+    fi
+}
+
+# ============================================================================
 # ============================================================================
 
 apply_argocd_applications() {
@@ -374,7 +457,7 @@ apply_argocd_applications() {
             if [ -f "$app_file" ]; then
                 local app_name=$(basename "$app_file" .yaml)
                 local category=$(basename "$category_dir")
-                if kubectl apply -f "$app_file" &>/dev/null; then
+                if kubectl apply -f "$app_file"; then
                     log_success "Applied: $category/$app_name"
                     applied=$((applied + 1))
                 else
@@ -452,6 +535,9 @@ install_argocd_bootstrap() {
     # Update ServiceAccounts with IAM role ARNs from Terraform outputs
     # Also updates VPC ID dynamically (by VPC name or EKS cluster)
     update_serviceaccount_annotations
+    
+    # Update Helm dependencies before applying applications
+    update_helm_dependencies
     
     # Apply ArgoCD Applications (ArgoCD will manage all addons)
     apply_argocd_applications
