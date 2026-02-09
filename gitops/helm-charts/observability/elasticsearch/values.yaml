@@ -1,5 +1,5 @@
 # Elasticsearch Helm Values
-# Used by: gitops/argo-apps/elasticsearch.yaml
+# Used by: gitops/argo-apps/observability/elasticsearch.yaml
 # Chart: elastic/elasticsearch
 
 replicas: 1

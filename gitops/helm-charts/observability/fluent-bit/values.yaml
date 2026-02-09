@@ -1,5 +1,5 @@
 # Fluent-bit Helm Values
-# Used by: gitops/argo-apps/fluent-bit.yaml
+# Used by: gitops/argo-apps/observability/fluent-bit.yaml
 # Chart: fluent/fluent-bit
 
 backend:
