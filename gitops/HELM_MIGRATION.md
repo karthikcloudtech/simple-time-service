@@ -75,7 +75,7 @@ All ArgoCD Application manifests in `gitops/argo-apps/` have been updated to use
 spec:
   source:
     repoURL: https://gitlab.com/karthikbm2k25/simple-time-service.git
-    targetRevision: main
+    targetRevision: app
     path: gitops/apps/simple-time-service/overlays/prod
 ```
 
@@ -84,7 +84,7 @@ spec:
 spec:
   source:
     repoURL: https://gitlab.com/karthikbm2k25/simple-time-service.git
-    targetRevision: main
+    targetRevision: app
     path: gitops/helm-charts/apps/simple-time-service
     helm:
       valueFiles:
