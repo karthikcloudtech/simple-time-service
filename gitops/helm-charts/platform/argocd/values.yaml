@@ -23,8 +23,7 @@ argocd:
       app.kubernetes.io/instance: argocd
   
   dex:
-    podLabels:
-      app.kubernetes.io/instance: argocd
+    enabled: false
   
   redis:
     podLabels:
