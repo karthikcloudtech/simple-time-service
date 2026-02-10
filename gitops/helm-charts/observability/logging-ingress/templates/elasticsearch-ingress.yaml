@@ -8,6 +8,8 @@ metadata:
     {{- range $key, $value := .Values.ingress.annotations }}
     {{ $key }}: {{ $value | quote }}
     {{- end }}
+    # Override healthcheck path for Elasticsearch
+    alb.ingress.kubernetes.io/healthcheck-path: {{ .Values.elasticsearch.healthcheckPath | quote }}
 spec:
   {{- if .Values.ingress.className }}
   ingressClassName: {{ .Values.ingress.className }}

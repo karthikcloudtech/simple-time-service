@@ -13,7 +13,6 @@ ingress:
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
     alb.ingress.kubernetes.io/ssl-redirect: '443'
     alb.ingress.kubernetes.io/ssl-policy: ELBSecurityPolicy-TLS13-1-2-2021-06
-    alb.ingress.kubernetes.io/healthcheck-path: /
     alb.ingress.kubernetes.io/healthcheck-port: traffic-port
     alb.ingress.kubernetes.io/healthcheck-protocol: HTTP
     alb.ingress.kubernetes.io/success-codes: '200-399'
@@ -24,9 +23,13 @@ elasticsearch:
   host: elasticsearch.kart24.shop
   serviceName: elasticsearch-master
   servicePort: 9200
+  # Elasticsearch cluster health check endpoint
+  healthcheckPath: /_cluster/health
 
 kibana:
   enabled: true
   host: kibana.kart24.shop
   serviceName: kibana-kibana
   servicePort: 5601
+  # Kibana API status endpoint
+  healthcheckPath: /api/status
