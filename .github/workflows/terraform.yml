@@ -3,19 +3,6 @@ name: Terraform
 on:
   pull_request:
     branches: [main, develop]
-    paths:
-      - "infra/**"
-      - ".github/workflows/terraform.yml"
-  workflow_dispatch:
-    inputs:
-      environment:
-        description: "Environment to apply"
-        required: true
-        default: "prod"
-        type: choice
-        options:
-          - prod
-          - staging
 
 env:
   TF_ROOT: infra/environments/prod
@@ -53,9 +40,7 @@ jobs:
   apply:
     runs-on: ubuntu-latest
     if: ${{ github.event_name == 'pull_request' }}
-    environment: ${{ github.event.inputs.environment || 'prod' }}
-    env:
-      TF_ROOT: infra/environments/${{ github.event.inputs.environment || 'prod' }}
+    environment: prod
     steps:
       - uses: actions/checkout@v4
       - uses: hashicorp/setup-terraform@v3
