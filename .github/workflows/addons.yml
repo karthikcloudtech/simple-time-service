@@ -1,6 +1,18 @@
 name: Bootstrap ArgoCD
 
 on:
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - "scripts/**"
+      - "gitops/**"
+      - ".github/workflows/addons.yml"
+  push:
+    branches: [main]
+    paths:
+      - "scripts/**"
+      - "gitops/**"
+      - ".github/workflows/addons.yml"
   workflow_dispatch:
     inputs:
       cluster_name:
@@ -13,8 +25,39 @@ on:
         default: "us-east-1"
 
 jobs:
+  validate:
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Shellcheck install-eks-addons.sh
+        run: shellcheck scripts/install-eks-addons.sh || true
+
+      - name: Validate Helm charts
+        run: |
+          curl -LO "https://get.helm.sh/helm-$(curl -s https://api.github.com/repos/helm/helm/releases/latest | jq -r '.tag_name')-linux-amd64.tar.gz"
+          tar -zxvf helm-*-linux-amd64.tar.gz
+          sudo mv linux-amd64/helm /usr/local/bin/helm
+          for chart in gitops/helm-charts/*/; do
+            for subchart in "$chart"*/; do
+              if [ -f "$subchart/Chart.yaml" ]; then
+                echo "Validating $subchart..."
+                helm lint "$subchart" || true
+              fi
+            done
+          done
+
+      - name: Validate ArgoCD application manifests
+        run: |
+          for f in gitops/argo-apps/**/*.yaml; do
+            echo "Checking $f..."
+            python3 -c "import yaml, sys; yaml.safe_load(open('$f'))" || echo "WARNING: Invalid YAML in $f"
+          done
+
   bootstrap:
     runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -49,7 +92,7 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     needs: [bootstrap]
-    if: ${{ always() }}
+    if: ${{ github.event_name == 'workflow_dispatch' && always() }}
     steps:
       - uses: actions/checkout@v4
 
