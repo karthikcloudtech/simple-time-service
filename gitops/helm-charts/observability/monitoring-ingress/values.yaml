@@ -22,9 +22,11 @@ prometheus:
   enabled: true
   host: prometheus.kart24.shop
   serviceName: prometheus-stack-prometheus
-  servicePort: 9090          # ← Change to 9090 (Prometheus listens directly on this)
+  servicePort: 9090
+  healthcheckPath: /-/healthy
 grafana:
   enabled: true
   host: grafana.kart24.shop
   serviceName: prometheus-stack-grafana
-  servicePort: 80          # ← Change to 3000 (container listen port / targetPort)
+  servicePort: 80
+  healthcheckPath: /api/health

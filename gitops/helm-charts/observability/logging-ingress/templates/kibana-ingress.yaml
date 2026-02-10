@@ -8,6 +8,7 @@ metadata:
     {{- range $key, $value := .Values.ingress.annotations }}
     {{ $key }}: {{ $value | quote }}
     {{- end }}
+    alb.ingress.kubernetes.io/healthcheck-path: {{ .Values.kibana.healthcheckPath | default "/api/status" | quote }}
 spec:
   {{- if .Values.ingress.className }}
   ingressClassName: {{ .Values.ingress.className }}
