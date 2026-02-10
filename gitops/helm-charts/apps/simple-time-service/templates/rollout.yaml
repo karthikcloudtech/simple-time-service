@@ -39,9 +39,11 @@ spec:
     canary:
       steps:
       {{- range .Values.rollout.strategy.canary.steps }}
+        {{- if .setWeight }}
         - setWeight: {{ .setWeight }}
+        {{- end }}
         {{- if .pause }}
-          pause:
+        - pause:
             duration: {{ .pause }}
         {{- end }}
       {{- end }}
