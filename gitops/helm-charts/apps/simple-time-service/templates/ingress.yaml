@@ -20,7 +20,7 @@ spec:
             pathType: {{ .Values.ingress.pathType }}
             backend:
               service:
-                name: {{ .Values.container.name }}
+                name: {{ .Values.container.name }}-stable
                 port:
                   number: {{ .Values.service.port }}
 {{- end }}
