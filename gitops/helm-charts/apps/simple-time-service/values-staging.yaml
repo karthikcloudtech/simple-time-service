@@ -6,7 +6,7 @@ namespace:
 
 # Staging uses latest or commit SHA tags
 image:
-  tag: "latest"
+  tag: "pr-d5f50ec"
 
 # Standard replicas for staging
 rollout:

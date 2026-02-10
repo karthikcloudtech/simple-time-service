@@ -10,7 +10,7 @@ namespace:
 # Image configuration
 image:
   repository: karthikbm2k25/simple-time-service
-  tag: "2c8cf65"
+  tag: "pr-d5f50ec"
   pullPolicy: IfNotPresent
 
 # Rollout configuration
