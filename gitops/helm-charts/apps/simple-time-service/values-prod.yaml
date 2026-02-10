@@ -6,7 +6,7 @@ namespace:
 
 # Production uses specific tested release image tag
 image:
-  tag: "pr-d5f50ec"
+  tag: "1.1.2"
 
 # Higher replicas for production
 rollout:
