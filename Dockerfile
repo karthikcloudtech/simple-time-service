@@ -13,6 +13,7 @@ RUN python3.11 -m pip install --no-cache-dir --prefix=/install -r requirements.t
 FROM --platform=$BUILDPLATFORM amazonlinux:2023 AS final
 RUN dnf install -y \
     python3.11 \
+    python3.11-setuptools \
     shadow-utils \
  && dnf clean all
 WORKDIR /app
