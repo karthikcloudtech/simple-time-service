@@ -8,7 +8,6 @@ argocd:
       type: ClusterIP
     extraArgs:
       - --insecure
-    secretKey: argocd-secret-key-do-not-use-in-prod-generate-random
     ingress:
       enabled: false
       # NOTE: Ingress is managed separately in argocd-ingress chart
