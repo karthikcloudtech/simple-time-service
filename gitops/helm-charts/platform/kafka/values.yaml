@@ -26,14 +26,13 @@ kafka:
     type: ClusterIP
     port: 9092
 
-  # Zookeeper configuration (required by Kafka)
+  # Disable Zookeeper - use KRaft mode (native Kafka)
   zookeeper:
+    enabled: false
+
+  # KRaft mode configuration
+  kraft:
     enabled: true
-    replicaCount: 1
-    persistence:
-      enabled: true
-      storageClass: gp3
-      size: 2Gi
 
   # Kafka configuration
   config:

@@ -1,16 +1,16 @@
 # PostgreSQL Helm Values
 # Used by: gitops/argo-apps/platform/postgresql.yaml
-# Chart: bitnami/postgresql
+# Chart: Custom PostgreSQL StatefulSet
+
+namespace: postgres
 
 postgresql:
-  # Database configuration
   auth:
     username: appuser
     password: changeme123
     postgresPassword: postgres123
     database: appdb
 
-  # Single replica for testing
   primary:
     replicaCount: 1
     resources:
@@ -21,23 +21,12 @@ postgresql:
         memory: 512Mi
         cpu: 500m
 
-  # Persistence settings
   persistence:
     enabled: true
     storageClass: gp3
     size: 5Gi
 
-  # Service configuration
   service:
     type: ClusterIP
     port: 5432
 
-  # Disable default postgresPassword auth method for security
-  postgresqlPassword: ""
-
-  # Boot strapping configuration
-  initdbScriptsConfigMap: ""
-
-# Create namespace if it doesn't exist
-namespaceCreate: true
-namespace: postgres
