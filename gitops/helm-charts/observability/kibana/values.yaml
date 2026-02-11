@@ -4,10 +4,11 @@
 
 replicas: 1
 
-# Use HTTPS with self-signed certs from cert-manager
-elasticsearchHosts: https://elasticsearch-master.logging.svc.cluster.local:9200
-elasticsearchCertificateSecret: elasticsearch-tls
-elasticsearchCertificateSecretMountPath: /usr/share/kibana/config/certs
+# Use HTTP (security disabled for testing)
+elasticsearchHosts: http://elasticsearch-master.logging.svc.cluster.local:9200
+# Certificate secrets not needed for HTTP
+# elasticsearchCertificateSecret: elasticsearch-tls
+# elasticsearchCertificateSecretMountPath: /usr/share/kibana/config/certs
 
 resources:
   requests:
@@ -24,10 +25,10 @@ lifecycleHooks:
   preDelete:
     enabled: false
 
-# Enable security
+# Security disabled for testing
 xpack:
   security:
-    enabled: true
-  encryptedSavedObjects:
-    encryptionKey: "min32characterlongsecretkeyhere1234"
+    enabled: false
+  # encryptedSavedObjects:
+  #   encryptionKey: "min32characterlongsecretkeyhere1234"
 
