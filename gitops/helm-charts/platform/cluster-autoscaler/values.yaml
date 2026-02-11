@@ -23,7 +23,7 @@ cluster-autoscaler:
       name: cluster-autoscaler-aws-cluster-autoscaler
 
   # Pod configuration
-  replicaCount: 2
+  replicaCount: 1
   
   fullnameOverride: aws-cluster-autoscaler
 
