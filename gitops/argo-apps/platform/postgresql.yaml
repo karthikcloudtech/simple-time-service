@@ -10,10 +10,9 @@ spec:
   source:
     repoURL: https://github.com/karthikcloudtech/simple-time-service.git
     targetRevision: app
-    path: gitops/helm-charts/platform/postgresql
-    helm:
-      valueFiles:
-        - values.yaml
+    path: gitops/argo-apps/platform
+    directory:
+      include: postgresql-simple.yaml
   destination:
     server: https://kubernetes.default.svc
     namespace: postgres
