@@ -32,4 +32,4 @@ kibana:
   host: kibana.kart24.shop
   serviceName: kibana-kibana
   servicePort: 5601
-  healthcheckPath: /api/status
+  healthcheckPath: /

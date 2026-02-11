@@ -18,7 +18,10 @@ persistence:
   storageClass: gp3
   size: 10Gi
 
+# Disable TLS/security for testing
 tls:
-  enabled: true
-  selfSigned: true
+  enabled: false
+xpack:
+  security:
+    enabled: false
 
