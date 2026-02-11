@@ -18,10 +18,29 @@ persistence:
   storageClass: gp3
   size: 10Gi
 
-# Disable TLS/security for testing
+# Enable TLS with self-signed certs from cert-manager
 tls:
-  enabled: false
+  enabled: true
+  existingCertSecret: elasticsearch-tls
+  existingCaSecret: elasticsearch-tls
+  existingCertSecretCertName: tls.crt
+  existingCertSecretKeyName: tls.key
+
+# Enable security with default password
 xpack:
   security:
-    enabled: false
+    enabled: true
+    http:
+      ssl:
+        enabled: true
+        certificateAuthorities: /usr/share/elasticsearch/config/certs/ca.crt
+        certificate: /usr/share/elasticsearch/config/certs/tls.crt
+        key: /usr/share/elasticsearch/config/certs/tls.key
+    transport:
+      ssl:
+        enabled: true
+        verificationMode: certificate
+        certificateAuthorities: /usr/share/elasticsearch/config/certs/ca.crt
+        certificate: /usr/share/elasticsearch/config/certs/tls.crt
+        key: /usr/share/elasticsearch/config/certs/tls.key
 

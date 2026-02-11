@@ -1,0 +1,35 @@
+{{- if .Values.elasticsearch.enabled }}
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ .Values.elasticsearch.certificateName }}
+  namespace: {{ .Values.namespace }}
+spec:
+  secretName: {{ .Values.elasticsearch.certificateName }}
+  commonName: {{ .Values.elasticsearch.commonName }}
+  dnsNames:
+    {{- range .Values.elasticsearch.dnsNames }}
+    - {{ . }}
+    {{- end }}
+  issuerRef:
+    name: {{ .Values.issuer.name }}
+    kind: {{ .Values.issuer.kind }}
+{{- end }}
+---
+{{- if .Values.kibana.enabled }}
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ .Values.kibana.certificateName }}
+  namespace: {{ .Values.namespace }}
+spec:
+  secretName: {{ .Values.kibana.certificateName }}
+  commonName: {{ .Values.kibana.commonName }}
+  dnsNames:
+    {{- range .Values.kibana.dnsNames }}
+    - {{ . }}
+    {{- end }}
+  issuerRef:
+    name: {{ .Values.issuer.name }}
+    kind: {{ .Values.issuer.kind }}
+{{- end }}

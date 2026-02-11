@@ -1,0 +1,26 @@
+# Self-signed certificates for Elasticsearch & Kibana via cert-manager
+namespace: logging
+
+issuer:
+  name: selfsigned-issuer
+  kind: Issuer
+
+elasticsearch:
+  enabled: true
+  certificateName: elasticsearch-tls
+  commonName: elasticsearch-master.logging.svc.cluster.local
+  dnsNames:
+    - elasticsearch-master
+    - elasticsearch-master.logging
+    - elasticsearch-master.logging.svc
+    - elasticsearch-master.logging.svc.cluster.local
+
+kibana:
+  enabled: true
+  certificateName: kibana-tls
+  commonName: kibana-kibana.logging.svc.cluster.local
+  dnsNames:
+    - kibana-kibana
+    - kibana-kibana.logging
+    - kibana-kibana.logging.svc
+    - kibana-kibana.logging.svc.cluster.local

@@ -4,8 +4,10 @@
 
 replicas: 1
 
-# HTTP (not HTTPS) since elasticsearch TLS is disabled for testing
-elasticsearchHosts: http://elasticsearch-master.logging.svc.cluster.local:9200
+# Use HTTPS with self-signed certs from cert-manager
+elasticsearchHosts: https://elasticsearch-master.logging.svc.cluster.local:9200
+elasticsearchCertificateSecret: elasticsearch-tls
+elasticsearchCertificateSecretMountPath: /usr/share/kibana/config/certs
 
 resources:
   requests:
@@ -22,8 +24,10 @@ lifecycleHooks:
   preDelete:
     enabled: false
 
-# Disable security for testing
+# Enable security
 xpack:
   security:
-    enabled: false
+    enabled: true
+  encryptedSavedObjects:
+    encryptionKey: "min32characterlongsecretkeyhere1234"
 
