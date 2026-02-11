@@ -3,6 +3,8 @@ kind: Application
 metadata:
   name: storage-class
   namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"  # Deploy first, before any charts needing gp3 StorageClass
 spec:
   project: default
   source:

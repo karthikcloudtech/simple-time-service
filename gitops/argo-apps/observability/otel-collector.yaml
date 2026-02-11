@@ -3,6 +3,8 @@ kind: Application
 metadata:
   name: otel-collector
   namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"  # Deploy after otel-collector-config (wave 1) is ready
 spec:
   project: default
   source:

@@ -3,6 +3,8 @@ kind: Application
 metadata:
   name: cluster-issuers
   namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"  # Deploy after cert-manager (wave 1) is ready
 spec:
   project: default
   source:

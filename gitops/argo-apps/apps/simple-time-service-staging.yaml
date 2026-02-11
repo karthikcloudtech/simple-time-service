@@ -3,6 +3,8 @@ kind: Application
 metadata:
   name: simple-time-service-staging
   namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"  # Deploy after all infrastructure is ready (wave 3)
 spec:
   project: default
   source:
