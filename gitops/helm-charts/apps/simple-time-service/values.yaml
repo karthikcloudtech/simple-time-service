@@ -15,7 +15,7 @@ image:
 
 # Rollout configuration
 rollout:
-  replicas: 2
+  replicas: 1
   strategy:
     canary:
       enabled: true

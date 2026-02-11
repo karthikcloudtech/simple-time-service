@@ -1,30 +1,36 @@
-# Default values for monitoring-ingress
-namespace:
-  name: monitoring
-  create: true
-ingress:
-  enabled: true
-  className: alb
-  annotations:
-    alb.ingress.kubernetes.io/group.name: kart24-shop
-    alb.ingress.kubernetes.io/scheme: internet-facing
-    alb.ingress.kubernetes.io/target-type: ip
-    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80},{"HTTPS":443}]'
-    alb.ingress.kubernetes.io/ssl-redirect: '443'
-    alb.ingress.kubernetes.io/ssl-policy: ELBSecurityPolicy-TLS13-1-2-2021-06
-    alb.ingress.kubernetes.io/backend-protocol: HTTP
-    alb.ingress.kubernetes.io/healthcheck-path: /api/health
-    alb.ingress.kubernetes.io/healthcheck-port: traffic-port
-    alb.ingress.kubernetes.io/healthcheck-protocol: HTTP
-    alb.ingress.kubernetes.io/success-codes: '200'
-    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:017019814021:certificate/ec034773-a62d-4646-bacb-8ce132c68473
-prometheus:
-  enabled: true
-  host: prometheus.kart24.shop
-  serviceName: prometheus-kube-prometheus-prometheus
-  servicePort: 9090          # ← CHANGE THIS (Prometheus container listens on 9090)
-grafana:
-  enabled: true
-  host: grafana.kart24.shop
-  serviceName: prometheus-stack-grafana
-  servicePort: 3000          # ← CHANGE THIS (Grafana container listens on 3000)
+# Prometheus Stack Helm Values (for testing - single replica)
+# Used by: gitops/argo-apps/observability/prometheus-stack.yaml
+# Chart: prometheus-community/kube-prometheus-stack
+
+prometheus-stack:
+  prometheus:
+    prometheusSpec:
+      replicas: 1
+      retention: 24h
+      resources:
+        requests:
+          cpu: 250m
+          memory: 512Mi
+        limits:
+          cpu: 500m
+          memory: 1Gi
+  
+  grafana:
+    replicas: 1
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 200m
+        memory: 256Mi
+  
+  alertmanager:
+    alertmanagerSpec:
+      replicas: 1
+  
+  nodeExporter:
+    enabled: true
+  
+  kubeStateMetrics:
+    enabled: true

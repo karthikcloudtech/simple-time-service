@@ -1,6 +1,16 @@
-# Fluent-bit Helm Values
+# Fluent-bit Helm Values (for testing - single pod)
 # Used by: gitops/argo-apps/observability/fluent-bit.yaml
 # Chart: fluent/fluent-bit
+
+replicaCount: 1
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 200m
+    memory: 256Mi
 
 backend:
   type: elasticsearch
