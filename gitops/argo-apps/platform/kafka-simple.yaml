@@ -62,8 +62,8 @@ spec:
     spec:
       containers:
       - name: kafka
-        image: bitnami/kafka:3.6.1
-        imagePullPolicy: IfNotPresent
+        image: bitnami/kafka:latest
+        imagePullPolicy: Always
         ports:
         - containerPort: 9092
           name: broker
