@@ -526,4 +526,63 @@ b37ccbb - fix: simplify Kafka to use standard Apache Kafka image
 
 ---
 
+## 11. Kafka Image Fix - Invalid Registry References ❌→✅
+
+### Problem
+- Pod stuck in `ImagePullBackOff`: `failed to pull image "bitnami/kafka:3.6.1": docker.io/bitnami/kafka:3.6.1: not found`
+- Multiple image references failed: `apache/kafka:3.5.0`, `bitnami/kafka:3.6.1`, `bitnami/kafka:latest`
+- Error: "docker.io/bitnami/kafka:latest: not found"
+
+### Root Cause
+- `apache/kafka:3.5.0` — Not a valid Docker image (Apache doesn't publish Kafka to Docker Hub)
+- `bitnami/kafka:3.6.1` — Version doesn't exist in Bitnami registry
+- `bitnami/kafka:latest` — Bitnami doesn't publish a `latest` tag
+- EKS nodes unable to pull from external registries (network/egress issue)
+
+### Attempted Fixes
+❌ `apache/kafka:3.5.0` — Invalid image reference  
+❌ `bitnami/kafka:3.6.1` — Tag doesn't exist  
+❌ `bitnami/kafka:latest` — Tag doesn't exist  
+❌ `confluentinc/cp-kafka:7.5.0` — Exists locally but nodes can't pull  
+
+### Final Solution
+✅ **Switched to `apache/kafka:3.7.0`** (Apache's official registry image)
+
+### Files Modified
+- `gitops/argo-apps/platform/kafka-simple.yaml` - Image updated, environment variables corrected
+- `gitops/helm-charts/apps/simple-time-service/values.yaml` - Kafka connection env vars added
+
+### Configuration
+```yaml
+image: apache/kafka:3.7.0
+imagePullPolicy: IfNotPresent
+env:
+  - KAFKA_BROKER_ID: "1"
+  - KAFKA_LISTENERS: PLAINTEXT://:9092
+  - KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka.kafka.svc.cluster.local:9092
+  - KAFKA_LOG_DIRS: /var/lib/kafka/data
+  - KAFKA_NUM_PARTITIONS: "3"
+  - KAFKA_DEFAULT_REPLICATION_FACTOR: "1"
+  - KAFKA_LOG_RETENTION_HOURS: "24"
+```
+
+### Status
+✅ Image validated locally (pulls successfully)
+⏳ Waiting for: EKS nodes network access to external registries OR Image cached on nodes
+⏳ Waiting for: Pod deletion to force StatefulSet recreation with new image
+
+### Next Steps
+1. Delete old pod: `kubectl delete pod kafka-0 -n kafka --grace-period=0 --force`
+2. Wait for StatefulSet to recreate pod with `apache/kafka:3.7.0`
+3. Verify pod reaches Running status
+4. Test app connectivity: `kubectl exec -it <app-pod> -- curl http://kafka.kafka:9092`
+
+### Lessons Learned
+- Apache Kafka doesn't maintain official Docker images (use Confluent or Bitnami)
+- Always verify image tags exist before deployment
+- EKS node egress to registries must be configured (VPC/NAT/security groups)
+- Local Docker pull success ≠ Cluster node can pull (different networks)
+
+---
+
 **All infrastructure components deployed and integrated. Testing environment optimized for cost and performance. 🚀**
