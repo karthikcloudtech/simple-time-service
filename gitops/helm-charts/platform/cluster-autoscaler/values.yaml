@@ -5,18 +5,36 @@
 cluster-autoscaler:
   autoDiscovery:
     clusterName: simple-time-service-prod
+    enabled: true
 
   awsRegion: us-east-1
 
+  # Use pre-created ServiceAccount with IAM role annotation from serviceaccounts chart
+  # This ServiceAccount is created in kube-system namespace with IRSA annotation
   serviceAccount:
     create: false
     name: cluster-autoscaler-aws-cluster-autoscaler
 
+  # Enable RBAC for cluster-autoscaler
   rbac:
     create: true
+    serviceAccount:
+      create: false
+      name: cluster-autoscaler-aws-cluster-autoscaler
 
+  # Pod configuration
+  replicaCount: 2
+  
+  fullnameOverride: aws-cluster-autoscaler
+
+  # Extra arguments for cluster-autoscaler
   extraArgs:
     scan-interval: 10s
     skip-nodes-with-local-storage: "false"
     skip-nodes-with-system-pods: "false"
+    balance-similar-node-groups: "true"
+    expander: "priority,least-waste"
+
+  # Enable pod priority to prevent eviction during scaling
+  priorityClassName: system-cluster-critical
 

@@ -3,9 +3,9 @@ kind: Application
 metadata:
   name: cluster-autoscaler
   namespace: argocd
-  # Sync after ServiceAccounts are created
+  # Sync AFTER ServiceAccounts are created (serviceaccounts uses wave -1)
   annotations:
-    argocd.argoproj.io/sync-wave: "0"
+    argocd.argoproj.io/sync-wave: "1"
 spec:
   project: default
   source:
@@ -15,9 +15,10 @@ spec:
     helm:
       valueFiles:
         - values.yaml
-      # ServiceAccount is created by Helm with IAM role annotation
-      # The IAM role ARN is set via serviceAccount.annotations parameter above
-      # Get role ARN: terraform -chdir=infra/environments/prod output -raw cluster_autoscaler_role_arn
+      # NOTE: ServiceAccount with IAM role annotation is pre-created by serviceaccounts chart (sync-wave: -1)
+      # Cluster Autoscaler is set to NOT create ServiceAccount (serviceAccount.create: false in values.yaml)
+      # This ensures IRSA (IAM Roles for Service Accounts) works correctly
+      # The pre-created ServiceAccount is in kube-system with name: cluster-autoscaler-aws-cluster-autoscaler
   destination:
     server: https://kubernetes.default.svc
     namespace: kube-system
