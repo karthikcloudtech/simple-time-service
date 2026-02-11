@@ -16,7 +16,7 @@ resources:
 persistence:
   enabled: true
   storageClass: gp3
-  size: 2Gi
+  size: 10Gi
 
 # Enable TLS with self-signed certs from cert-manager
 tls:
