@@ -4,6 +4,8 @@ metadata:
   name: cluster-autoscaler
   namespace: argocd
   # Sync AFTER ServiceAccounts are created (serviceaccounts uses wave -1)
+  # ServiceAccounts must be created first with IAM role annotations (IRSA)
+  # This ensures cluster-autoscaler pod gets AWS credentials via STS AssumeRole
   annotations:
     argocd.argoproj.io/sync-wave: "1"
 spec:

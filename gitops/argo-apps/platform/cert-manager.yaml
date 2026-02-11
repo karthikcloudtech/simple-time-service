@@ -3,7 +3,8 @@ kind: Application
 metadata:
   name: cert-manager
   namespace: argocd
-  # Sync after ServiceAccounts are created (serviceaccounts uses wave -1)
+  # CRDs must be installed first (wave -2), followed by serviceaccounts (wave -1)
+  # This cert-manager deployment happens at wave 1
   annotations:
     argocd.argoproj.io/sync-wave: "1"
 spec:
@@ -15,9 +16,9 @@ spec:
     helm:
       valueFiles:
         - values.yaml
-      # CRDs will be installed automatically with installCRDs=true
-      # ServiceAccount is created by Helm with IAM role annotation for Route53 DNS-01 challenge
-      # Get role ARN: terraform -chdir=infra/environments/prod output -raw cert_manager_role_arn
+      # NOTE: CRDs are installed by cert-manager-crds app (wave -2)
+      # ServiceAccount is created by serviceaccounts app (wave -1) with IAM role annotation
+      # Cert-manager deployment happens at wave 1, CRDs and ServiceAccount are guaranteed to exist
   destination:
     server: https://kubernetes.default.svc
     namespace: cert-manager
