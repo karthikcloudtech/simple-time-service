@@ -47,6 +47,12 @@ container:
   env:
     - name: PORT
       value: "8080"
+    - name: KAFKA_BROKERS
+      value: "kafka.kafka.svc.cluster.local:9092"
+    - name: KAFKA_TOPIC_EVENTS
+      value: "simple-time-service-events"
+    - name: KAFKA_CONSUMER_GROUP
+      value: "simple-time-service-group"
     - name: OTEL_EXPORTER_OTLP_ENDPOINT
       value: "http://otel-collector.observability.svc.cluster.local:4317"
     - name: OTEL_SERVICE_NAME
