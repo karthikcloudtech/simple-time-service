@@ -19,7 +19,7 @@ ingress:
     alb.ingress.kubernetes.io/healthcheck-path: /healthz
     alb.ingress.kubernetes.io/healthcheck-port: traffic-port
     alb.ingress.kubernetes.io/healthcheck-protocol: HTTP
-    alb.ingress.kubernetes.io/success-codes: "200"
+    alb.ingress.kubernetes.io/success-codes: '200'
   host: argocd.kart24.shop
   path: /
   pathType: Prefix

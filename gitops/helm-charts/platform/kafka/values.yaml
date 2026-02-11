@@ -1,0 +1,49 @@
+# Apache Kafka Helm Values
+# Used by: gitops/argo-apps/platform/kafka.yaml
+# Chart: bitnami/kafka
+
+kafka:
+  # Number of Kafka brokers for testing
+  replicaCount: 1
+
+  # Broker resource configuration
+  resources:
+    requests:
+      memory: 512Mi
+      cpu: 500m
+    limits:
+      memory: 1Gi
+      cpu: 1000m
+
+  # Persistence settings
+  persistence:
+    enabled: true
+    storageClass: gp3
+    size: 5Gi
+
+  # Service configuration for clients
+  service:
+    type: ClusterIP
+    port: 9092
+
+  # Zookeeper configuration (required by Kafka)
+  zookeeper:
+    enabled: true
+    replicaCount: 1
+    persistence:
+      enabled: true
+      storageClass: gp3
+      size: 2Gi
+
+  # Kafka configuration
+  config:
+    # Log retention
+    logRetentionHours: 24
+    numPartitions: 3
+    defaultReplicationFactor: 1
+    # Disable auto topic creation
+    autoCreateTopicsEnable: false
+
+# Create namespace if it doesn't exist
+namespaceCreate: true
+namespace: kafka
