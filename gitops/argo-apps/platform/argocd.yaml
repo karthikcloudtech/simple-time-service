@@ -7,7 +7,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/karthikcloudtech/simple-time-service.git
-    targetRevision: app
+    targetRevision: develop
     path: gitops/helm-charts/platform/argocd
     helm:
       valueFiles:

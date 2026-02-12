@@ -9,7 +9,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/karthikcloudtech/simple-time-service.git
-    targetRevision: app
+    targetRevision: develop
     path: gitops/helm-charts/observability/otel-collector
     helm:
       valueFiles:

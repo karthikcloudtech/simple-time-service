@@ -74,7 +74,7 @@ All ArgoCD Application manifests in `gitops/argo-apps/` have been updated to use
 ```yaml
 spec:
   source:
-    repoURL: https://gitlab.com/karthikbm2k25/simple-time-service.git
+    repoURL: https://github.com/karthikcloudtech/simple-time-service.git
     targetRevision: app
     path: gitops/apps/simple-time-service/overlays/prod
 ```
@@ -83,8 +83,8 @@ spec:
 ```yaml
 spec:
   source:
-    repoURL: https://gitlab.com/karthikbm2k25/simple-time-service.git
-    targetRevision: app
+    repoURL: https://github.com/karthikcloudtech/simple-time-service.git
+    targetRevision: develop
     path: gitops/helm-charts/apps/simple-time-service
     helm:
       valueFiles:
