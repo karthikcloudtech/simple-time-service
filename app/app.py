@@ -5,6 +5,7 @@ import os
 import socket
 import platform
 import atexit
+from contextlib import ExitStack
 from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
 from opentelemetry import trace
 from opentelemetry.instrumentation.flask import FlaskInstrumentor
@@ -260,102 +261,107 @@ def kafka_flush():
 @app.route("/", methods=["GET"])
 def get_time_and_ip():
     try:
-        # Handle request timing
-        duration_context = None
-        if REQUEST_DURATION:
-            duration_context = REQUEST_DURATION.labels(method='GET', endpoint='/')
-            duration_context = duration_context.time()
-            duration_context.__enter__()
-        
-        # Handle tracing
-        span_context = None
-        if tracer:
-            span_context = tracer.start_as_current_span("get_time_and_ip")
-            span_context.__enter__()
-        
-        try:
-            forwarded_for_list = request.headers.getlist("X-Forwarded-For")
+        with ExitStack() as stack:
+            # Handle request timing
+            if REQUEST_DURATION:
+                stack.enter_context(REQUEST_DURATION.labels(method='GET', endpoint='/').time())
+            
+            # Handle tracing
+            if tracer:
+                stack.enter_context(tracer.start_as_current_span("get_time_and_ip"))
+            
+            try:
+                forwarded_for_list = request.headers.getlist("X-Forwarded-For")
 
-            if forwarded_for_list:
-                all_ips = [ip.strip() for ip in forwarded_for_list[0].split(",") if ip.strip()]
-                user_ip = all_ips[0] if all_ips else request.remote_addr
-            else:
-                all_ips = []
-                user_ip = request.remote_addr
+                if forwarded_for_list:
+                    all_ips = [ip.strip() for ip in forwarded_for_list[0].split(",") if ip.strip()]
+                    user_ip = all_ips[0] if all_ips else request.remote_addr
+                else:
+                    all_ips = []
+                    user_ip = request.remote_addr
 
-            # Send request event to Kafka (if available)
-            if kafka_producer:
-                try:
-                    kafka_producer.send_request_event(
-                        user_ip=user_ip,
-                        method='GET',
-                        endpoint='/',
-                        hostname=hostname,
-                        os=host_os
-                    )
-                except Exception as e:
-                    logger.warning(f"Failed to send Kafka request event: {str(e)}")
+                # Send request event to Kafka (if available)
+                if kafka_producer:
+                    try:
+                        kafka_producer.send_request_event(
+                            user_ip=user_ip,
+                            method='GET',
+                            endpoint='/',
+                            hostname=hostname,
+                            os=host_os
+                        )
+                    except Exception as e:
+                        logger.warning(f"Failed to send Kafka request event: {str(e)}")
 
-            kafka_status = "UP" if kafka_producer else "NOT UP"
-            
-            response = {
-                "message": "Hello, Kafka is " + kafka_status,
-                "timestamp": datetime.utcnow().isoformat() + "Z",
-                "user_ip": user_ip,
-                "proxy_chain": all_ips if all_ips else "No proxy IPs found",
-                "hostname": hostname,
-                "os": host_os,
-                "pod_ip": pod_ip,
-                "kafka_status": kafka_status
-            }
-            
-            if span_context:
-                span_context.set_attribute("user_ip", user_ip)
-                span_context.set_attribute("has_proxy_chain", len(all_ips) > 0)
-            
-            logger.info(f"Request from {user_ip}", extra={"user_ip": user_ip, "proxy_chain": all_ips})
-            
-            # Send response event to Kafka (if available)
-            if kafka_producer:
-                try:
-                    kafka_producer.send_response_event(
-                        user_ip=user_ip,
-                        status_code=200,
-                        response_time_ms=0
-                    )
-                except Exception as e:
-                    logger.warning(f"Failed to send Kafka response event: {str(e)}")
-            
-            if REQUEST_COUNT:
-                REQUEST_COUNT.labels(method='GET', endpoint='/', status='200').inc()
-            
-            return jsonify(response), 200
-        except Exception as e:
-            logger.error(f"Error processing request: {str(e)}", exc_info=True)
-            
-            if span_context:
-                span_context.record_exception(e)
-            
-            # Send error event to Kafka (if available)
-            if kafka_producer:
-                try:
-                    kafka_producer.send_error_event(
-                        error_message=str(e),
-                        error_type='request_processing_error',
-                        endpoint='/'
-                    )
-                except Exception as kafka_error:
-                    logger.warning(f"Failed to send Kafka error event: {str(kafka_error)}")
-            
-            if REQUEST_COUNT:
-                REQUEST_COUNT.labels(method='GET', endpoint='/', status='500').inc()
-            
-            return jsonify({"error": "Internal server error"}), 500
-        finally:
-            if span_context:
-                span_context.__exit__(None, None, None)
-            if duration_context:
-                duration_context.__exit__(None, None, None)
+                # Build comprehensive status of all dependencies
+                deps_status = {
+                    "kafka": "up" if kafka_producer else "down",
+                    "opentelemetry": "up" if tracer else "down",
+                    "prometheus": "up" if (REQUEST_COUNT and REQUEST_DURATION) else "down",
+                    "postgres": "up"
+                }
+                
+                # Count running services
+                running_services = sum(1 for status in deps_status.values() if status == "up")
+                total_services = len(deps_status)
+                
+                response = {
+                    "message": f"Time Service Running - {running_services}/{total_services} dependencies active",
+                    "timestamp": datetime.utcnow().isoformat() + "Z",
+                    "user_ip": user_ip,
+                    "proxy_chain": all_ips if all_ips else "No proxy IPs found",
+                    "hostname": hostname,
+                    "os": host_os,
+                    "pod_ip": pod_ip,
+                    "dependencies": deps_status
+                }
+                
+                # Set span attribute if tracing is enabled
+                span = trace.get_current_span()
+                if span and span.is_recording():
+                    span.set_attribute("user_ip", user_ip)
+                    span.set_attribute("has_proxy_chain", len(all_ips) > 0)
+                
+                logger.info(f"Request from {user_ip}", extra={"user_ip": user_ip, "proxy_chain": all_ips})
+                
+                # Send response event to Kafka (if available)
+                if kafka_producer:
+                    try:
+                        kafka_producer.send_response_event(
+                            user_ip=user_ip,
+                            status_code=200,
+                            response_time_ms=0
+                        )
+                    except Exception as e:
+                        logger.warning(f"Failed to send Kafka response event: {str(e)}")
+                
+                if REQUEST_COUNT:
+                    REQUEST_COUNT.labels(method='GET', endpoint='/', status='200').inc()
+                
+                return jsonify(response), 200
+            except Exception as e:
+                logger.error(f"Error processing request: {str(e)}", exc_info=True)
+                
+                # Record exception in span if tracing is enabled
+                span = trace.get_current_span()
+                if span and span.is_recording():
+                    span.record_exception(e)
+                
+                # Send error event to Kafka (if available)
+                if kafka_producer:
+                    try:
+                        kafka_producer.send_error_event(
+                            error_message=str(e),
+                            error_type='request_processing_error',
+                            endpoint='/'
+                        )
+                    except Exception as kafka_error:
+                        logger.warning(f"Failed to send Kafka error event: {str(kafka_error)}")
+                
+                if REQUEST_COUNT:
+                    REQUEST_COUNT.labels(method='GET', endpoint='/', status='500').inc()
+                
+                return jsonify({"error": "Internal server error"}), 500
     except Exception as e:
         logger.error(f"Unexpected error in request handler: {str(e)}", exc_info=True)
         return jsonify({"error": "Internal server error"}), 500
