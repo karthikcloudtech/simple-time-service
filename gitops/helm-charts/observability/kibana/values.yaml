@@ -17,9 +17,9 @@ resources:
 
 lifecycleHooks:
   preInstall:
-    enabled: false
+    enabled: true
   preUpgrade:
-    enabled: false
+    enabled: true
   preRollback:
     enabled: false
   preDelete:
