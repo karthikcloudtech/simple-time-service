@@ -10,7 +10,7 @@ image:
 
 # Higher replicas for production
 rollout:
-  replicas: 3
+  replicas: 1
 
 # Production ingress configuration
 ingress:
