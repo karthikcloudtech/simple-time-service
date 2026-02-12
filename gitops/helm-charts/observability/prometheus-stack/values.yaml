@@ -9,11 +9,11 @@ prometheus-stack:
       retention: 24h
       resources:
         requests:
-          cpu: 250m
-          memory: 512Mi
+          cpu: 100m
+          memory: 256Mi
         limits:
-          cpu: 500m
-          memory: 1Gi
+          cpu: 200m
+          memory: 512Mi
   
   grafana:
     replicas: 1

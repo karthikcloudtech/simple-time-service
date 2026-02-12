@@ -13,7 +13,7 @@ elasticsearchHosts: http://elasticsearch-master.logging.svc.cluster.local:9200
 resources:
   requests:
     memory: 512Mi
-    cpu: 500m
+    cpu: 100m
 
 lifecycleHooks:
   preInstall:

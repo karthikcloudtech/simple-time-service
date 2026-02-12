@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template_string
 from datetime import datetime
 import logging
 import os
@@ -159,7 +159,284 @@ except Exception as e:
     REQUEST_COUNT = None
     REQUEST_DURATION = None
 
-@app.route("/healthz", methods=["GET"])
+# HTML Status Dashboard Template
+STATUS_DASHBOARD = """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Time Service - Status Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            width: 100%;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: 600;
+        }
+        
+        .healthy {
+            background: #4CAF50;
+        }
+        
+        .content {
+            padding: 40px;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+        
+        @media (max-width: 600px) {
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .info-item {
+            border-left: 4px solid #667eea;
+            padding-left: 16px;
+        }
+        
+        .info-label {
+            font-size: 0.85em;
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+            font-weight: 600;
+        }
+        
+        .info-value {
+            font-size: 1.1em;
+            color: #333;
+            word-break: break-all;
+            font-family: 'Monaco', 'Courier New', monospace;
+            background: #f5f5f5;
+            padding: 8px 12px;
+            border-radius: 4px;
+        }
+        
+        .dependencies {
+            background: #f9f9f9;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 30px;
+        }
+        
+        .dependencies h3 {
+            color: #333;
+            margin-bottom: 16px;
+            font-size: 1.2em;
+        }
+        
+        .dep-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 16px;
+        }
+        
+        .dep-item {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        
+        .dep-item:hover {
+            border-color: #667eea;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+        }
+        
+        .dep-name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 0.95em;
+        }
+        
+        .dep-status {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+        
+        .dep-status.up {
+            background: #E8F5E9;
+            color: #2E7D32;
+        }
+        
+        .dep-status.down {
+            background: #FFEBEE;
+            color: #C62828;
+        }
+        
+        .status-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 6px;
+        }
+        
+        .status-dot.up {
+            background: #4CAF50;
+            animation: pulse-green 2s infinite;
+        }
+        
+        .status-dot.down {
+            background: #F44336;
+        }
+        
+        @keyframes pulse-green {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+        
+        .timestamp {
+            text-align: center;
+            color: #999;
+            font-size: 0.85em;
+            padding-top: 20px;
+            border-top: 1px solid #e0e0e0;
+            margin-top: 30px;
+        }
+        
+        .message {
+            background: linear-gradient(135deg, rgba(76, 175, 80, 0.1), rgba(102, 126, 234, 0.1));
+            border-left: 4px solid #4CAF50;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            color: #333;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⏱️ Simple Time Service</h1>
+            <div class="status-badge healthy">
+                <span class="status-dot up"></span>Running
+            </div>
+        </div>
+        
+        <div class="content">
+            <div class="message">
+                <strong>✓ {{ message }}</strong>
+            </div>
+            
+            <div class="dependencies">
+                <h3>📊 Dependencies Status</h3>
+                <div class="dep-grid">
+                    {% for dep, status in dependencies.items() %}
+                    <div class="dep-item">
+                        <div class="dep-name">{{ dep | replace('_', ' ') | title }}</div>
+                        <div class="dep-status {{ status }}">
+                            <span class="status-dot {{ status }}"></span>{{ status | upper }}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <div class="info-grid">
+                <div class="info-item">
+                    <div class="info-label">Hostname</div>
+                    <div class="info-value">{{ hostname }}</div>
+                </div>
+                
+                <div class="info-item">
+                    <div class="info-label">Operating System</div>
+                    <div class="info-value">{{ os }}</div>
+                </div>
+                
+                <div class="info-item">
+                    <div class="info-label">Pod IP</div>
+                    <div class="info-value">{{ pod_ip }}</div>
+                </div>
+                
+                <div class="info-item">
+                    <div class="info-label">Client IP</div>
+                    <div class="info-value">{{ user_ip }}</div>
+                </div>
+                
+                {% if proxy_chain != 'No proxy IPs found' %}
+                <div class="info-item">
+                    <div class="info-label">Proxy Chain</div>
+                    <div class="info-value">{{ proxy_chain | join(' → ') }}</div>
+                </div>
+                {% endif %}
+                
+                <div class="info-item">
+                    <div class="info-label">Timestamp (UTC)</div>
+                    <div class="info-value">{{ timestamp }}</div>
+                </div>
+            </div>
+            
+            <div class="timestamp">
+                Last updated: {{ timestamp }} • Status auto-refreshes every 30s
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Auto-refresh every 30 seconds
+        setTimeout(() => location.reload(), 30000);
+    </script>
+</body>
+</html>
+"""
+
+
 def health_check():
     """Lightweight health check endpoint for Kubernetes probes"""
     if REQUEST_COUNT:
@@ -338,7 +615,11 @@ def get_time_and_ip():
                 if REQUEST_COUNT:
                     REQUEST_COUNT.labels(method='GET', endpoint='/', status='200').inc()
                 
-                return jsonify(response), 200
+                # Return HTML or JSON based on Accept header
+                if 'text/html' in request.headers.get('Accept', ''):
+                    return render_template_string(STATUS_DASHBOARD, **response), 200, {'Content-Type': 'text/html'}
+                else:
+                    return jsonify(response), 200
             except Exception as e:
                 logger.error(f"Error processing request: {str(e)}", exc_info=True)
                 

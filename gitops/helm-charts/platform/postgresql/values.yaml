@@ -16,12 +16,10 @@ postgresql:
     resources:
       requests:
         memory: 256Mi
-        cpu: 250m
-      limits:
-        memory: 512Mi
-        cpu: 500m
-
-  persistence:
+          cpu: 100m
+        limits:
+          memory: 512Mi
+          cpu: 200m
     enabled: true
     storageClass: gp3
     size: 5Gi
