@@ -1,41 +1,47 @@
 # Elasticsearch Helm Values
 # Used by: gitops/argo-apps/observability/elasticsearch.yaml
-# Chart: elastic/elasticsearch
+# Chart: elastic/elasticsearch (aliased as 'elasticsearch' in dependencies)
 
-# Force single replica for non-HA setup
-replicas: 1
-minimumMasterNodes: 1
+elasticsearch:
+  # 2 replicas for AZ distribution (1 per AZ), NOT for HA
+  # us-east-1a (2 nodes) and us-east-1b (2 nodes)
+  # Ensures log collection from both AZs
+  replicas: 2
+  minimumMasterNodes: 1
 
-# Add these to override chart defaults
-nodeGroup: "master"
-roles:
-  - master
-  - data
-  - ingest
+  # Pod anti-affinity to spread across AZs
+  podAntiAffinity: "soft"
+  
+  # Single master-data-ingest node (not true HA cluster)
+  nodeGroup: "master"
+  roles:
+    - master
+    - data
+    - ingest
 
-resources:
-  requests:
-    memory: 512Mi
-    cpu: 150m
-  limits:
-    memory: 1Gi
-    cpu: 500m
+  resources:
+    requests:
+      memory: 512Mi
+      cpu: 150m
+    limits:
+      memory: 1Gi
+      cpu: 500m
 
-persistence:
-  enabled: true
-  storageClass: gp3
-  size: 10Gi
+  persistence:
+    enabled: true
+    storageClass: gp3
+    size: 10Gi
 
-# Enable TLS with self-signed certs from cert-manager
-tls:
-  enabled: true
-  existingCertSecret: elasticsearch-tls
-  existingCaSecret: elasticsearch-tls
-  existingCertSecretCertName: tls.crt
-  existingCertSecretKeyName: tls.key
+  # Enable TLS with self-signed certs from cert-manager
+  tls:
+    enabled: true
+    existingCertSecret: elasticsearch-tls
+    existingCaSecret: elasticsearch-tls
+    existingCertSecretCertName: tls.crt
+    existingCertSecretKeyName: tls.key
 
-# Security disabled for testing
-xpack:
-  security:
-    enabled: false
+  # Security disabled for testing
+  xpack:
+    security:
+      enabled: false
 
