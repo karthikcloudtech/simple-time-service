@@ -2,8 +2,16 @@
 # Used by: gitops/argo-apps/observability/elasticsearch.yaml
 # Chart: elastic/elasticsearch
 
+# Force single replica for non-HA setup
 replicas: 1
 minimumMasterNodes: 1
+
+# Add these to override chart defaults
+nodeGroup: "master"
+roles:
+  - master
+  - data
+  - ingest
 
 resources:
   requests:
