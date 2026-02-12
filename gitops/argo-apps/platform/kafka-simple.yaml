@@ -51,6 +51,8 @@ spec:
               fieldPath: metadata.name
         - name: KAFKA_PROCESS_ROLES
           value: "broker,controller"
+        - name: KAFKA_ZOOKEEPER_CONNECT
+          value: ""
         - name: KAFKA_CONTROLLER_QUORUM_VOTERS
           value: "0@kafka-0.kafka.kafka.svc.cluster.local:9093"
         - name: KAFKA_LISTENERS
