@@ -65,7 +65,7 @@ container:
       cpu: "100m"
     limits:
       memory: "256Mi"
-      cpu: "500m"
+      cpu: "300m"
   livenessProbe:
     httpGet:
       path: /healthz
