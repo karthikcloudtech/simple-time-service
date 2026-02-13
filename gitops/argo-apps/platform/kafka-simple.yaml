@@ -4,19 +4,6 @@ kind: Namespace
 metadata:
   name: kafka
 ---
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: kafka-pvc
-  namespace: kafka
-spec:
-  accessModes:
-    - ReadWriteOnce
-  storageClassName: gp3
-  resources:
-    requests:
-      storage: 5Gi
----
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -33,6 +20,10 @@ spec:
       labels:
         app: kafka
     spec:
+      securityContext:
+        fsGroup: 1000
+        runAsUser: 1000
+        runAsGroup: 1000
       containers:
       - name: kafka
         image: apache/kafka:4.1.1
@@ -44,7 +35,7 @@ spec:
           name: controller
         env:
         - name: CLUSTER_ID
-          value: "MkQkRjRlMTAwMDAxNDAxNA"
+          value: "c2ltcGxlLXRpbWUtc3ZjLQ"  # base64 of 'simple-time-svc-'
         - name: KAFKA_NODE_ID
           value: "0"
         - name: KAFKA_PROCESS_ROLES
@@ -60,7 +51,7 @@ spec:
         - name: KAFKA_CONTROLLER_LISTENER_NAMES
           value: "CONTROLLER"
         - name: KAFKA_LOG_DIRS
-          value: "/var/lib/kafka/data"
+          value: "/var/lib/kafka/data/kafka-logs"
         - name: KAFKA_NUM_PARTITIONS
           value: "3"
         - name: KAFKA_DEFAULT_REPLICATION_FACTOR
@@ -89,10 +80,6 @@ spec:
             port: 9092
           initialDelaySeconds: 20
           periodSeconds: 5
-      volumes:
-      - name: kafka-storage
-        persistentVolumeClaim:
-          claimName: kafka-pvc
   volumeClaimTemplates:
   - metadata:
       name: kafka-storage
