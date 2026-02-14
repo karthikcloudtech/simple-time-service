@@ -3,6 +3,15 @@ name: Terraform
 on:
   pull_request:
     branches: [main, develop]
+    paths:
+      - "infra/**"
+      - ".github/workflows/terraform.yml"
+
+  push:
+    branches: [main, develop]
+    paths:
+      - "infra/**"
+      - ".github/workflows/terraform.yml"
 
 env:
   TF_ROOT: infra/environments/prod
@@ -10,10 +19,13 @@ env:
   PROJECT_NAME: simple-time-service
   ENVIRONMENT: prod
 
+# --------------------
+# STAGE 1: TERRAFORM PLAN (on PRs)
+# --------------------
 jobs:
   plan:
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'pull_request' }}
+    if: github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@v4
       - uses: hashicorp/setup-terraform@v3
@@ -34,9 +46,13 @@ jobs:
         run: terraform validate
 
       - name: Terraform plan
-        working-directory: ${{ env.TF_ROOT }}
-        run: terraform plan -var-file=terraform.tfvars
-
+# --------------------
+# STAGE 2: TERRAFORM APPLY (on push to main/develop after PR merge)
+# --------------------
+  apply:
+    runs-on: ubuntu-latest
+    needs: plan
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
   apply:
     runs-on: ubuntu-latest
     if: ${{ github.event_name == 'pull_request' }}

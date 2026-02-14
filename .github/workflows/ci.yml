@@ -25,9 +25,10 @@ on:
 
 env:
   IMAGE_NAME: docker.io/${{ secrets.DOCKERHUB_USERNAME }}/simple-time-service
+  PROJECT_NAME: simple-time-service
 
 # --------------------
-# BUILD & VALIDATE (PRs and Pushes)
+# STAGE 1: BUILD (sequential)
 # --------------------
 jobs:
   build:
@@ -46,7 +47,11 @@ jobs:
         run: python -m compileall app/
 
 # --------------------
-# DOCKER BUILD & PUSH
+# STAGE 2: PARALLEL JOBS (after build)
+#   - docker: build & push images
+#   - semgrep: SAST scan
+#   - sonarqube: code quality
+#   - owasp-dependency-check: CVE scan
 # --------------------
   docker:
     runs-on: ubuntu-latest
@@ -108,3 +113,139 @@ jobs:
           docker pull "${IMAGE_NAME}:${{ steps.tags.outputs.sha_tag }}"
           docker tag "${IMAGE_NAME}:${{ steps.tags.outputs.sha_tag }}" "${IMAGE_NAME}:${{ steps.tags.outputs.release_tag }}"
           docker push "${IMAGE_NAME}:${{ steps.tags.outputs.release_tag }}"
+
+  semgrep:
+    runs-on: ubuntu-latest
+    needs: build
+    container:
+      image: semgrep/semgrep
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Semgrep SAST scan
+        env:
+          SEMGREP_RULES: >-
+            p/default
+            p/python
+            p/flask
+            p/docker
+            p/owasp-top-ten
+            p/security-audit
+        run: semgrep ci --json --output semgrep-results.json || true
+
+      - name: Upload Semgrep results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: semgrep-results
+          path: semgrep-results.json
+          retention-days: 30
+
+# --------------------
+# TRIVY – Container Image & Filesystem Vulnerability Scan
+# --------------------
+  sonarqube:
+    runs-on: ubuntu-latest
+    needs: build
+      - name: Run Trivy filesystem scan (dependencies)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          format: table
+          severity: CRITICAL,HIGH
+          exit-code: "0"
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Resolve image tag
+        id: tag
+        run: echo "sha_tag=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+
+      - name: Run Trivy image scan
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.sha_tag }}
+          format: json
+          output: trivy-image-results.json
+          severity: CRITICAL,HIGH,MEDIUM
+          exit-code: "0"
+
+      - name: Upload Trivy results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-results
+          path: trivy-image-results.json
+          retention-days: 30
+
+# --------------------
+# SONARQUBE – Code Quality & Security Analysis
+# --------------------
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v4
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        with:
+          args: >
+            -Dsonar.projectKey=${{ env.PROJECT_NAME }}
+            -Dsonar.sources=app/
+            -Dsonar.python.version=3.11
+            -Dsonar.qualitygate.wait=true
+
+      - name: SonarQube Quality Gate check
+        uses: SonarSource/sonarqube-quality-gate-action@v1
+        timeout-minutes: 5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run OWASP Dependency-Check
+        uses: dependency-check/Dependency-Check_Action@main
+        with:
+          project: ${{ env.PROJECT_NAME }}
+          path: .
+          format: HTML
+          args: >-
+            --scan requirements.txt
+            --enableExperimental
+            --failOnCVSS 9
+            --nvdApiKey ${{ secrets.NVD_API_KEY }}
+        env:
+          JAVA_HOME: /opt/jdk
+
+      - name: Upload OWASP Dependency-Check report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: owasp-dependency-check-report
+          path: reports/
+          retention-days: 30
+
+
+# --------------------
+# STAGE 3: TRIVY SCAN (after docker builds)
+#   - Requires docker image to be built
+# --------------------
+  trivy:
+    runs-on: ubuntu-latest
+    needs: docker
