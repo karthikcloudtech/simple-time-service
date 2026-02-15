@@ -75,3 +75,4 @@ jobs:
       - name: Terraform apply
         working-directory: ${{ env.TF_ROOT }}
         run: terraform apply -auto-approve -var-file=terraform.tfvars
+

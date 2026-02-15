@@ -34,6 +34,8 @@ Stage 2 (parallel):
   │
   ├→ semgrep (ubuntu-latest, semgrep/semgrep container)
   │
+  ├→ snyk (ubuntu-latest)
+  │
   ├→ sonarqube (ubuntu-latest)
   │
   └→ owasp-dependency-check (ubuntu-latest)
