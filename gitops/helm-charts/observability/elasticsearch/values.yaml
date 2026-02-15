@@ -40,8 +40,14 @@ elasticsearch:
     existingCertSecretCertName: tls.crt
     existingCertSecretKeyName: tls.key
 
-  # Security disabled for testing
+  # Security enabled with TLS
   xpack:
     security:
-      enabled: false
+      enabled: true
+      http:
+        ssl:
+          enabled: true
+          keystore:
+            path: /usr/share/elasticsearch/config/certs/elasticsearch.p12
+            password: changeme
 
