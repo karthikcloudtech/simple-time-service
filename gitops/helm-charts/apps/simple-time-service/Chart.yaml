@@ -3,4 +3,4 @@ name: simple-time-service
 description: A Helm chart for simple-time-service application
 type: application
 version: 1.0.0
-appVersion: "pr-d8805a3"
+appVersion: "pr-d4d59ec"

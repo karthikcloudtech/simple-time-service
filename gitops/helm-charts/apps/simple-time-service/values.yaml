@@ -10,7 +10,7 @@ namespace:
 # Image configuration
 image:
   repository: karthikbm2k25/simple-time-service
-  tag: "pr-d8805a3"
+  tag: "pr-d4d59ec"
   pullPolicy: IfNotPresent
 
 # Rollout configuration
@@ -58,7 +58,7 @@ container:
     - name: OTEL_SERVICE_NAME
       value: "simple-time-service"
     - name: OTEL_RESOURCE_ATTRIBUTES
-      value: "service.name=simple-time-service,service.version=pr-d8805a3"
+      value: "service.name=simple-time-service,service.version=pr-d4d59ec"
   resources:
     requests:
       memory: "128Mi"
