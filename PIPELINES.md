@@ -23,13 +23,16 @@ All GitHub Actions workflows for this project. View live runs in the **[Actions]
 ### Jobs
 
 ```
-build (ubuntu-latest)
-  ↓
+Stage 1:
+  build (ubuntu-latest)
+    ↓
+Stage 2 (parallel):
   ├→ docker (ubuntu-latest)
+  │    ↓
+  │  Stage 3:
+  │    └→ trivy (ubuntu-latest)
   │
   ├→ semgrep (ubuntu-latest, semgrep/semgrep container)
-  │
-  ├→ trivy (ubuntu-latest)
   │
   ├→ sonarqube (ubuntu-latest)
   │
@@ -41,9 +44,9 @@ build (ubuntu-latest)
 | **build** | Install Python deps, compile bytecode | — | — |
 | **docker** | Build & push multi-arch images to Docker Hub (or tag existing SHA) | — | `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN` |
 | **semgrep** | SAST with Python/Flask/Docker/OWASP rules | `semgrep-results.json` | — |
-| **trivy** | CVE scan: filesystem + Docker image | `trivy-image-results.json` | `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN` |
 | **sonarqube** | Code quality & security with quality gate | — | `SONAR_TOKEN`, `SONAR_HOST_URL` |
 | **owasp-dependency-check** | Scan `requirements.txt` for known CVEs; fails on CVSS ≥ 9 | `owasp-dependency-check-report/` (HTML) | `NVD_API_KEY` |
+| **trivy** (after docker) | CVE scan: filesystem + Docker image | `trivy-image-results.json` | `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN` |
 
 ---
 
