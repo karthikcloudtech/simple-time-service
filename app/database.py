@@ -4,15 +4,38 @@ from psycopg2.pool import SimpleConnectionPool
 import os
 import logging
 from datetime import datetime
+import boto3
+from botocore.exceptions import ClientError
 
 logger = logging.getLogger(__name__)
 
+# Function to retrieve password from AWS Secrets Manager
+def get_db_password_from_secrets():
+    """Retrieve DB password from AWS Secrets Manager"""
+    secret_name = os.getenv('AWS_SECRET_NAME', 'simple-time-service-rds-credentials')
+    region = os.getenv('AWS_REGION', 'us-east-1')
+    
+    try:
+        client = boto3.client('secretsmanager', region_name=region)
+        response = client.get_secret_value(SecretId=secret_name)
+        if 'SecretString' in response:
+            return response['SecretString']
+        else:
+            logger.error(f"No SecretString found in {secret_name}")
+            return None
+    except ClientError as e:
+        logger.warning(f"Could not retrieve password from Secrets Manager: {str(e)}. Using fallback.")
+        return os.getenv('DB_PASSWORD', 'changeme123')
+    except Exception as e:
+        logger.warning(f"Unexpected error retrieving from Secrets Manager: {str(e)}")
+        return os.getenv('DB_PASSWORD', 'changeme123')
+
 # PostgreSQL connection configuration
-DB_HOST = os.getenv('DB_HOST', 'postgresql.postgres.svc.cluster.local')
+DB_HOST = os.getenv('DB_HOST', 'simple-time-service-postgres.co18eum88817.us-east-1.rds.amazonaws.com')
 DB_PORT = os.getenv('DB_PORT', '5432')
 DB_NAME = os.getenv('DB_NAME', 'appdb')
 DB_USER = os.getenv('DB_USER', 'appuser')
-DB_PASSWORD = os.getenv('DB_PASSWORD', 'changeme123')
+DB_PASSWORD = get_db_password_from_secrets()
 
 # Connection pool for better performance
 conn_pool = None
