@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 # Function to retrieve password from AWS Secrets Manager
 def get_db_password_from_secrets():
     """Retrieve DB password from AWS Secrets Manager"""
-    secret_name = os.getenv('AWS_SECRET_NAME', 'simple-time-service-rds-credentials')
+    secret_name = os.getenv('AWS_SECRET_NAME', 'simple-time-service-postgres')
     region = os.getenv('AWS_REGION', 'us-east-1')
     
     try:
@@ -24,7 +24,7 @@ def get_db_password_from_secrets():
             logger.error(f"No SecretString found in {secret_name}")
             return None
     except ClientError as e:
-        logger.warning(f"Could not retrieve password from Secrets Manager: {str(e)}. Using fallback.")
+        logger.warning(f"Could not retrieve secret {secret_name}: {str(e)}. Using fallback.")
         return os.getenv('DB_PASSWORD', 'changeme123')
     except Exception as e:
         logger.warning(f"Unexpected error retrieving from Secrets Manager: {str(e)}")
