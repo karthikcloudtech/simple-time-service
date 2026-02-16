@@ -28,8 +28,12 @@ env:
   PROJECT_NAME: simple-time-service
 
 # --------------------
-# STAGE 1: BUILD (sequential)
+# WORKFLOW STAGES
 # --------------------
+# STAGE 1: BUILD (sequential) - Compile dependencies
+# STAGE 2: PARALLEL (after build) - Docker, Semgrep, SonarCloud, OWASP
+# STAGE 3: TRIVY SCAN (after docker) - Image vulnerability scan
+# Note: Terraform plan/apply handled in separate terraform.yml workflow
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -183,6 +187,13 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Cache SonarCloud packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@v4
         env:
@@ -258,14 +269,21 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Resolve image tag
+      - name: Resolve image tag for Trivy scan
         id: tag
-        run: echo "sha_tag=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+        run: |
+          SHA_TAG=${GITHUB_SHA::7}
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            IMAGE_TAG=${IMAGE_NAME}:pr-${SHA_TAG}
+          else
+            IMAGE_TAG=${IMAGE_NAME}:${SHA_TAG}
+          fi
+          echo "image-ref=${IMAGE_TAG}" >> "$GITHUB_OUTPUT"
 
       - name: Run Trivy image scan
         uses: aquasecurity/trivy-action@0.28.0
         with:
-          image-ref: ${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.sha_tag }}
+          image-ref: ${{ steps.tag.outputs.image-ref }}
           format: json
           output: trivy-image-results.json
           severity: CRITICAL,HIGH,MEDIUM

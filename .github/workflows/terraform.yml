@@ -50,11 +50,12 @@ jobs:
         run: terraform plan
 
 # --------------------
-# STAGE 2: TERRAFORM APPLY (on push to main/develop after PR merge)
+# STAGE 2: TERRAFORM APPLY (on push to main/develop)
 # --------------------
   apply:
     runs-on: ubuntu-latest
     if: ${{ github.event_name == 'pull_request' }}
+    needs: plan
     environment: prod
     steps:
       - uses: actions/checkout@v4
