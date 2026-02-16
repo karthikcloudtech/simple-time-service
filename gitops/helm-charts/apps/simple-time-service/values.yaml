@@ -18,27 +18,27 @@ rollout:
   replicas: 1
   strategy:
     canary:
-      enabled: true
-      steps:
-        - setWeight: 20
-        - pause: 5m
-        - setWeight: 50
-        - pause: 5m
-        - setWeight: 100
-      analysis:
-        interval: 30s
-        threshold: 2
-        maxWeight: 50
-        startingWeight: 0
-      metrics:
-        - name: canary-4xx-regression
-          weightPercentage: 50
-        - name: canary-5xx-regression
-          weightPercentage: 50
-      trafficRouting:
-        alb:
-          enabled: true
-          servicePort: 80
+      enabled: false
+      # steps:
+      #   - setWeight: 20
+      #   - pause: 5m
+      #   - setWeight: 50
+      #   - pause: 5m
+      #   - setWeight: 100
+      # analysis:
+      #   interval: 30s
+      #   threshold: 2
+      #   maxWeight: 50
+      #   startingWeight: 0
+      # metrics:
+      #   - name: canary-4xx-regression
+      #     weightPercentage: 50
+      #   - name: canary-5xx-regression
+      #     weightPercentage: 50
+      # trafficRouting:
+      #   alb:
+      #     enabled: true
+      #     servicePort: 80
 
 # Container configuration
 container:

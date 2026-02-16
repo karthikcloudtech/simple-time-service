@@ -54,7 +54,7 @@ jobs:
 # --------------------
   apply:
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'pull_request' }}
+    if: github.event_name == 'push'
     needs: plan
     environment: prod
     steps:

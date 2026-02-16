@@ -187,15 +187,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Cache SonarCloud packages
-        uses: actions/cache@v3
-        with:
-          path: ~/.sonar/cache
-          key: ${{ runner.os }}-sonar
-          restore-keys: ${{ runner.os }}-sonar
-
       - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@v4
+        uses: SonarSource/sonarcloud-github-action@v3
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
@@ -204,7 +197,6 @@ jobs:
             -Dsonar.organization=${{ github.repository_owner }}
             -Dsonar.sources=app/
             -Dsonar.python.version=3.11
-            -Dsonar.qualitygate.wait=true
 
 # --------------------
 # OWASP Dependency-Check – CVE Scan
