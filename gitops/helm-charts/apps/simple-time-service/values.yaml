@@ -13,9 +13,14 @@ image:
   tag: "pr-d4d59ec"
   pullPolicy: IfNotPresent
 
-# Rollout configuration
-rollout:
-  replicas: 1
+# Deployment configuration
+deployment:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
 
 # Container configuration
 container:

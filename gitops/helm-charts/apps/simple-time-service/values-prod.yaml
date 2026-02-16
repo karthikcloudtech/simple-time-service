@@ -9,8 +9,8 @@ image:
   tag: "pr-d4d59ec"
 
 # Higher replicas for production
-rollout:
-  replicas: 1
+deployment:
+  replicas: 2
 
 # Production ingress configuration
 ingress:

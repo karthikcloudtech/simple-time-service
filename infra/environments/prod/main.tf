@@ -62,3 +62,24 @@ module "eks" {
 module "ec2" {
   source = "../../terraform/modules/ec2"
 }
+
+module "rds" {
+  source = "../../terraform/modules/rds"
+
+  project_name           = var.project_name
+  vpc_id                 = module.vpc.vpc_id
+  private_subnet_ids     = module.vpc.private_subnet_ids
+  eks_security_group_id  = module.eks.cluster_security_group_id
+  
+  # RDS Configuration
+  postgres_version       = var.postgres_version
+  instance_class         = var.rds_instance_class
+  allocated_storage      = var.rds_allocated_storage
+  database_name          = var.rds_database_name
+  master_username        = var.rds_master_username
+  master_password        = var.rds_master_password
+  multi_az               = var.rds_multi_az
+  backup_retention_days  = var.rds_backup_retention_days
+  deletion_protection    = var.rds_deletion_protection
+  skip_final_snapshot    = var.rds_skip_final_snapshot
+}

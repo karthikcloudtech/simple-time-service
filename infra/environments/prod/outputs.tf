@@ -67,3 +67,39 @@ output "aws_load_balancer_controller_role_arn" {
   description = "IAM role ARN for AWS Load Balancer Controller"
   value       = module.eks.aws_load_balancer_controller_role_arn
 }
+# RDS Outputs
+output "rds_db_instance_id" {
+  description = "RDS instance ID"
+  value       = module.rds.db_instance_id
+}
+
+output "rds_db_endpoint" {
+  description = "RDS endpoint (hostname:port)"
+  value       = module.rds.db_endpoint
+}
+
+output "rds_db_host" {
+  description = "RDS database hostname"
+  value       = module.rds.db_host
+}
+
+output "rds_db_port" {
+  description = "RDS database port"
+  value       = module.rds.db_port
+}
+
+output "rds_db_name" {
+  description = "RDS database name"
+  value       = module.rds.db_name
+}
+
+output "rds_master_username" {
+  description = "RDS master username"
+  value       = module.rds.db_username
+  sensitive   = true
+}
+
+output "rds_security_group_id" {
+  description = "RDS security group ID"
+  value       = module.rds.security_group_id
+}
