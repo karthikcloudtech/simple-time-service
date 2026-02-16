@@ -43,12 +43,3 @@ output "security_group_id" {
   description = "RDS security group ID"
   value       = aws_security_group.rds.id
 }
-output "rds_credentials_secret_name" {
-  description = "Name of the secret in AWS Secrets Manager containing RDS credentials"
-  value       = aws_secretsmanager_secret.rds_credentials.name
-}
-
-output "rds_credentials_secret_arn" {
-  description = "ARN of the secret in AWS Secrets Manager containing RDS credentials"
-  value       = aws_secretsmanager_secret.rds_credentials.arn
-}
