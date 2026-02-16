@@ -40,7 +40,7 @@ variable "public_subnet_cidrs" {
 variable "postgres_version" {
   description = "PostgreSQL engine version"
   type        = string
-  default     = "18.1-R1"
+  default     = "18.1"
 }
 
 variable "rds_instance_class" {

@@ -106,6 +106,6 @@ output "rds_security_group_id" {
 
 output "rds_master_user_secret_arn" {
   description = "ARN of the AWS-managed secret in Secrets Manager containing RDS master user password"
-  value       = module.rds.rds_master_user_secret_name
+  value       = module.rds.db_master_user_secret_arn
 }
 

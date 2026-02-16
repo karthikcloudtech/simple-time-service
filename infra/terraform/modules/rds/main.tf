@@ -59,6 +59,10 @@ resource "aws_db_instance" "postgres" {
   vpc_security_group_ids = [aws_security_group.rds.id]
   publicly_accessible    = false
 
+  # AWS manages master user password automatically
+  # Secret is created in Secrets Manager with name: !aws/rds/{resource-id}
+  # AWS handles rotation, encryption, and all secret management
+  # Application retrieves password by passing the secret name to Secrets Manager API
   manage_master_user_password = true
 
   skip_final_snapshot       = var.skip_final_snapshot
