@@ -50,8 +50,9 @@ variable "master_username" {
 }
 
 variable "master_password" {
-  description = "Master database password"
+  description = "DEPRECATED: Master password is now managed by AWS Secrets Manager"
   type        = string
+  default     = ""
   sensitive   = true
 }
 

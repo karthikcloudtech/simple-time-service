@@ -41,6 +41,16 @@ container:
       value: "simple-time-service"
     - name: OTEL_RESOURCE_ATTRIBUTES
       value: "service.name=simple-time-service,service.version=pr-d4d59ec"
+    - name: DB_HOST
+      value: "postgresql.postgres.svc.cluster.local"
+    - name: DB_PORT
+      value: "5432"
+    - name: DB_NAME
+      value: "appdb"
+    - name: DB_USER
+      value: "appuser"
+    - name: DB_PASSWORD
+      value: "changeme123"
   resources:
     requests:
       memory: "128Mi"

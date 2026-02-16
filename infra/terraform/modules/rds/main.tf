@@ -47,7 +47,6 @@ resource "aws_db_instance" "postgres" {
 
   db_name  = var.database_name
   username = var.master_username
-  password = var.master_password
 
   allocated_storage     = var.allocated_storage
   storage_type          = "gp3"
@@ -59,6 +58,8 @@ resource "aws_db_instance" "postgres" {
   db_subnet_group_name   = aws_db_subnet_group.main.name
   vpc_security_group_ids = [aws_security_group.rds.id]
   publicly_accessible    = false
+
+  manage_master_user_password = true
 
   skip_final_snapshot       = var.skip_final_snapshot
   final_snapshot_identifier = "${var.project_name}-postgres-final-snapshot-${formatdate("YYYY-MM-DD-hhmm", timestamp())}"

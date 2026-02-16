@@ -77,7 +77,6 @@ module "rds" {
   allocated_storage      = var.rds_allocated_storage
   database_name          = var.rds_database_name
   master_username        = var.rds_master_username
-  master_password        = var.rds_master_password
   multi_az               = var.rds_multi_az
   backup_retention_days  = var.rds_backup_retention_days
   deletion_protection    = var.rds_deletion_protection

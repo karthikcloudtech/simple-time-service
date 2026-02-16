@@ -12,6 +12,35 @@ image:
 deployment:
   replicas: 2
 
-# Production ingress configuration
-ingress:
-  host: time.kart24.shop
+# Production database configuration (RDS)
+# Get these values from Terraform outputs:
+#   terraform output rds_db_host
+#   terraform output rds_db_port
+#   terraform output rds_db_name
+container:
+  env:
+    - name: PORT
+      value: "8080"
+    - name: KAFKA_BROKERS
+      value: "kafka.kafka.svc.cluster.local:9092"
+    - name: KAFKA_TOPIC_EVENTS
+      value: "simple-time-service-events"
+    - name: KAFKA_CONSUMER_GROUP
+      value: "simple-time-service-group"
+    - name: OTEL_EXPORTER_OTLP_ENDPOINT
+      value: "http://otel-collector.observability.svc.cluster.local:4317"
+    - name: OTEL_SERVICE_NAME
+      value: "simple-time-service"
+    - name: OTEL_RESOURCE_ATTRIBUTES
+      value: "service.name=simple-time-service,service.version=pr-d4d59ec"
+    - name: DB_HOST
+      value: "simple-time-service-postgres.XXXXXXXXXXXXX.us-east-1.rds.amazonaws.com"  # Replace with RDS endpoint
+    - name: DB_PORT
+      value: "5432"
+    - name: DB_NAME
+      value: "simple_time_service"
+    - name: DB_USER
+      value: "postgres"
+    - name: DB_PASSWORD
+      value: ""  # Set via external secret or environment variable
+

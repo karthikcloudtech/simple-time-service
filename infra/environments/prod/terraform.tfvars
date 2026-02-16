@@ -12,7 +12,7 @@ rds_instance_class         = "db.t3.micro"
 rds_allocated_storage      = 20
 rds_database_name          = "simple_time_service"
 rds_master_username        = "postgres"
-# rds_master_password       = "YOUR_SECURE_PASSWORD_HERE"  # Set via TF_VAR_rds_master_password environment variable
+# Password is automatically managed by AWS Secrets Manager
 rds_multi_az               = false
 rds_backup_retention_days  = 7
 rds_deletion_protection    = true

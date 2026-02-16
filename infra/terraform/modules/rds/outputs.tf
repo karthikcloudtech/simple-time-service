@@ -34,10 +34,9 @@ output "db_username" {
   sensitive   = true
 }
 
-output "db_password" {
-  description = "RDS master password"
-  value       = aws_db_instance.postgres.password
-  sensitive   = true
+output "db_master_user_secret_arn" {
+  description = "ARN of the master user password secret in Secrets Manager"
+  value       = aws_db_instance.postgres.master_user_secret[0].secret_arn
 }
 
 output "security_group_id" {

@@ -69,8 +69,9 @@ variable "rds_master_username" {
 }
 
 variable "rds_master_password" {
-  description = "RDS master password"
+  description = "DEPRECATED: RDS master password is now managed by AWS Secrets Manager. Leave empty."
   type        = string
+  default     = ""
   sensitive   = true
 }
 

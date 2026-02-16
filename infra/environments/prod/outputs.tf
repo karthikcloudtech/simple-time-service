@@ -99,6 +99,11 @@ output "rds_master_username" {
   sensitive   = true
 }
 
+output "rds_master_user_secret_arn" {
+  description = "ARN of the master user secret in AWS Secrets Manager"
+  value       = module.rds.db_master_user_secret_arn
+}
+
 output "rds_security_group_id" {
   description = "RDS security group ID"
   value       = module.rds.security_group_id
