@@ -14,6 +14,7 @@ resource "aws_security_group" "rds" {
     description     = "Allow PostgreSQL from EKS cluster"
   }
 
+
   egress {
     from_port   = 0
     to_port     = 0
