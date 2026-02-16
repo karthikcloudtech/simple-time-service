@@ -99,12 +99,17 @@ output "rds_master_username" {
   sensitive   = true
 }
 
-output "rds_master_user_secret_arn" {
-  description = "ARN of the master user secret in AWS Secrets Manager"
-  value       = module.rds.db_master_user_secret_arn
-}
-
 output "rds_security_group_id" {
   description = "RDS security group ID"
   value       = module.rds.security_group_id
+}
+
+output "rds_credentials_secret_name" {
+  description = "Name of the secret in AWS Secrets Manager containing RDS credentials"
+  value       = module.rds.rds_credentials_secret_name
+}
+
+output "rds_credentials_secret_arn" {
+  description = "ARN of the secret in AWS Secrets Manager containing RDS credentials"
+  value       = module.rds.rds_credentials_secret_arn
 }

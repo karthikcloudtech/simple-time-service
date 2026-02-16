@@ -9,3 +9,4 @@ opentelemetry-exporter-otlp==1.27.0
 prometheus-client==0.21.0
 kafka-python==2.0.2
 psycopg2-binary==2.9.9
+boto3>=1.26.0

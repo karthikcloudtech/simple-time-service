@@ -71,3 +71,26 @@ resource "aws_db_instance" "postgres" {
     Name = "${var.project_name}-postgres"
   }
 }
+# Custom secret for project-specific RDS credentials
+resource "aws_secretsmanager_secret" "rds_credentials" {
+  name                    = "${var.project_name}-rds-credentials"
+  description             = "RDS credentials for ${var.project_name}"
+  recovery_window_in_days = 7
+
+  tags = {
+    Name = "${var.project_name}-rds-credentials"
+  }
+}
+
+# Store credentials in the secret
+resource "aws_secretsmanager_secret_version" "rds_credentials" {
+  secret_id = aws_secretsmanager_secret.rds_credentials.id
+  secret_string = jsonencode({
+    username = aws_db_instance.postgres.username
+    password = try(nonsensitive(aws_db_instance.postgres.master_user_secret[0].secret_string), "")
+    engine   = "postgres"
+    host     = aws_db_instance.postgres.address
+    port     = aws_db_instance.postgres.port
+    dbname   = aws_db_instance.postgres.db_name
+  })
+}
