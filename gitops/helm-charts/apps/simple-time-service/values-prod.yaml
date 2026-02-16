@@ -4,10 +4,6 @@
 namespace:
   name: simple-time-service
 
-# Production uses specific tested release image tag
-image:
-  tag: "pr-d4d59ec"
-
 # Higher replicas for production
 deployment:
   replicas: 2
@@ -31,8 +27,6 @@ container:
       value: "http://otel-collector.observability.svc.cluster.local:4317"
     - name: OTEL_SERVICE_NAME
       value: "simple-time-service"
-    - name: OTEL_RESOURCE_ATTRIBUTES
-      value: "service.name=simple-time-service,service.version=pr-d4d59ec"
     - name: DB_HOST
       value: "simple-time-service-postgres.XXXXXXXXXXXXX.us-east-1.rds.amazonaws.com"  # Replace with RDS endpoint
     - name: DB_PORT

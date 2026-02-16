@@ -10,8 +10,10 @@ namespace:
 # Image configuration
 image:
   repository: karthikbm2k25/simple-time-service
-  tag: "pr-d4d59ec"
   pullPolicy: IfNotPresent
+
+# App version (tag) - can be semantic version or git commit hash
+appVersion: "pr-078b766"
 
 # Deployment configuration
 deployment:
@@ -39,8 +41,6 @@ container:
       value: "http://otel-collector.observability.svc.cluster.local:4317"
     - name: OTEL_SERVICE_NAME
       value: "simple-time-service"
-    - name: OTEL_RESOURCE_ATTRIBUTES
-      value: "service.name=simple-time-service,service.version=pr-d4d59ec"
     - name: DB_HOST
       value: "postgresql.postgres.svc.cluster.local"
     - name: DB_PORT

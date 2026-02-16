@@ -1,5 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
+{{- $appVersion := .Values.appVersion }}
+{{- $image := printf "%s:%s" .Values.image.repository $appVersion }}
 metadata:
   name: {{ .Values.container.name }}
   namespace: {{ .Values.namespace.name }}
@@ -24,7 +26,7 @@ spec:
     spec:
       containers:
         - name: {{ .Values.container.name }}
-          image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+          image: {{ $image }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - containerPort: {{ .Values.container.port }}
@@ -35,6 +37,8 @@ spec:
             - name: {{ .name }}
               value: {{ .value | quote }}
           {{- end }}
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: "service.name={{ .Values.container.name }},service.version={{ $appVersion }}"
           resources:
             {{- toYaml .Values.container.resources | nindent 12 }}
           livenessProbe:
