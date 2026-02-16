@@ -208,12 +208,10 @@ Check `/tmp/events.db` exists and is writable. Consumer logs will show warnings 
 
 ## Infrastructure & Deployment
 
-For production deployment, Kubernetes setup, canary deployments, monitoring, and infrastructure guides, see:
+For production deployment, Kubernetes setup, monitoring, and infrastructure guides, see:
 
 - **[docs/infrastructure/SETUP.md](docs/infrastructure/SETUP.md)** - EKS cluster setup
-- **[docs/infrastructure/CANARY_GUIDE.md](docs/infrastructure/CANARY_GUIDE.md)** - Canary deployments with ArgoCD
 - **[docs/infrastructure/MONITORING_ACCESS.md](docs/infrastructure/MONITORING_ACCESS.md)** - Prometheus, Grafana, Kibana access
-- **[docs/infrastructure/INSTALLATION_BEST_PRACTICES.md](docs/infrastructure/INSTALLATION_BEST_PRACTICES.md)** - Best practices
 - **[docs/infrastructure/DNS_SETUP.md](docs/infrastructure/DNS_SETUP.md)** - DNS configuration
 - **[docs/infrastructure/SECRETS_MANAGEMENT.md](docs/infrastructure/SECRETS_MANAGEMENT.md)** - Secrets setup
 - **[docs/infrastructure/PROJECT_STRUCTURE.md](docs/infrastructure/PROJECT_STRUCTURE.md)** - Full project layout

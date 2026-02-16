@@ -34,35 +34,3 @@ spec:
             {{- toYaml .Values.container.livenessProbe | nindent 12 }}
           readinessProbe:
             {{- toYaml .Values.container.readinessProbe | nindent 12 }}
-  {{- if .Values.rollout.strategy.canary.enabled }}
-  strategy:
-    canary:
-      steps:
-      {{- range .Values.rollout.strategy.canary.steps }}
-        {{- if .setWeight }}
-        - setWeight: {{ .setWeight }}
-        {{- end }}
-        {{- if .pause }}
-        - pause:
-            duration: {{ .pause }}
-        {{- end }}
-      {{- end }}
-      analysis:
-        interval: {{ .Values.rollout.strategy.canary.analysis.interval }}
-        threshold: {{ .Values.rollout.strategy.canary.analysis.threshold }}
-        maxWeight: {{ .Values.rollout.strategy.canary.analysis.maxWeight }}
-        startingWeight: {{ .Values.rollout.strategy.canary.analysis.startingWeight }}
-      metrics:
-      {{- range .Values.rollout.strategy.canary.metrics }}
-        - name: {{ .name }}
-          weightPercentage: {{ .weightPercentage }}
-      {{- end }}
-      canaryService: {{ .Values.container.name }}-canary
-      stableService: {{ .Values.container.name }}-stable
-      {{- if .Values.rollout.strategy.canary.trafficRouting.alb.enabled }}
-      trafficRouting:
-        alb:
-          ingress: {{ .Values.container.name }}-ingress
-          servicePort: {{ .Values.rollout.strategy.canary.trafficRouting.alb.servicePort }}
-      {{- end }}
-  {{- end }}

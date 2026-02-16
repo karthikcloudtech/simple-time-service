@@ -448,8 +448,7 @@ AWS Account (us-east-1)
 │
 ├─ GitOps (ArgoCD)
 │  ├─ Monitors Git repository
-│  ├─ Auto-deploys on changes
-│  └─ Canary deployments (ArgoCD Rollouts)
+│  └─ Auto-deploys on changes
 │
 └─ Terraform State
    ├─ S3 bucket

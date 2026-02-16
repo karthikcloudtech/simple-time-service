@@ -16,29 +16,6 @@ image:
 # Rollout configuration
 rollout:
   replicas: 1
-  strategy:
-    canary:
-      enabled: false
-      # steps:
-      #   - setWeight: 20
-      #   - pause: 5m
-      #   - setWeight: 50
-      #   - pause: 5m
-      #   - setWeight: 100
-      # analysis:
-      #   interval: 30s
-      #   threshold: 2
-      #   maxWeight: 50
-      #   startingWeight: 0
-      # metrics:
-      #   - name: canary-4xx-regression
-      #     weightPercentage: 50
-      #   - name: canary-5xx-regression
-      #     weightPercentage: 50
-      # trafficRouting:
-      #   alb:
-      #     enabled: true
-      #     servicePort: 80
 
 # Container configuration
 container:
@@ -120,16 +97,4 @@ serviceMonitor:
   labels:
     release: prometheus
 
-# Analysis Templates for canary deployments
-analysisTemplates:
-  enabled: true
-  metrics4xx:
-    name: canary-4xx-regression
-    interval: 30s
-    count: 5
-    failureLimit: 3
-  metrics5xx:
-    name: canary-5xx-regression
-    interval: 30s
-    count: 5
-    failureLimit: 3
+

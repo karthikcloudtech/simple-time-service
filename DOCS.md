@@ -28,7 +28,6 @@ Quick guide to understanding this repository from any entry point.
 ### 🔧 **I want infrastructure & deployment details**
 → Check [docs/infrastructure/](docs/infrastructure/)
 - EKS cluster setup
-- Canary deployments
 - Monitoring and logging
 - DNS, secrets, troubleshooting
 
@@ -118,11 +117,9 @@ Infrastructure (Deployment & Operations):
 └── docs/infrastructure/
     ├── README.md
     ├── SETUP.md                    ← EKS setup
-    ├── CANARY_GUIDE.md             ← Deployments
     ├── MONITORING_ACCESS.md        ← Observability
     ├── SECRETS_MANAGEMENT.md
     ├── DNS_SETUP.md
-    ├── INSTALLATION_BEST_PRACTICES.md
     ├── PROJECT_STRUCTURE.md
     ├── TROUBLESHOOTING_AWS_LB_CONTROLLER.md
     └── IAM_ROLE_ANNOTATION_FIX.md
@@ -165,7 +162,6 @@ Infrastructure (Deployment & Operations):
 2. [ARCHITECTURE.md](ARCHITECTURE.md) - Understand design
 3. [docs/infrastructure/SETUP.md](docs/infrastructure/SETUP.md) - Deploy to EKS
 4. [docs/infrastructure/MONITORING_ACCESS.md](docs/infrastructure/MONITORING_ACCESS.md) - Set up monitoring
-5. [docs/infrastructure/CANARY_GUIDE.md](docs/infrastructure/CANARY_GUIDE.md) - Configure deployments
 
 **For Understanding Design:**
 1. [ARCHITECTURE.md](ARCHITECTURE.md) - All sections

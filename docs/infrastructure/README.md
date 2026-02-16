@@ -11,7 +11,6 @@ Production-ready infrastructure setup, operations, and troubleshooting for Simpl
 | Document | Purpose |
 |----------|---------|
 | **[SETUP.md](SETUP.md)** | Step-by-step EKS deployment with prerequisites and verification |
-| **[CANARY_GUIDE.md](CANARY_GUIDE.md)** | Zero-downtime deployments using ArgoCD Rollouts and Prometheus |
 | **[MONITORING_ACCESS.md](MONITORING_ACCESS.md)** | Access monitoring dashboards (Prometheus, Grafana, Kibana) |
 | **[SECRETS_MANAGEMENT.md](SECRETS_MANAGEMENT.md)** | Store and manage secrets via GitLab CI/CD |
 | **[DNS_SETUP.md](DNS_SETUP.md)** | Configure DNS and automatic SSL certificates |
