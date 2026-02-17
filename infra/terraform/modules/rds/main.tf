@@ -26,9 +26,6 @@ resource "aws_security_group" "rds" {
   tags = {
     Name = "${var.project_name}-rds-sg"
   }
-  lifecycle {
-  prevent_destroy = true  
-  }
   
 }
 
@@ -74,9 +71,7 @@ resource "aws_db_instance" "postgres" {
 
   multi_az            = var.multi_az
   auto_minor_version_upgrade = false
-  lifecycle {
-    prevent_destroy = true
-  }
+
   
   tags = {
     Name = "${var.project_name}-postgres"
