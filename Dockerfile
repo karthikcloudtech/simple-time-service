@@ -10,7 +10,6 @@ RUN pip3.11 install --no-cache-dir --prefix=/install -r requirements.txt
 # Stage 2: Final Image
 FROM --platform=$BUILDPLATFORM amazonlinux:2023 AS final
 RUN dnf install -y python3.11 \
- && dnf remove -y dnf \
  && dnf clean all \
  && rm -rf /var/cache/dnf/* /var/lib/dnf/* \
  && useradd -m appuser
