@@ -3,43 +3,45 @@ kind: Application
 metadata:
   name: kafka
   namespace: argocd
-  annotations:
-    argocd.argoproj.io/sync-wave: "0"
+
 spec:
   project: default
+
   source:
-  repoURL: https://charts.bitnami.com/bitnami
-  chart: kafka
-  targetRevision: 30.1.2
-  helm:
-    values: |
-      image:
-        registry: public.ecr.aws
-        repository: bitnami/kafka
-        tag: 3.9.0
+    repoURL: https://charts.bitnami.com/bitnami
+    chart: kafka
+    targetRevision: 30.1.2
+    helm:
+  values: |
+    global:
+      imageRegistry: public.ecr.aws
 
-      kraft:
-        enabled: true
+    image:
+      repository: bitnami/kafka
+      tag: 3.8.0
 
-      zookeeper:
-        enabled: false
+    kraft:
+      enabled: true
 
+    zookeeper:
+      enabled: false
+
+    controller:
+      replicaCount: 1
+
+    broker:
+      replicaCount: 1
+
+    listeners:
+      client:
+        protocol: PLAINTEXT
       controller:
-        replicaCount: 1
+        protocol: PLAINTEXT
 
-      broker:
-        replicaCount: 1
+    interBrokerListenerName: PLAINTEXT
+    allowPlaintextListener: true
 
-      listeners:
-        client:
-          protocol: PLAINTEXT
-        controller:
-          protocol: PLAINTEXT
-
-      interBrokerListenerName: PLAINTEXT
-      allowPlaintextListener: true
-
-      persistence:
-        enabled: true
-        storageClass: gp3
-        size: 5Gi
+    persistence:
+      enabled: true
+      storageClass: gp3-wait
+      size: 5Gi
