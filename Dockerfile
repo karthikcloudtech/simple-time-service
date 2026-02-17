@@ -30,4 +30,4 @@ COPY app/ .
 RUN chown -R appuser:appuser /app
 USER appuser
 EXPOSE 8080
-CMD ["python3.11", "app/app.py"]
+CMD ["python3.11", "app.py"]
