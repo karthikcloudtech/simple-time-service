@@ -12,37 +12,47 @@ spec:
     chart: kafka
     targetRevision: 30.1.2
     helm:
-  values: |
-    global:
-      imageRegistry: public.ecr.aws
+      values: |
+        global:
+          imageRegistry: public.ecr.aws
 
-    image:
-      registry: public.ecr.aws
-      repository: bitnami/kafka
-      tag: 3.8.0
+        image:
+          repository: bitnami/kafka
+          tag: 3.8.0
 
-    kraft:
-      enabled: true
+        kraft:
+          enabled: true
 
-    zookeeper:
-      enabled: false
+        zookeeper:
+          enabled: false
 
-    controller:
-      replicaCount: 1
+        controller:
+          replicaCount: 1
 
-    broker:
-      replicaCount: 1
+        broker:
+          replicaCount: 1
 
-    listeners:
-      client:
-        protocol: PLAINTEXT
-      controller:
-        protocol: PLAINTEXT
+        listeners:
+          client:
+            protocol: PLAINTEXT
+          controller:
+            protocol: PLAINTEXT
 
-    interBrokerListenerName: PLAINTEXT
-    allowPlaintextListener: true
+        interBrokerListenerName: PLAINTEXT
+        allowPlaintextListener: true
 
-    persistence:
-      enabled: true
-      storageClass: gp3-wait
-      size: 5Gi
+        persistence:
+          enabled: true
+          storageClass: gp3-wait
+          size: 5Gi
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kafka
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
