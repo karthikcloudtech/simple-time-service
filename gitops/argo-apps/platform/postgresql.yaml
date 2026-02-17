@@ -13,7 +13,7 @@
 #   project: default
 #   source:
 #     repoURL: https://github.com/karthikcloudtech/simple-time-service.git
-#     targetRevision: develop
+#     targetRevision: fastapi
 #     path: gitops/argo-apps/platform
 #     directory:
 #       include: postgresql-simple.yaml
