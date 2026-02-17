@@ -9,5 +9,5 @@ opentelemetry-instrumentation-requests>=0.49b0
 opentelemetry-exporter-otlp>=1.28.0
 prometheus-client>=0.21.0
 kafka-python>=2.0.2
-psycopg2-binary>=2.9.12
+psycopg2-binary>=2.9.11
 boto3>=1.35.0
