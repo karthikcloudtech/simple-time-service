@@ -1,9 +1,9 @@
 # Self-signed certificates for Elasticsearch & Kibana via cert-manager
 namespace: logging
 
-issuer:
-  name: selfsigned-issuer
-  kind: Issuer
+issuerRef:
+  name: internal-ca
+  kind: ClusterIssuer
 
 elasticsearch:
   enabled: true
