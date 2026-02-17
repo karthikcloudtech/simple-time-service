@@ -27,14 +27,3 @@ container:
       value: "http://otel-collector.observability.svc.cluster.local:4317"
     - name: OTEL_SERVICE_NAME
       value: "simple-time-service"
-    - name: DB_HOST
-      value: "simple-time-service-postgres.XXXXXXXXXXXXX.us-east-1.rds.amazonaws.com"  # Replace with RDS endpoint
-    - name: DB_PORT
-      value: "5432"
-    - name: DB_NAME
-      value: "simple_time_service"
-    - name: DB_USER
-      value: "postgres"
-    - name: DB_PASSWORD
-      value: ""  # Set via external secret or environment variable
-
