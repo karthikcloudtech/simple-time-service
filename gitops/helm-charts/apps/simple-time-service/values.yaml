@@ -17,7 +17,7 @@ appVersion: "latest"
 
 # Deployment configuration
 deployment:
-  replicas: 2
+  replicas: 1
   strategy:
     type: RollingUpdate
     rollingUpdate:
