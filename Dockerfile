@@ -26,7 +26,7 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip3.11 install --no-cache-dir -r requirements.txt
 
-COPY app/ ./app
+COPY app/ .
 RUN chown -R appuser:appuser /app
 USER appuser
 EXPOSE 8080
