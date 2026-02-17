@@ -6,8 +6,17 @@ metadata:
   annotations:
     storageclass.kubernetes.io/is-default-class: "true"
   {{- end }}
+
 provisioner: {{ .Values.storageClass.provisioner }}
-volumeBindingMode: {{ .Values.storageClass.volumeBindingMode }}
+volumeBindingMode: WaitForFirstConsumer
+
+allowedTopologies:
+- matchLabelExpressions:
+  - key: topology.kubernetes.io/zone
+    values:
+      - us-east-1a
+      - us-east-1b
+
 parameters:
   {{- range $key, $value := .Values.storageClass.parameters }}
   {{ $key }}: {{ $value | quote }}

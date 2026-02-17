@@ -30,7 +30,7 @@ elasticsearch:
   persistence:
     enabled: true
     storageClass: gp3
-    size: 10Gi
+    size: 20Gi
 
   # Enable TLS with self-signed certs from cert-manager
   tls:
