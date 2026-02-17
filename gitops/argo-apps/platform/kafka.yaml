@@ -16,7 +16,7 @@ spec:
       image:
         registry: public.ecr.aws
         repository: bitnami/kafka
-        tag: 3.7.0
+        tag: 3.8.0
 
       kraft:
         enabled: true
