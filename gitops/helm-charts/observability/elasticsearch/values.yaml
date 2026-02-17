@@ -1,18 +1,21 @@
-# Elasticsearch Helm Values
-# Used by: gitops/argo-apps/observability/elasticsearch.yaml
-# Chart: elastic/elasticsearch (aliased as 'elasticsearch' in dependencies)
-
 elasticsearch:
-  # 2 replicas for AZ distribution (1 per AZ), NOT for HA
-  # us-east-1a (2 nodes) and us-east-1b (2 nodes)
-  # Ensures log collection from both AZs
   replicas: 2
   minimumMasterNodes: 1
 
-  # Pod anti-affinity to spread across AZs
-  podAntiAffinity: "soft"
-  
-  # Single master-data-ingest node (not true HA cluster)
+  # keep pods on different nodes but SAME AZ
+  podAntiAffinity: "hard"
+
+  # IMPORTANT: force single AZ
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: topology.kubernetes.io/zone
+                operator: In
+                values:
+                  - us-east-1a   # change if your nodes use different zone
+
   nodeGroup: "master"
   roles:
     - master
@@ -29,10 +32,9 @@ elasticsearch:
 
   persistence:
     enabled: true
-    storageClass: gp3
+    storageClass: gp3-wait   # MUST be WaitForFirstConsumer
     size: 20Gi
 
-  # Enable TLS with self-signed certs from cert-manager
   tls:
     enabled: true
     existingCertSecret: elasticsearch-tls
@@ -40,8 +42,6 @@ elasticsearch:
     existingCertSecretCertName: tls.crt
     existingCertSecretKeyName: tls.key
 
-  # Security enabled with TLS from cert-manager
   xpack:
     security:
       enabled: true
-
