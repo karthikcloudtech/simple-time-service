@@ -13,7 +13,7 @@ image:
   pullPolicy: IfNotPresent
 
 # App version (tag) - can be semantic version or git commit hash
-appVersion: "pr-078b766"
+appVersion: "2.0.0"
 
 # Deployment configuration
 deployment:

@@ -9,7 +9,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/karthikcloudtech/simple-time-service.git
-    targetRevision: develop
+    targetRevision: fastapi
     path: gitops/helm-charts/observability/kibana
     helm:
       valueFiles:
