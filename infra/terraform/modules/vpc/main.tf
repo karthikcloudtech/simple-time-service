@@ -106,6 +106,25 @@ resource "aws_route_table_association" "private" {
   route_table_id = aws_route_table.private.id
 }
 
+# DB Private Subnets (separate from EKS subnets for better isolation)
+resource "aws_subnet" "db_private" {
+  count = length(var.db_subnet_cidrs)
+  vpc_id = aws_vpc.main.id
+  cidr_block = var.db_subnet_cidrs[count.index]
+  availability_zone = var.availability_zones[count.index % length(var.availability_zones)]
+  tags = {
+    Name = "${var.project_name}-db-subnet-${count.index + 1}"
+    Tier = "database"
+  }
+}
+
+# Route table for DB subnets (uses same NAT Gateway for outbound traffic)
+resource "aws_route_table_association" "db_private" {
+  count = length(aws_subnet.db_private)
+  subnet_id = aws_subnet.db_private[count.index].id
+  route_table_id = aws_route_table.private.id
+}
+
 # VPC Peering with Default VPC
 data "aws_vpc" "default" {
   default = true
