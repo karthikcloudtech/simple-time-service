@@ -17,6 +17,7 @@ spec:
       imageRegistry: public.ecr.aws
 
     image:
+      registry: public.ecr.aws
       repository: bitnami/kafka
       tag: 3.8.0
 
