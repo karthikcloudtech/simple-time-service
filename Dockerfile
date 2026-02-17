@@ -1,19 +1,9 @@
-# Stage 1: Builder
-FROM --platform=$BUILDPLATFORM amazonlinux:2023 AS builder
+# Use single stage since no build compilation needed (all deps are pure Python or pre-built)
+FROM --platform=$BUILDPLATFORM amazonlinux:2023
+
 RUN dnf install -y --nodocs \
     python3.11 \
     python3.11-pip \
-    gcc \
- && dnf clean all \
- && rm -rf /var/cache/dnf/* /var/lib/dnf/*
-WORKDIR /build
-COPY requirements.txt .
-RUN pip3.11 install --no-cache-dir --prefix=/install -r requirements.txt
-
-# Stage 2: Final Image
-FROM --platform=$BUILDPLATFORM amazonlinux:2023 AS final
-RUN dnf install -y --nodocs \
-    python3.11 \
     python3.11-setuptools \
     shadow-utils \
  && dnf clean all \
@@ -22,9 +12,11 @@ RUN dnf install -y --nodocs \
 RUN useradd -m appuser
 
 WORKDIR /app
-COPY --from=builder /install /usr/local
+COPY requirements.txt .
+RUN pip3.11 install --no-cache-dir -r requirements.txt
+
 COPY app/ ./app
-RUN chown -R appuser:appuser /app /usr/local
+RUN chown -R appuser:appuser /app
 USER appuser
 EXPOSE 8080
 CMD ["python3.11", "app/app.py"]
