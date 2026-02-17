@@ -20,12 +20,11 @@ env:
   ENVIRONMENT: prod
 
 # --------------------
-# STAGE 1: TERRAFORM PLAN (on PRs)
+# STAGE 1: TERRAFORM PLAN (on PRs and push)
 # --------------------
 jobs:
   plan:
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@v4
       - uses: hashicorp/setup-terraform@v3
@@ -50,11 +49,11 @@ jobs:
         run: terraform plan
 
 # --------------------
-# STAGE 2: TERRAFORM APPLY (on push to main/develop)
+# STAGE 2: TERRAFORM APPLY (on push to main/develop after plan succeeds)
 # --------------------
   apply:
     runs-on: ubuntu-latest
-    if: github.event_name == 'push'
+    if: github.event_name == 'pull_request'
     needs: plan
     environment: prod
     steps:
