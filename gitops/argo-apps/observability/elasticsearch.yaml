@@ -4,7 +4,7 @@ metadata:
   name: elasticsearch
   namespace: argocd
   annotations:
-    argocd.argoproj.io/sync-wave: "1"  # Deploy after storage-class (wave 0) is ready
+    argocd.argoproj.io/sync-wave: "3"  # Deploy after storage-class (wave 0) is ready
 spec:
   project: default
   source:
