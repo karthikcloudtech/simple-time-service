@@ -10,9 +10,7 @@ spec:
   source:
     repoURL: https://github.com/karthikcloudtech/simple-time-service.git
     targetRevision: fastapi
-    path: gitops/argo-apps/platform
-    directory:
-      include: kafka-simple.yaml
+    path: gitops/helm-charts/platform/kafka
   destination:
     server: https://kubernetes.default.svc
     namespace: kafka
