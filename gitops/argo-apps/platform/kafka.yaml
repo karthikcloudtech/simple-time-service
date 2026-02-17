@@ -4,16 +4,39 @@ metadata:
   name: kafka
   namespace: argocd
   annotations:
-    argocd.argoproj.io/sync-wave: "0"  # Deploy early, before apps use it
+    argocd.argoproj.io/sync-wave: "0"
 spec:
   project: default
   source:
-    repoURL: https://github.com/karthikcloudtech/simple-time-service.git
-    targetRevision: fastapi
-    path: gitops/helm-charts/platform/kafka
+    repoURL: https://charts.bitnami.com/bitnami
+    chart: kafka
+    targetRevision: 30.1.2
+    helm:
+      valueFiles: []
+      values: |
+        kraft:
+          enabled: true
+
+        zookeeper:
+          enabled: false
+
+        replicaCount: 1
+
+        persistence:
+          enabled: true
+          storageClass: gp3
+          size: 5Gi
+
+        listeners:
+          client:
+            protocol: PLAINTEXT
+
+        autoCreateTopicsEnable: false
+
   destination:
     server: https://kubernetes.default.svc
     namespace: kafka
+
   syncPolicy:
     automated:
       prune: true
