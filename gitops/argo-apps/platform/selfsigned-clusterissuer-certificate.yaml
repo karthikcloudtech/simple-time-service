@@ -1,0 +1,25 @@
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: selfsigned-cluster-issuer
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: simple-time-service-tls
+  namespace: default
+spec:
+  secretName: simple-time-service-tls
+  duration: 2160h # 90d
+  renewBefore: 360h # 15d
+  subject:
+    organizations:
+      - Simple Time Service
+  commonName: simple-time-service.local
+  dnsNames:
+    - simple-time-service.local
+  issuerRef:
+    name: selfsigned-cluster-issuer
+    kind: ClusterIssuer
