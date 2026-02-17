@@ -42,6 +42,7 @@ module "vpc" {
   vpc_cidr             = var.vpc_cidr
   availability_zones   = var.availability_zones
   private_subnet_cidrs = var.private_subnet_cidrs
+  db_subnet_cidrs      = var.db_subnet_cidrs
   public_subnet_cidrs  = var.public_subnet_cidrs
   eks_cluster_name     = local.eks_cluster_name
 }
@@ -68,7 +69,7 @@ module "rds" {
 
   project_name           = var.project_name
   vpc_id                 = module.vpc.vpc_id
-  eks_private_subnet_ids = module.vpc.private_subnet_ids
+  db_private_subnet_ids  = module.vpc.db_subnet_ids
   eks_security_group_id  = module.eks.cluster_security_group_id
   
   # RDS Configuration

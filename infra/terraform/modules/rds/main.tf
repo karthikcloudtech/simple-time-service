@@ -26,12 +26,16 @@ resource "aws_security_group" "rds" {
   tags = {
     Name = "${var.project_name}-rds-sg"
   }
+  lifecycle {
+  prevent_destroy = true  
+  }
+  
 }
 
 # DB Subnet Group
 resource "aws_db_subnet_group" "main" {
   name       = "${var.project_name}-db-subnet-group"
-  subnet_ids = var.eks_private_subnet_ids
+  subnet_ids = var.db_private_subnet_ids
 
   tags = {
     Name = "${var.project_name}-db-subnet-group"
@@ -70,6 +74,9 @@ resource "aws_db_instance" "postgres" {
 
   multi_az            = var.multi_az
   auto_minor_version_upgrade = false
+  lifecycle {
+    prevent_destroy = true
+  }
   
   tags = {
     Name = "${var.project_name}-postgres"

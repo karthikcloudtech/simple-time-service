@@ -3,69 +3,67 @@ import psycopg2
 from psycopg2.pool import SimpleConnectionPool
 import os
 import logging
+import json
 from datetime import datetime
 import boto3
 from botocore.exceptions import ClientError
 
 logger = logging.getLogger(__name__)
 
-# Function to retrieve password from AWS Secrets Manager
-def get_db_password_from_secrets():
-    """Retrieve DB password from AWS Secrets Manager"""
-    secret_name = os.getenv('AWS_SECRET_NAME', 'simple-time-service-postgres')
-    region = os.getenv('AWS_REGION', 'us-east-1')
+# PostgreSQL connection via Secrets Manager
+def connect_to_postgres_with_secrets(secret_name, region_name='us-east-1'):
+    """
+    Connect to PostgreSQL using credentials from Secrets Manager
+    """
+    # Get credentials from Secrets Manager
+    client = boto3.client('secretsmanager', region_name=region_name)
     
     try:
-        client = boto3.client('secretsmanager', region_name=region)
         response = client.get_secret_value(SecretId=secret_name)
-        if 'SecretString' in response:
-            return response['SecretString']
-        else:
-            logger.error(f"No SecretString found in {secret_name}")
-            return None
-    except ClientError as e:
-        logger.warning(f"Could not retrieve secret {secret_name}: {str(e)}. Using fallback.")
-        return os.getenv('DB_PASSWORD', 'changeme123')
+        secret = json.loads(response['SecretString'])
+        
+        # Get database name (hardcoded to 'simple')
+        database = 'simple_time_service'
+        
+        # Create PostgreSQL connection
+        connection = psycopg2.connect(
+            host=secret['host'],
+            port=secret.get('port', 5432),
+            database=database,
+            user=secret['username'],
+            password=secret['password']
+        )
+        
+        logger.info(f"Connected to PostgreSQL at {secret['host']}:{secret.get('port', 5432)}/{database} as {secret['username']}")
+        return connection
+        
     except Exception as e:
-        logger.warning(f"Unexpected error retrieving from Secrets Manager: {str(e)}")
-        return os.getenv('DB_PASSWORD', 'changeme123')
+        logger.error(f"Error connecting to database: {str(e)}")
+        return None
 
-# PostgreSQL connection configuration
-DB_HOST = os.getenv('DB_HOST', 'simple-time-service-postgres.co18eum88817.us-east-1.rds.amazonaws.com')
-DB_PORT = os.getenv('DB_PORT', '5432')
-DB_NAME = os.getenv('DB_NAME', 'appdb')
-DB_USER = os.getenv('DB_USER', 'appuser')
-DB_PASSWORD = get_db_password_from_secrets()
 
-# Connection pool for better performance
-conn_pool = None
+# Secrets Manager configuration
+SECRET_NAME = os.getenv('AWS_SECRET_NAME', 'rds!db-d3383bf3-468c-4942-86f3-89af40e59872')
+REGION_NAME = os.getenv('AWS_REGION', 'us-east-1')
 
 
 def get_connection():
-    """Get a database connection from the pool"""
-    global conn_pool
+    """Get a database connection using Secrets Manager"""
     try:
-        if conn_pool is None:
-            conn_pool = SimpleConnectionPool(
-                1,  # Minimum connections
-                5,  # Maximum connections
-                host=DB_HOST,
-                port=int(DB_PORT),
-                database=DB_NAME,
-                user=DB_USER,
-                password=DB_PASSWORD
-            )
-        return conn_pool.getconn()
+        conn = connect_to_postgres_with_secrets(SECRET_NAME, REGION_NAME)
+        return conn
     except Exception as e:
         logger.error(f"Failed to get database connection: {str(e)}")
         return None
 
 
 def return_connection(conn):
-    """Return a connection to the pool"""
-    global conn_pool
-    if conn_pool and conn:
-        conn_pool.putconn(conn)
+    """Close a database connection"""
+    if conn:
+        try:
+            conn.close()
+        except Exception as e:
+            logger.warning(f"Error closing connection: {str(e)}")
 
 
 def init_db():
@@ -119,7 +117,7 @@ def init_db():
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_errors_timestamp ON errors(timestamp)')
         
         conn.commit()
-        logger.info(f"Database initialized successfully at {DB_HOST}:{DB_PORT}/{DB_NAME}")
+        logger.info("Database initialized successfully")
         return True
     except Exception as e:
         logger.warning(f"Database init failed: {str(e)}")

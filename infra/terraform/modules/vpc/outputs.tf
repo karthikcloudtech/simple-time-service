@@ -23,6 +23,11 @@ output "private_subnet_ids" {
   value       = aws_subnet.private[*].id
 }
 
+output "db_subnet_ids" {
+  description = "DB private subnet IDs (dedicated database subnets)"
+  value       = aws_subnet.db_private[*].id
+}
+
 output "nat_gateway_id" {
   description = "NAT Gateway ID"
   value       = aws_nat_gateway.main.id
