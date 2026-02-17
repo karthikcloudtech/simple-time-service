@@ -1,33 +1,6 @@
-apiVersion: argoproj.io/v1alpha1
-kind: Application
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
 metadata:
-  name: cluster-issuers
-  namespace: argocd
-  annotations:
-    argocd.argoproj.io/sync-wave: "2"  # Deploy after cert-manager (wave 1) is ready
+  name: selfsigned-issuer
 spec:
-  project: default
-  source:
-    repoURL: https://github.com/karthikcloudtech/simple-time-service.git
-    targetRevision: fastapi
-    path: gitops/helm-charts/platform/cluster-issuers
-    helm:
-      valueFiles:
-        - values.yaml
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: cert-manager  # ClusterIssuers are cluster-scoped, but namespace helps organize
-  syncPolicy:
-    automated:
-      prune: false  # Don't auto-delete ClusterIssuers
-      selfHeal: true  # Auto-sync if manually changed
-    syncOptions:
-      - CreateNamespace=false  # cert-manager namespace should already exist
-  # Ignore differences in status fields (cert-manager updates these)
-  ignoreDifferences:
-    - group: cert-manager.io
-      kind: ClusterIssuer
-      jsonPointers:
-        - /status
-
-
+  selfSigned: {}
