@@ -8,9 +8,11 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/prometheus-community/helm-charts
+    repoURL: https://github.com/prometheus-operator/prometheus-operator
     targetRevision: main
-    path: charts/kube-prometheus-stack/crds
+    path: example/prometheus-operator-crd
+    directory:
+      recurse: true
   destination:
     server: https://kubernetes.default.svc
     namespace: monitoring
