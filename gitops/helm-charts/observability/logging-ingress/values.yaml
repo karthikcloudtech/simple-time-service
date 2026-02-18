@@ -25,7 +25,7 @@ elasticsearch:
   host: elasticsearch.kart24.shop
   serviceName: elasticsearch-master
   servicePort: 9200
-  healthcheckPath: /_cluster/health
+  healthcheckPath: /
 
 kibana:
   enabled: true
