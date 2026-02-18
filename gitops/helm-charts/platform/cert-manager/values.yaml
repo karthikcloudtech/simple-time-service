@@ -2,7 +2,12 @@
 # Used by: gitops/argo-apps/observability/cert-manager.yaml
 # Chart: jetstack/cert-manager
 
-installCRDs: true
+installCRDs: false
+
+# When this chart depends on the upstream 'cert-manager' chart via Helm dependencies
+# the subchart can be configured under the subchart key. Set both to be explicit.
+cert-manager:
+  installCRDs: false
 
 # NOTE: IAM role ARN annotation must be set via ServiceAccount annotation for Route53 DNS-01
 # Use Terraform output: terraform output cert_manager_role_arn

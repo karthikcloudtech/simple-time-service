@@ -16,6 +16,9 @@ spec:
     helm:
       valueFiles:
         - values.yaml
+      parameters:
+        - name: cert-manager.installCRDs
+          value: "false"
       # NOTE: CRDs are installed by cert-manager-crds app (wave -2)
       # ServiceAccount is created by serviceaccounts app (wave -1) with IAM role annotation
       # Cert-manager deployment happens at wave 1, CRDs and ServiceAccount are guaranteed to exist
