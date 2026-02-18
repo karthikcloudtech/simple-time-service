@@ -1,6 +1,7 @@
 kube-prometheus-stack:
 
   prometheus:
+    enabled: true
     prometheusSpec:
       replicas: 1
       retention: 24h
