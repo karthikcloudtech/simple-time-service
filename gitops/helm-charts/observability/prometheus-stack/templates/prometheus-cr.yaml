@@ -1,41 +1,27 @@
-{{- /*
-Create a Prometheus CR so the Prometheus Operator will reconcile a Prometheus StatefulSet.
-The template determines the correct values path (either `.Values.prometheus` or
-`.Values.prometheus-stack.prometheus`) and renders only when enabled.
-*/ -}}
-{{- $enabled := false }}
-{{- if hasKey .Values "prometheus" }}
-  {{- $p := index .Values "prometheus" }}
-  {{- if and (hasKey $p "enabled") (index $p "enabled") }}
-    {{- $enabled = true }}
-    {{- $vals := $p }}
-  {{- end }}
-{{- end }}
-{{- if not $enabled }}
-  {{- if hasKey .Values "prometheus-stack" }}
-    {{- $ps := index .Values "prometheus-stack" }}
-    {{- if and (hasKey $ps "prometheus") (hasKey (index $ps "prometheus") "enabled") (index (index $ps "prometheus") "enabled") }}
-      {{- $enabled = true }}
-      {{- $vals := index $ps "prometheus" }}
-    {{- end }}
-  {{- end }}
+{{- $vals := dict }}
+
+{{- if .Values.prometheus.enabled }}
+  {{- $vals = .Values.prometheus }}
+{{- else if .Values.prometheus-stack.prometheus.enabled }}
+  {{- $vals = .Values.prometheus-stack.prometheus }}
 {{- end }}
 
-{{- if $enabled }}
+{{- if $vals }}
 apiVersion: monitoring.coreos.com/v1
 kind: Prometheus
 metadata:
-  name: prometheus-stack-prometheus
+  name: prometheus
   namespace: {{ .Release.Namespace }}
 spec:
-  replicas: {{ default 1 (index $vals "prometheusSpec" ).replicas }}
-  serviceAccountName: prometheus
+  replicas: {{ default 1 $vals.prometheusSpec.replicas }}
+
   serviceMonitorSelector: {}
+
   resources:
     requests:
-      cpu: {{ default "100m" (index (index $vals "prometheusSpec") "resources").requests.cpu }}
-      memory: {{ default "256Mi" (index (index $vals "prometheusSpec") "resources").requests.memory }}
+      cpu: {{ default "100m" $vals.prometheusSpec.resources.requests.cpu }}
+      memory: {{ default "256Mi" $vals.prometheusSpec.resources.requests.memory }}
     limits:
-      cpu: {{ default "250m" (index (index $vals "prometheusSpec") "resources").limits.cpu }}
-      memory: {{ default "512Mi" (index (index $vals "prometheusSpec") "resources").limits.memory }}
+      cpu: {{ default "500m" $vals.prometheusSpec.resources.limits.cpu }}
+      memory: {{ default "1Gi" $vals.prometheusSpec.resources.limits.memory }}
 {{- end }}

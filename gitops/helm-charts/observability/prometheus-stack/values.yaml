@@ -1,10 +1,6 @@
-# Prometheus Stack Helm Values (for testing - single replica)
-# Used by: gitops/argo-apps/observability/prometheus-stack.yaml
-# Chart: prometheus-community/kube-prometheus-stack
-prometheus-stack:
+kube-prometheus-stack:
 
   prometheus:
-    enabled: true
     prometheusSpec:
       replicas: 1
       retention: 24h
