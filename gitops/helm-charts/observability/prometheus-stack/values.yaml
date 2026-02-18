@@ -1,9 +1,10 @@
 # Prometheus Stack Helm Values (for testing - single replica)
 # Used by: gitops/argo-apps/observability/prometheus-stack.yaml
 # Chart: prometheus-community/kube-prometheus-stack
-
 prometheus-stack:
+
   prometheus:
+    enabled: true
     prometheusSpec:
       replicas: 1
       retention: 24h
@@ -14,8 +15,9 @@ prometheus-stack:
         limits:
           cpu: 250m
           memory: 512Mi
-  
+
   grafana:
+    enabled: true
     replicas: 1
     resources:
       requests:
@@ -24,13 +26,14 @@ prometheus-stack:
       limits:
         cpu: 200m
         memory: 256Mi
-  
+
   alertmanager:
+    enabled: true
     alertmanagerSpec:
       replicas: 1
-  
-  nodeExporter:
+
+  kube-state-metrics:
     enabled: true
-  
-  kubeStateMetrics:
+
+  prometheus-node-exporter:
     enabled: true
