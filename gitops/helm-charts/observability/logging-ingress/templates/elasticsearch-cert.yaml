@@ -1,0 +1,20 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: elasticsearch-tls
+  namespace: logging
+spec:
+  secretName: elasticsearch-tls
+  issuerRef:
+    name: internal-ca
+    kind: ClusterIssuer
+  commonName: elasticsearch-master.logging.svc
+  dnsNames:
+    - elasticsearch-master
+    - elasticsearch-master.logging
+    - elasticsearch-master.logging.svc
+    - elasticsearch-master.logging.svc.cluster.local
+  usages:
+    - digital signature
+    - key encipherment
+    - server auth
