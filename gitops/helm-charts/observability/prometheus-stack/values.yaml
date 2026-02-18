@@ -4,6 +4,11 @@ kube-prometheus-stack:
     prometheusSpec:
       replicas: 1
       retention: 24h
+
+      # 🔴 REQUIRED — allow custom ServiceMonitors
+      serviceMonitorSelector: {}
+      serviceMonitorSelectorNilUsesHelmValues: false
+
       resources:
         requests:
           cpu: 100m
