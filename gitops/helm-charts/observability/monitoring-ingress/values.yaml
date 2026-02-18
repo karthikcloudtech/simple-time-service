@@ -13,7 +13,6 @@ ingress:
     alb.ingress.kubernetes.io/ssl-redirect: '443'
     alb.ingress.kubernetes.io/ssl-policy: ELBSecurityPolicy-TLS13-1-2-2021-06
     alb.ingress.kubernetes.io/backend-protocol: HTTP
-    alb.ingress.kubernetes.io/healthcheck-path: /api/health
     alb.ingress.kubernetes.io/healthcheck-port: traffic-port
     alb.ingress.kubernetes.io/healthcheck-protocol: HTTP
     alb.ingress.kubernetes.io/success-codes: '200'
@@ -21,12 +20,13 @@ ingress:
 prometheus:
   enabled: true
   host: prometheus.kart24.shop
-  serviceName: prometheus-stack-prometheus
+  serviceName: prometheus-kube-prometheus-prometheus
   servicePort: 9090
   healthcheckPath: /-/healthy
+
 grafana:
   enabled: true
   host: grafana.kart24.shop
-  serviceName: prometheus-stack-grafana
+  serviceName: prometheus-grafana
   servicePort: 80
   healthcheckPath: /api/health
