@@ -156,8 +156,11 @@ resource "aws_route" "public_to_default" {
   destination_cidr_block    = data.aws_vpc.default.cidr_block
   vpc_peering_connection_id = aws_vpc_peering_connection.main_to_default.id
 
-  depends_on = [aws_vpc_peering_connection_accepter.default]
+  lifecycle {
+    ignore_changes = [vpc_peering_connection_id]
+  }
 }
+
 
 # Route from main VPC private subnets to default VPC
 resource "aws_route" "private_to_default" {
@@ -165,14 +168,17 @@ resource "aws_route" "private_to_default" {
   destination_cidr_block    = data.aws_vpc.default.cidr_block
   vpc_peering_connection_id = aws_vpc_peering_connection.main_to_default.id
 
-  depends_on = [aws_vpc_peering_connection_accepter.default]
+ lifecycle {
+    ignore_changes = [vpc_peering_connection_id]
+  }
 }
-
 # Route from default VPC back to main VPC
 resource "aws_route" "default_to_main" {
   route_table_id            = data.aws_route_table.default.id
   destination_cidr_block    = var.vpc_cidr
   vpc_peering_connection_id = aws_vpc_peering_connection.main_to_default.id
 
-  depends_on = [aws_vpc_peering_connection_accepter.default]
+ lifecycle {
+    ignore_changes = [vpc_peering_connection_id]
+  }
 }

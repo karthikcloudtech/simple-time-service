@@ -29,7 +29,7 @@ resource "aws_security_group" "rds" {
   
 }
 
-# DB Subnet Group
+# DB Subnet Group, ignore_changes = [ subnet_ids ] to prevent unnecessary destroy of subnet
 resource "aws_db_subnet_group" "main" {
   name       = "${var.project_name}-db-subnet-group"
   subnet_ids = var.db_private_subnet_ids
@@ -37,6 +37,9 @@ resource "aws_db_subnet_group" "main" {
   tags = {
     Name = "${var.project_name}-db-subnet-group"
   }
+  lifecycle {
+ignore_changes = [ subnet_ids ]
+}
 }
 
 # RDS PostgreSQL Instance
