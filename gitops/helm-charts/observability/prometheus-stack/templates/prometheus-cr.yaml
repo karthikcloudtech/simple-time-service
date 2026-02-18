@@ -1,0 +1,22 @@
+{{- /*
+Create a Prometheus CR so the Prometheus Operator will reconcile a Prometheus StatefulSet.
+This template is rendered only when `.Values.prometheus.enabled` is true.
+*/ -}}
+{{- if .Values.prometheus.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: Prometheus
+metadata:
+  name: prometheus-stack-prometheus
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: {{ .Values.prometheus.prometheusSpec.replicas | default 1 }}
+  serviceAccountName: prometheus
+  serviceMonitorSelector: {}
+  resources:
+    requests:
+      cpu: {{ .Values.prometheus.prometheusSpec.resources.requests.cpu | default "100m" }}
+      memory: {{ .Values.prometheus.prometheusSpec.resources.requests.memory | default "256Mi" }}
+    limits:
+      cpu: {{ .Values.prometheus.prometheusSpec.resources.limits.cpu | default "250m" }}
+      memory: {{ .Values.prometheus.prometheusSpec.resources.limits.memory | default "512Mi" }}
+{{- end }}
