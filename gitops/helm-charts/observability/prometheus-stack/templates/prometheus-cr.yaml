@@ -1,9 +1,17 @@
 {{- $vals := dict }}
 
-{{- if .Values.prometheus.enabled }}
+{{- if and (hasKey .Values "prometheus") .Values.prometheus.enabled }}
   {{- $vals = .Values.prometheus }}
-{{- else if .Values.prometheus-stack.prometheus.enabled }}
-  {{- $vals = .Values.prometheus-stack.prometheus }}
+{{- else if (index .Values "prometheus-stack") }}
+  {{- $ps := index .Values "prometheus-stack" }}
+  {{- if and (hasKey $ps "prometheus") $ps.prometheus.enabled }}
+    {{- $vals = $ps.prometheus }}
+  {{- end }}
+{{- else if (index .Values "kube-prometheus-stack") }}
+  {{- $kps := index .Values "kube-prometheus-stack" }}
+  {{- if and (hasKey $kps "prometheus") $kps.prometheus.enabled }}
+    {{- $vals = $kps.prometheus }}
+  {{- end }}
 {{- end }}
 
 {{- if $vals }}
