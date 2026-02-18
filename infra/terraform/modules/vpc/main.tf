@@ -131,22 +131,15 @@ data "aws_vpc" "default" {
 }
 
 resource "aws_vpc_peering_connection" "main_to_default" {
-  vpc_id      = aws_vpc.main.id
-  peer_vpc_id = data.aws_vpc.default.id
+  vpc_id        = aws_vpc.main.id
+  peer_vpc_id   = data.aws_vpc.default.id
+  auto_accept   = true
 
   tags = {
     Name = "${var.project_name}-peering-default"
   }
 }
 
-resource "aws_vpc_peering_connection_accepter" "default" {
-  vpc_peering_connection_id = aws_vpc_peering_connection.main_to_default.id
-  auto_accept              = true
-
-  tags = {
-    Name = "${var.project_name}-peering-default-accepter"
-  }
-}
 
 # Get default VPC main route table
 data "aws_route_table" "default" {
