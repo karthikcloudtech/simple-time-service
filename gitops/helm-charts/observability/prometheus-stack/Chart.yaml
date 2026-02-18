@@ -4,8 +4,4 @@ description: Wrapper chart for prometheus-community/kube-prometheus-stack
 type: application
 version: 1.0.0
 appVersion: "62.0.0"
-dependencies:
-  - name: kube-prometheus-stack
-    version: 62.0.0
-    repository: https://prometheus-community.github.io/helm-charts
-    alias: prometheus-stack
+# upstream dependency removed: managing Prometheus resources directly via wrapper
