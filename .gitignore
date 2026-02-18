@@ -77,3 +77,6 @@ gitops/helm-charts/**/Chart.lock
 
 # Helm package files
 *.tgz.prov
+!gitops/helm-charts/**/charts/
+!gitops/helm-charts/**/charts/*.tgz
+!gitops/helm-charts/**/Chart.lock
