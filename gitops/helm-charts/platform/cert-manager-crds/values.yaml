@@ -1,4 +1,0 @@
-# Cert-Manager CRDs Helm Values
-# Purpose: Install cert-manager CustomResourceDefinitions before cert-manager deployment
-# Ensures CRDs are available when cert-manager startup checks run
-# This chart must deploy before cert-manager (use lower sync-wave)
