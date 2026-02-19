@@ -1,35 +1,17 @@
-name: Destroy Infrastructure
-
-on:
-  workflow_dispatch:
-    inputs:
-      env:
-        description: "Environment to destroy"
-        required: true
-        type: choice
-        options:
-          - dev
-          - stage
-          - prod
-      confirm:
-        description: "Type DESTROY to confirm"
-        required: true
-
 jobs:
   destroy:
     runs-on: ubuntu-latest
-
-    # approval gate (configure in Settings → Environments)
     environment: ${{ github.event.inputs.env }}
 
     env:
       AWS_DEFAULT_REGION: us-east-1
       TF_ROOT: infra/environments/${{ github.event.inputs.env }}
+      CONFIRM_TEXT: ${{ github.event.inputs.confirm }}
 
     steps:
       - name: Stop if not confirmed
         run: |
-          if [ "${{ github.event.inputs.confirm }}" != "DESTROY" ]; then
+          if [ "$CONFIRM_TEXT" != "DESTROY" ]; then
             echo "You must type DESTROY exactly. Aborting."
             exit 1
           fi
