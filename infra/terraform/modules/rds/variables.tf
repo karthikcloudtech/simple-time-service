@@ -13,10 +13,12 @@ variable "db_private_subnet_ids" {
   type        = list(string)
 }
 
-variable "eks_security_group_id" {
-  description = "EKS cluster security group ID for ingress rules"
+
+variable "node_security_group_id" {
+  description = "EKS node group security group ID for ingress rules"
   type        = string
 }
+
 
 variable "postgres_version" {
   description = "PostgreSQL engine version"
