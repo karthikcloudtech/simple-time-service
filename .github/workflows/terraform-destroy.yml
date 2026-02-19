@@ -1,17 +1,16 @@
-name: 🧨 Destroy Infrastructure (Manual Only)
+name: Destroy Infrastructure
 
 on:
   workflow_dispatch:
     inputs:
       env:
-        description: "Which environment to destroy?"
+        description: "Environment to destroy"
         required: true
         type: choice
         options:
           - dev
           - stage
           - prod
-
       confirm:
         description: "Type DESTROY to confirm"
         required: true
@@ -20,35 +19,30 @@ jobs:
   destroy:
     runs-on: ubuntu-latest
 
-    # approval gate per environment
+    # approval gate (configure in Settings → Environments)
     environment: ${{ github.event.inputs.env }}
 
     env:
-      TF_ROOT: infra/environments/${{ github.event.inputs.env }}
       AWS_DEFAULT_REGION: us-east-1
+      TF_ROOT: infra/environments/${{ github.event.inputs.env }}
 
     steps:
-      - name: Safety check
+      - name: Stop if not confirmed
         run: |
           if [ "${{ github.event.inputs.confirm }}" != "DESTROY" ]; then
-            echo "Aborted: confirmation text mismatch"
+            echo "You must type DESTROY exactly. Aborting."
             exit 1
           fi
 
-      - uses: actions/checkout@v4
-      - uses: hashicorp/setup-terraform@v3
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_DEFAULT_REGION }}
-
-      - name: Terraform init
-        working-directory: ${{ env.TF_ROOT }}
-        run: terraform init
-
-      - name: Terraform destroy
-        working-directory: ${{ env.TF_ROOT }}
-        run: terraform destroy -auto-approve
+          aws-region: ${{ env.AWS_DEFA_
