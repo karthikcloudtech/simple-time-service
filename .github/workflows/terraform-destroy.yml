@@ -1,3 +1,21 @@
+name: Destroy Infrastructure
+
+on:
+  workflow_dispatch:
+    inputs:
+      env:
+        description: Environment to destroy
+        required: true
+        type: choice
+        options:
+          - dev
+          - stage
+          - prod
+      confirm:
+        description: Type DESTROY to confirm
+        required: true
+        type: string
+
 jobs:
   destroy:
     runs-on: ubuntu-latest
@@ -12,7 +30,7 @@ jobs:
       - name: Stop if not confirmed
         run: |
           if [ "$CONFIRM_TEXT" != "DESTROY" ]; then
-            echo "You must type DESTROY exactly. Aborting."
+            echo "Confirmation failed. Aborting."
             exit 1
           fi
 
