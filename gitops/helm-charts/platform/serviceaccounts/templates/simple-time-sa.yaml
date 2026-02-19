@@ -1,0 +1,9 @@
+{{- if .Values.simpleTimeService.enabled }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ .Values.simpleTimeService.name }}
+  namespace: {{ .Values.simpleTimeService.namespace }}
+  annotations:
+    eks.amazonaws.com/role-arn: {{ .Values.simpleTimeService.roleArn | quote }}
+{{- end }}

@@ -24,6 +24,7 @@ spec:
       labels:
         app: {{ .Values.container.name }}
     spec:
+      serviceAccountName: {{ .Values.serviceAccount.name }}
       containers:
         - name: {{ .Values.container.name }}
           image: {{ $image }}
