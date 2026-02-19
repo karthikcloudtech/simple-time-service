@@ -25,7 +25,7 @@ def connect_to_postgres_with_secrets(secret_name, region_name='us-east-1'):
         # Get database name (hardcoded to 'simple')
         database = 'simple_time_service'
         connection = psycopg2.connect(
-            db_host = 'simple-time-service-postgres.co18eum88817.us-east-1.rds.amazonaws.com',
+            host = 'simple-time-service-postgres.co18eum88817.us-east-1.rds.amazonaws.com',
             port=secret.get('port', 5432),
             database=database,
             user=secret['username'],
