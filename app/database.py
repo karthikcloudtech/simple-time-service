@@ -71,9 +71,9 @@ def init_db():
         if not conn:
             logger.error("Could not connect to database")
             return False
-        
+
         cursor = conn.cursor()
-        
+
         # Create requests table
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS http_requests (
@@ -86,7 +86,7 @@ def init_db():
                 os TEXT
             )
         ''')
-        
+
         # Create responses table
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS http_responses (
@@ -97,7 +97,7 @@ def init_db():
                 response_time_ms FLOAT
             )
         ''')
-        
+
         # Create errors table
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS errors (
@@ -108,12 +108,12 @@ def init_db():
                 endpoint TEXT
             )
         ''')
-        
+
         # Create indexes for better query performance
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_http_requests_timestamp ON http_requests(timestamp)')
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_http_responses_timestamp ON http_responses(timestamp)')
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_errors_timestamp ON errors(timestamp)')
-        
+
         conn.commit()
         logger.info("Database initialized successfully")
         return True
