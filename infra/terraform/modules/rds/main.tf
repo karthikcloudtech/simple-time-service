@@ -1,3 +1,24 @@
+resource "aws_iam_policy" "simple_time_secret_read" {
+  name = "simple-time-service-secret-read"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "secretsmanager:GetSecretValue"
+        ]
+        Resource = "arn:aws:secretsmanager:us-east-1:017019814021:secret:rds!db-d3383bf3-468c-4942-86f3-89af40e59872-4Koo8Q"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "simple_time_secret_attach" {
+  role       = aws_iam_role.simple_time_irsa.name
+  policy_arn = aws_iam_policy.simple_time_secret_read.arn
+}
 resource "aws_iam_role" "simple_time_irsa" {
   name = "simple-time-service-rds-irsa-role"
     
@@ -7,6 +28,7 @@ resource "aws_iam_role" "simple_time_irsa" {
 locals {
   oidc = replace(var.cluster_oidc_issuer_url, "https://", "")
 }
+
 
 data "aws_iam_policy_document" "irsa_assume" {
   statement {
@@ -116,7 +138,7 @@ resource "aws_db_instance" "postgres" {
   manage_master_user_password = true
 
   skip_final_snapshot       = var.skip_final_snapshot
-  final_snapshot_identifier = "${var.project_name}-postgres-final-snapshot-${formatdate("YYYY-MM-DD-hhmm", timestamp())}"
+  final_snapshot_identifier = "${var.project_name}-simple-time-service-postgres-final"
 
   multi_az            = var.multi_az
   auto_minor_version_upgrade = false
