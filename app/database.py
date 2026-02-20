@@ -9,7 +9,9 @@ import boto3
 from botocore.exceptions import ClientError
 
 logger = logging.getLogger(__name__)
-
+# Secrets Manager configuration
+SECRET_NAME = 'rds!db-d3383bf3-468c-4942-86f3-89af40e59872'
+REGION_NAME = 'us-east-1'
 # PostgreSQL connection via Secrets Manager
 def connect_to_postgres_with_secrets(secret_name, region_name='us-east-1'):
     """
@@ -17,7 +19,8 @@ def connect_to_postgres_with_secrets(secret_name, region_name='us-east-1'):
     """
     # Get credentials from Secrets Manager
     client = boto3.client('secretsmanager', region_name=region_name)
-    
+    rds_host = 'simple-time-service-postgres.co18eum88817.us-east-1.rds.amazonaws.com'
+
     try:
         response = client.get_secret_value(SecretId=secret_name)
         secret = json.loads(response['SecretString'])
@@ -25,24 +28,19 @@ def connect_to_postgres_with_secrets(secret_name, region_name='us-east-1'):
         # Get database name (hardcoded to 'simple')
         database = 'simple_time_service'
         connection = psycopg2.connect(
-            host = 'simple-time-service-postgres.co18eum88817.us-east-1.rds.amazonaws.com',
+            host = rds_host,
             port=secret.get('port', 5432),
             database=database,
             user=secret['username'],
             password=secret['password']
         )
         
-        logger.info(f"Connected to PostgreSQL at {secret['host']}:{secret.get('port', 5432)}/{database} as {secret['username']}")
+        logger.info(f"Connected to PostgreSQL at {rds_host}:{secret.get('port', 5432)}/{database} as {secret['username']}")
         return connection
         
     except Exception as e:
-        logger.error(f"Error connecting to database: {str(e)}")
+        logger.error(f"Error connecting to database:  {str(e)}")
         return None
-
-
-# Secrets Manager configuration
-SECRET_NAME = os.getenv('AWS_SECRET_NAME', 'rds!db-d3383bf3-468c-4942-86f3-89af40e59872')
-REGION_NAME = os.getenv('AWS_REGION', 'us-east-1')
 
 
 def get_connection():
@@ -117,9 +115,12 @@ def init_db():
         conn.commit()
         logger.info("Database initialized successfully")
         return True
+    
+    except ClientError as e:
+        logger.error("AWS ClientError", exc_info=True)
     except Exception as e:
-        logger.warning(f"Database init failed: {str(e)}")
-        return False
+        logger.error("Generic error", exc_info=True)
+
     finally:
         if conn:
             return_connection(conn)
