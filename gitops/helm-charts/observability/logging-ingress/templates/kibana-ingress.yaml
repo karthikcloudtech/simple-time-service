@@ -5,7 +5,11 @@ metadata:
   name: kibana-ingress
   namespace: {{ .Values.namespace.name }}
   annotations:
-    {{- range $key, $value := .Values.ingress.annotations }}
+    {{- range $key, $value := .Values.ingress.commonAnnotations }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+
+    {{- range $key, $value := .Values.kibana.annotations }}
     {{ $key }}: {{ $value | quote }}
     {{- end }}
     alb.ingress.kubernetes.io/healthcheck-path: {{ .Values.kibana.healthcheckPath | default "/api/status" | quote }}
