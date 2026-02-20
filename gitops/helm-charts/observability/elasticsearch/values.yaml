@@ -46,19 +46,19 @@ elasticsearch:
   xpack:
     security:
       enabled: true
+      
+  esConfig:
+    elasticsearch.yml: |
+      xpack.security.authc:
+        anonymous:
+          username: healthcheck
+          roles: lb_health
+          authz_exception: false
 
-esConfig:
-  elasticsearch.yml: |
-    xpack.security.authc:
-      anonymous:
-        username: healthcheck
-        roles: lb_health
-        authz_exception: false
-
-  roles.yml: |
-    lb_health:
-      cluster:
-        - monitor
-      indices:
-        - names: ["*"]
-          privileges: ["monitor"]
+    roles.yml: |
+      lb_health:
+        cluster:
+          - monitor
+        indices:
+          - names: ["*"]
+            privileges: ["monitor"]
