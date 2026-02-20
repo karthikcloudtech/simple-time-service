@@ -25,6 +25,7 @@ spec:
         app: {{ .Values.container.name }}
     spec:
       serviceAccountName: {{ .Values.serviceAccount.name }}
+      create: {{ .Values.serviceAccount.create }}
       containers:
         - name: {{ .Values.container.name }}
           image: {{ $image }}
