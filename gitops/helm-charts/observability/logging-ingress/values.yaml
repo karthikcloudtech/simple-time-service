@@ -1,5 +1,6 @@
 ingress:
   enabled: true
+  className: alb
   commonAnnotations:
     alb.ingress.kubernetes.io/group.name: kart24-shop
     alb.ingress.kubernetes.io/scheme: internet-facing
@@ -10,6 +11,7 @@ ingress:
     alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:017019814021:certificate/ec034773-a62d-4646-bacb-8ce132c68473
 
 elasticsearch:
+  enabled: true
   namespace: logging
   className: alb
   host: elasticsearch.kart24.shop
@@ -21,6 +23,7 @@ elasticsearch:
   successCodes: "200"
 
 kibana:
+  enabled: true
   namespace: logging
   className: alb
   host: kibana.kart24.shop

@@ -3,15 +3,18 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: kibana-ingress
-  namespace: {{ .Values.namespace.name }}
+  namespace: {{ .Values.ingress.namespace }}
   annotations:
     {{- range $key, $value := .Values.ingress.commonAnnotations }}
     {{ $key }}: {{ $value | quote }}
     {{- end }}
-
     {{- range $key, $value := .Values.kibana.annotations }}
     {{ $key }}: {{ $value | quote }}
     {{- end }}
+    alb.ingress.kubernetes.io/backend-protocol: {{ .Values.kibana.backendProtocol }}
+    alb.ingress.kubernetes.io/healthcheck-protocol: {{ .Values.kibana.healthcheckProtocol }}
+    alb.ingress.kubernetes.io/healthcheck-path: {{ .Values.kibana.healthcheckPath }}
+    alb.ingress.kubernetes.io/success-codes: {{ .Values.kibana.successCodes | quote }}
 spec:
   {{- if .Values.ingress.className }}
   ingressClassName: {{ .Values.ingress.className }}
