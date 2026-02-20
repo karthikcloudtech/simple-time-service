@@ -1,3 +1,47 @@
+resource "aws_iam_role" "simple_time_irsa" {
+  name = "simple-time-service-rds-irsa-role"
+    
+  assume_role_policy = data.aws_iam_policy_document.irsa_assume.json
+}
+
+locals {
+  oidc = replace(var.cluster_oidc_issuer_url, "https://", "")
+}
+
+data "aws_iam_policy_document" "irsa_assume" {
+  statement {
+    actions = ["sts:AssumeRoleWithWebIdentity"]
+
+    principals {
+      type        = "Federated"
+      identifiers = [var.oidc_provider_arn]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "${local.oidc}:sub"
+      values   = ["system:serviceaccount:simple-time-service:simple-time-sa"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "${local.oidc}:aud"
+      values   = ["sts.amazonaws.com"]
+    }
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
 # RDS PostgreSQL Database Module
 
 # Security Group for RDS
@@ -28,6 +72,8 @@ resource "aws_security_group" "rds" {
   }
   
 }
+
+
 
 # DB Subnet Group, ignore_changes = [ subnet_ids ] to prevent unnecessary destroy of subnet
 resource "aws_db_subnet_group" "main" {
