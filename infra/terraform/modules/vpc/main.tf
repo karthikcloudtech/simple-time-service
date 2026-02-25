@@ -45,6 +45,10 @@ resource "aws_subnet" "private" {
       "kubernetes.io/role/internal-elb" = "1"
     } : {}
   )
+  lifecycle {
+  prevent_destroy = true  
+  }
+  
 }
 
 resource "aws_eip" "nat" {
