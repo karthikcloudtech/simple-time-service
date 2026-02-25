@@ -9,7 +9,7 @@ resource "aws_iam_policy" "simple_time_secret_read" {
         Action = [
           "secretsmanager:GetSecretValue"
         ]
-        Resource = "arn:aws:secretsmanager:us-east-1:017019814021:secret:rds!db-d3383bf3-468c-4942-86f3-89af40e59872-4Koo8Q"
+        Resource = "arn:aws:secretsmanager:us-east-1:017019814021:secret:rds!db-44cb3a2b-9758-45b5-98c6-297fd02576c3"
       }
     ]
   })
@@ -105,9 +105,8 @@ resource "aws_db_subnet_group" "main" {
   tags = {
     Name = "${var.project_name}-db-subnet-group"
   }
-  lifecycle {
-ignore_changes = [ subnet_ids ]
-}
+
+
 }
 
 # RDS PostgreSQL Instance

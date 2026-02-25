@@ -42,7 +42,7 @@ def connect_to_postgres_with_secrets(secret_name, region_name='us-east-1'):
 
 
 # Secrets Manager configuration
-SECRET_NAME = os.getenv('AWS_SECRET_NAME', 'rds!db-d3383bf3-468c-4942-86f3-89af40e59872')
+SECRET_NAME = os.getenv('AWS_SECRET_NAME', 'rds!db-44cb3a2b-9758-45b5-98c6-297fd02576c3')
 REGION_NAME = os.getenv('AWS_REGION', 'us-east-1')
 
 
