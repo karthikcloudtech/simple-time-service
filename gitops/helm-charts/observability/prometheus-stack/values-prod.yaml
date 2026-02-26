@@ -1,1 +1,80 @@
-# Production environment overrides for prometheus-stack
+kube-prometheus-stack:
+
+  crds:
+    enabled: true
+
+  prometheus:
+    enabled: true
+    prometheusSpec:
+      replicas: 1
+
+      retention: 7d
+
+      serviceMonitorSelector: {}
+      serviceMonitorSelectorNilUsesHelmValues: false
+
+      resources:
+        requests:
+          cpu: 500m
+          memory: 1Gi
+        limits:
+          cpu: 1
+          memory: 2Gi
+
+      storageSpec:
+        volumeClaimTemplate:
+          spec:
+            accessModes: ["ReadWriteOnce"]
+            resources:
+              requests:
+                storage: 20Gi
+
+  alertmanager:
+    enabled: true
+    alertmanagerSpec:
+      replicas: 1
+      storage:
+        volumeClaimTemplate:
+          spec:
+            accessModes: ["ReadWriteOnce"]
+            resources:
+              requests:
+                storage: 5Gi
+
+  grafana:
+    enabled: true
+    replicas: 1
+
+    adminUser: admin
+    adminPassword: admin123  # change in real prod
+
+    persistence:
+      enabled: true
+      accessModes: ["ReadWriteOnce"]
+      size: 10Gi
+
+    resources:
+      requests:
+        cpu: 200m
+        memory: 512Mi
+      limits:
+        cpu: 500m
+        memory: 1Gi
+
+    service:
+      type: ClusterIP
+
+  kube-state-metrics:
+    enabled: true
+
+  prometheus-node-exporter:
+    enabled: true
+
+  kubeEtcd:
+    enabled: false  # disable if using managed control plane (like EKS)
+
+  kubeControllerManager:
+    enabled: false
+
+  kubeScheduler:
+    enabled: false
