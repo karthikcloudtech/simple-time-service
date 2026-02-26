@@ -11,10 +11,15 @@ spec:
     chart: kube-prometheus-stack
     targetRevision: 81.6.1
     helm:
+      releaseName: prometheus
       values: |
+        crds:
+          enabled: true
         prometheus:
           prometheusSpec:
             retention: 7d
+            serviceMonitorSelector: {}
+            serviceMonitorSelectorNilUsesHelmValues: false
 
   destination:
     server: https://kubernetes.default.svc
