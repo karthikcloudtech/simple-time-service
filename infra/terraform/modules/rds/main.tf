@@ -9,7 +9,7 @@ resource "aws_iam_policy" "simple_time_secret_read" {
         Action = [
           "secretsmanager:GetSecretValue"
         ]
-        Resource = "arn:aws:secretsmanager:us-east-1:017019814021:secret:rds!db-44cb3a2b-9758-45b5-98c6-297fd02576c3"
+        Resource = "arn:aws:secretsmanager:us-east-1:017019814021:secret:arn:aws:secretsmanager:us-east-1:017019814021:secret:rds!db-44cb3a2b-9758-45b5-98c6-297fd02576c3-amTjiw"
       }
     ]
   })

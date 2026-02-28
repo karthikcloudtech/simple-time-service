@@ -1,0 +1,10 @@
+crds:
+  enabled: true
+
+prometheus:
+  prometheusSpec:
+    retention: 7d
+
+grafana:
+  persistence:
+    enabled: true
