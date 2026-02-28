@@ -1,25 +1,23 @@
 kube-prometheus-stack:
 
-  crds:
+  grafana:
     enabled: true
+    adminUser: admin
+    adminPassword: "ChangeMe123!"   # replace with external secret later
+
+    persistence:
+      enabled: true
+      size: 10Gi
+
+    ingress:
+      enabled: true
+      ingressClassName: nginx
+      hosts:
+        - grafana.yourdomain.com
 
   prometheus:
-    enabled: true
     prometheusSpec:
-      replicas: 1
-
-      retention: 7d
-
-      serviceMonitorSelector: {}
-      serviceMonitorSelectorNilUsesHelmValues: false
-
-      resources:
-        requests:
-          cpu: 500m
-          memory: 1Gi
-        limits:
-          cpu: 1
-          memory: 2Gi
+      retention: 15d
 
       storageSpec:
         volumeClaimTemplate:
@@ -27,12 +25,10 @@ kube-prometheus-stack:
             accessModes: ["ReadWriteOnce"]
             resources:
               requests:
-                storage: 20Gi
+                storage: 30Gi
 
   alertmanager:
-    enabled: true
     alertmanagerSpec:
-      replicas: 1
       storage:
         volumeClaimTemplate:
           spec:
@@ -41,40 +37,8 @@ kube-prometheus-stack:
               requests:
                 storage: 5Gi
 
-  grafana:
-    enabled: true
-    replicas: 1
-
-    adminUser: admin
-    adminPassword: admin123  # change in real prod
-
-    persistence:
-      enabled: true
-      accessModes: ["ReadWriteOnce"]
-      size: 10Gi
-
-    resources:
-      requests:
-        cpu: 200m
-        memory: 512Mi
-      limits:
-        cpu: 500m
-        memory: 1Gi
-
-    service:
-      type: ClusterIP
-
   kube-state-metrics:
     enabled: true
 
-  prometheus-node-exporter:
+  nodeExporter:
     enabled: true
-
-  kubeEtcd:
-    enabled: false  # disable if using managed control plane (like EKS)
-
-  kubeControllerManager:
-    enabled: false
-
-  kubeScheduler:
-    enabled: false

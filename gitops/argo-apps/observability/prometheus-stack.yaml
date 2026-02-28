@@ -3,23 +3,19 @@ kind: Application
 metadata:
   name: prometheus
   namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
 spec:
   project: default
 
   source:
-    repoURL: https://prometheus-community.github.io/helm-charts
-    chart: kube-prometheus-stack
-    targetRevision: 81.6.1
+    repoURL: https://github.com/karthikcloudtech/simple-time-service.git
+    targetRevision: fastapi
+    path: gitops/helm-charts/observability/prometheus-stack
     helm:
       releaseName: prometheus
-      values: |
-        crds:
-          enabled: true
-        prometheus:
-          prometheusSpec:
-            retention: 7d
-            serviceMonitorSelector: {}
-            serviceMonitorSelectorNilUsesHelmValues: false
+      valueFiles:
+        - values.yaml
 
   destination:
     server: https://kubernetes.default.svc
