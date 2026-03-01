@@ -24,23 +24,16 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
-      - name: Install kubectl, helm, helmfile
-        run: |
-          sudo apt-get update -y
-          sudo apt-get install -y curl jq
+      - name: Setup Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.15.0
 
-          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-          sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
-          curl -LO "https://get.helm.sh/helm-$(curl -s https://api.github.com/repos/helm/helm/releases/latest | jq -r '.tag_name')-linux-amd64.tar.gz"
-          tar -zxvf helm-*-linux-amd64.tar.gz
-          sudo mv linux-amd64/helm /usr/local/bin/helm
-          HELMFILE_VERSION=v1.3.2
-          curl -LO https://github.com/helmfile/helmfile/releases/download/${HELMFILE_VERSION}/helmfile_${HELMFILE_VERSION#v}_linux_amd64.tar.gz
-          mkdir -p /tmp/helmfile-install
-          tar -xzf helmfile_${HELMFILE_VERSION#v}_linux_amd64.tar.gz -C /tmp/helmfile-install
-          sudo mv /tmp/helmfile-install/helmfile /usr/local/bin/helmfile
-          helmfile --version
-          helm plugin install https://github.com/databus23/helm-diff --verify=false
+      - name: Setup Helmfile
+        uses: helmfile/helmfile-action@v1
+        with:
+          version: v1.3.2
+
       - name: Update kubeconfig
         run: |
           aws eks update-kubeconfig \
