@@ -41,7 +41,7 @@ jobs:
           tar -xzf helmfile_${HELMFILE_VERSION#v}_linux_amd64.tar.gz -C /tmp/helmfile-install
           sudo mv /tmp/helmfile-install/helmfile /usr/local/bin/helmfile
           helmfile --version
-          helm plugin install https://github.com/databus23/helm-diff
+          helm plugin install https://github.com/databus23/helm-diff --verify=false
       - name: Update kubeconfig
         run: |
           aws eks update-kubeconfig \
