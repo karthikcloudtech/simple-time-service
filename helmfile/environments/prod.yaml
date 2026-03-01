@@ -1,3 +1,0 @@
-env: prod
-kubeContext: "arn:aws:eks:us-east-1:017019814021:cluster/simple-time-service-prod"
-chartVersion: 80.13.3
