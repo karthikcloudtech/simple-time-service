@@ -36,13 +36,12 @@ jobs:
           curl -LO "https://get.helm.sh/helm-$(curl -s https://api.github.com/repos/helm/helm/releases/latest | jq -r '.tag_name')-linux-amd64.tar.gz"
           tar -zxvf helm-*-linux-amd64.tar.gz
           sudo mv linux-amd64/helm /usr/local/bin/helm
-
-          HELMFILE_VERSION=$(curl -s https://api.github.com/repos/helmfile/helmfile/releases/latest | jq -r '.tag_name')
+          HELMFILE_VERSION=v1.3.2
           curl -LO https://github.com/helmfile/helmfile/releases/download/${HELMFILE_VERSION}/helmfile_${HELMFILE_VERSION#v}_linux_amd64.tar.gz
-          tar -xzf helmfile_*_linux_amd64.tar.gz
-          sudo mv helmfile /usr/local/bin/helmfile
+          mkdir -p /tmp/helmfile-install
+          tar -xzf helmfile_${HELMFILE_VERSION#v}_linux_amd64.tar.gz -C /tmp/helmfile-install
+          sudo mv /tmp/helmfile-install/helmfile /usr/local/bin/helmfile
           helmfile --version
-
       - name: Update kubeconfig
         run: |
           aws eks update-kubeconfig \
