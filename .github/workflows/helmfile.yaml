@@ -5,9 +5,7 @@ on:
     branches:
       - fastapi
     paths:
-      - 'helmfile/environments/prod.yaml'
-      - 'helmfile/prom-stack/values-prod.yaml'
-      - 'helmfile/helmfile.yaml'
+      - 'helmfile/**
 
 
 jobs:
