@@ -9,6 +9,7 @@ on:
       - 'helmfile/prom-stack/values-prod.yaml'
       - 'helmfile/helmfile.yaml'
 
+
 jobs:
   helm-deploy-prod:
     runs-on: ubuntu-latest
