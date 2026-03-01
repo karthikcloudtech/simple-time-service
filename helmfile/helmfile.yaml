@@ -6,6 +6,7 @@ releases:
     chart: prometheus-community/kube-prometheus-stack
     version: {{ .Values.chartVersion }}
 
+
 environments:
   dev:
     values:
