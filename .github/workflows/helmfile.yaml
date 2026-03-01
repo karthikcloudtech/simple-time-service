@@ -37,9 +37,11 @@ jobs:
           tar -zxvf helm-*-linux-amd64.tar.gz
           sudo mv linux-amd64/helm /usr/local/bin/helm
 
-          curl -L https://github.com/helmfile/helmfile/releases/latest/download/helmfile_linux_amd64 -o helmfile_bin
-          chmod +x helmfile_bin
-          sudo mv helmfile_bin /usr/local/bin/helmfile
+          HELMFILE_VERSION=$(curl -s https://api.github.com/repos/helmfile/helmfile/releases/latest | jq -r '.tag_name')
+          curl -LO https://github.com/helmfile/helmfile/releases/download/${HELMFILE_VERSION}/helmfile_${HELMFILE_VERSION#v}_linux_amd64.tar.gz
+          tar -xzf helmfile_*_linux_amd64.tar.gz
+          sudo mv helmfile /usr/local/bin/helmfile
+          helmfile --version
 
       - name: Update kubeconfig
         run: |
