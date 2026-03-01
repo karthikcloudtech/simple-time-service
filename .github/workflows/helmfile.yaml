@@ -50,4 +50,4 @@ jobs:
       - name: Deploy Prometheus Stack (prod)
         run: |
           #helmfile -f helmfile/helmfile.yaml diff
-          helmfile -f helmfile/helmfile.yaml apply
+          helmfile -f helmfile/helmfile-prom-prod.yaml apply
