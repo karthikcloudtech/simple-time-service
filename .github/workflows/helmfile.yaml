@@ -1,0 +1,52 @@
+name: Deploy Prometheus (Prod)
+
+on:
+  push:
+    branches:
+      - fastapi
+    paths:
+      - 'helmfile/environments/prod.yaml'
+      - 'helmfile/prom-stack/values-prod.yaml'
+      - 'helmfile/helmfile.yaml'
+
+jobs:
+  helm-deploy-prod:
+    runs-on: ubuntu-latest
+    environment: prod   # enables manual approval
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Install kubectl, helm, helmfile
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y curl jq
+
+          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+
+          curl -LO "https://get.helm.sh/helm-$(curl -s https://api.github.com/repos/helm/helm/releases/latest | jq -r '.tag_name')-linux-amd64.tar.gz"
+          tar -zxvf helm-*-linux-amd64.tar.gz
+          sudo mv linux-amd64/helm /usr/local/bin/helm
+
+          curl -L https://github.com/helmfile/helmfile/releases/latest/download/helmfile_linux_amd64 -o helmfile
+          chmod +x helmfile
+          sudo mv helmfile /usr/local/bin/helmfile
+
+      - name: Update kubeconfig
+        run: |
+          aws eks update-kubeconfig \
+            --region us-east-1 \
+            --name simple-time-service-prod
+
+      - name: Deploy Prometheus Stack (prod)
+        run: |
+          helmfile -f helmfile/helmfile.yaml -e prod diff
+          helmfile -f helmfile/helmfile.yaml -e prod apply

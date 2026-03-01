@@ -2,9 +2,19 @@ releases:
   - name: kube-prometheus-stack
     namespace: monitoring
     createNamespace: true
-    kubeContext: arn:aws:eks:us-east-1:017019814021:cluster/simple-time-service-prod
+    kubeContext: {{ .Values.kubeContext }}
     chart: prometheus-community/kube-prometheus-stack
-    version: 80.13.3
+    version: {{ .Values.chartVersion }}
+
+environments:
+  dev:
     values:
+      - environments/dev.yaml
+      - prom-stack/values.yaml
+      - prom-stack/values-dev.yaml
+
+  prod:
+    values:
+      - environments/prod.yaml
       - prom-stack/values.yaml
       - prom-stack/values-prod.yaml
