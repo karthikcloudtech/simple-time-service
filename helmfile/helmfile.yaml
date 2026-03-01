@@ -1,11 +1,3 @@
-releases:
-  - name: kube-prometheus-stack
-    namespace: monitoring
-    createNamespace: true
-    kubeContext: {{ .Values.kubeContext }}
-    chart: prometheus-community/kube-prometheus-stack
-    version: {{ .Values.chartVersion }}
-
 environments:
   dev:
     values:
@@ -18,4 +10,12 @@ environments:
       - environments/prod.yaml
       - prom-stack/values.yaml
       - prom-stack/values-prod.yaml
+
+releases:
+  - name: kube-prometheus-stack
+    namespace: monitoring
+    createNamespace: true
+    kubeContext: {{ .Values.kubeContext }}
+    chart: prometheus-community/kube-prometheus-stack
+    version: {{ .Values.chartVersion }}
 
