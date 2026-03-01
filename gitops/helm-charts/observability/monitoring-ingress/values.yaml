@@ -20,13 +20,12 @@ ingress:
 prometheus:
   enabled: true
   host: prometheus.kart24.shop
-  serviceName: prometheus-kube-prometheus-prometheus
+  serviceName: prometheus-stack-kube-prometheus-prometheus
   servicePort: 9090
   healthcheckPath: /-/healthy
-
 grafana:
   enabled: true
   host: grafana.kart24.shop
-  serviceName: prometheus-grafana
+  serviceName: prometheus-stack-grafana
   servicePort: 80
   healthcheckPath: /api/health

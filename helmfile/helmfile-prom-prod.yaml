@@ -1,0 +1,21 @@
+helmDefaults:
+  kubeContext: "arn:aws:eks:us-east-1:017019814021:cluster/simple-time-service-prod"
+  atomic: true
+  wait: true
+  timeout: 600
+  cleanupOnFail: true
+
+repositories:
+  - name: prometheus-community
+    url: https://prometheus-community.github.io/helm-charts
+
+releases:
+  - name: kube-prometheus-stack
+    namespace: monitoring
+    createNamespace: true
+    chart: prometheus-community/kube-prometheus-stack
+    version: 80.13.3   # 🔒 pinned production version
+    disableValidation: true
+    values:
+      - prom-stack/values.yaml
+      - prom-stack/values-prod.yaml

@@ -1,3 +1,69 @@
+resource "aws_iam_policy" "simple_time_secret_read" {
+  name = "simple-time-service-secret-read"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "secretsmanager:GetSecretValue"
+        ]
+        Resource = "arn:aws:secretsmanager:us-east-1:017019814021:secret:arn:aws:secretsmanager:us-east-1:017019814021:secret:rds!db-44cb3a2b-9758-45b5-98c6-297fd02576c3-amTjiw"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "simple_time_secret_attach" {
+  role       = aws_iam_role.simple_time_irsa.name
+  policy_arn = aws_iam_policy.simple_time_secret_read.arn
+}
+resource "aws_iam_role" "simple_time_irsa" {
+  name = "simple-time-service-rds-irsa-role"
+    
+  assume_role_policy = data.aws_iam_policy_document.irsa_assume.json
+}
+
+locals {
+  oidc = replace(var.cluster_oidc_issuer_url, "https://", "")
+}
+
+
+data "aws_iam_policy_document" "irsa_assume" {
+  statement {
+    actions = ["sts:AssumeRoleWithWebIdentity"]
+
+    principals {
+      type        = "Federated"
+      identifiers = [var.oidc_provider_arn]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "${local.oidc}:sub"
+      values   = ["system:serviceaccount:simple-time-service:simple-time-sa"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "${local.oidc}:aud"
+      values   = ["sts.amazonaws.com"]
+    }
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
 # RDS PostgreSQL Database Module
 
 # Security Group for RDS
@@ -10,7 +76,7 @@ resource "aws_security_group" "rds" {
     from_port       = 5432
     to_port         = 5432
     protocol        = "tcp"
-    security_groups = [var.node_security_group_id]
+    security_groups = [var.node_security_group_id,"sg-04ed7867006607abf"]
     description     = "Allow PostgreSQL from EKS cluster"
   }
 
@@ -29,6 +95,8 @@ resource "aws_security_group" "rds" {
   
 }
 
+
+
 # DB Subnet Group, ignore_changes = [ subnet_ids ] to prevent unnecessary destroy of subnet
 resource "aws_db_subnet_group" "main" {
   name       = "${var.project_name}-db-subnet-group"
@@ -37,9 +105,8 @@ resource "aws_db_subnet_group" "main" {
   tags = {
     Name = "${var.project_name}-db-subnet-group"
   }
-  lifecycle {
-ignore_changes = [ subnet_ids ]
-}
+
+
 }
 
 # RDS PostgreSQL Instance
@@ -70,11 +137,10 @@ resource "aws_db_instance" "postgres" {
   manage_master_user_password = true
 
   skip_final_snapshot       = var.skip_final_snapshot
-  final_snapshot_identifier = "${var.project_name}-postgres-final-snapshot-${formatdate("YYYY-MM-DD-hhmm", timestamp())}"
+  final_snapshot_identifier = "${var.project_name}-simple-time-service-postgres-final"
 
   multi_az            = var.multi_az
   auto_minor_version_upgrade = false
-
   
   tags = {
     Name = "${var.project_name}-postgres"

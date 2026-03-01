@@ -1,35 +1,35 @@
-# Default values for logging-ingress
-namespace:
-  name: logging
-  create: true
-
 ingress:
   enabled: true
   className: alb
-  annotations:
+  commonAnnotations:
     alb.ingress.kubernetes.io/group.name: kart24-shop
     alb.ingress.kubernetes.io/scheme: internet-facing
     alb.ingress.kubernetes.io/target-type: ip
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80},{"HTTPS":443}]'
     alb.ingress.kubernetes.io/ssl-redirect: '443'
     alb.ingress.kubernetes.io/ssl-policy: ELBSecurityPolicy-TLS13-1-2-2021-06
-    alb.ingress.kubernetes.io/backend-protocol: HTTPS
-    alb.ingress.kubernetes.io/healthcheck-path: /
-    alb.ingress.kubernetes.io/healthcheck-port: traffic-port
-    alb.ingress.kubernetes.io/healthcheck-protocol: HTTPS
-    alb.ingress.kubernetes.io/success-codes: '200,302'
     alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:017019814021:certificate/ec034773-a62d-4646-bacb-8ce132c68473
 
 elasticsearch:
   enabled: true
+  namespace: logging
+  className: alb
   host: elasticsearch.kart24.shop
   serviceName: elasticsearch-master
   servicePort: 9200
-  healthcheckPath: /
+  backendProtocol: HTTPS
+  healthcheckProtocol: HTTPS
+  healthcheckPath: /_cluster/health?local=true
+  successCodes: "200"
 
 kibana:
   enabled: true
+  namespace: logging
+  className: alb
   host: kibana.kart24.shop
   serviceName: kibana-kibana
   servicePort: 5601
+  backendProtocol: HTTP
+  healthcheckProtocol: HTTP
   healthcheckPath: /
+  successCodes: "200,302"

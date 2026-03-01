@@ -73,13 +73,6 @@ variable "rds_master_username" {
   sensitive   = true
 }
 
-variable "rds_master_password" {
-  description = "DEPRECATED: RDS master password is now managed by AWS Secrets Manager. Leave empty."
-  type        = string
-  default     = ""
-  sensitive   = true
-}
-
 variable "rds_multi_az" {
   description = "Enable Multi-AZ for RDS"
   type        = bool
