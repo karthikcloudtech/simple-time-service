@@ -46,6 +46,10 @@ jobs:
           VERBOSE="true" \
           bash scripts/install-eks-addons.sh
 
+      - name: Install prometheus kube stack
+        run: |
+
+
   verify:
     runs-on: ubuntu-latest
     needs: [bootstrap]

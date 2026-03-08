@@ -74,6 +74,16 @@ backend.tfbackend
 gitops/helm-charts/**/charts/
 gitops/helm-charts/**/Chart.lock
 *.tgz
+# Helm dependencies
+
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+
+# Python
+.venv/
+__pycache__/
 
 # Helm package files
 *.tgz.prov

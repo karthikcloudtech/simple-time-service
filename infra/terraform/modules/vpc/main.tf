@@ -45,6 +45,7 @@ resource "aws_subnet" "private" {
       "kubernetes.io/role/internal-elb" = "1"
     } : {}
   )
+  
 }
 
 resource "aws_eip" "nat" {
@@ -67,18 +68,19 @@ resource "aws_nat_gateway" "main" {
 
   depends_on = [aws_internet_gateway.main]
 }
-
+# Making it idempotent by ignoring changes to allocation_id, so that if the EIP is replaced (e.g. due to failure), it won't trigger a NAT gateway replacement which can cause downtime
 resource "aws_route_table" "public" {
   vpc_id = aws_vpc.main.id
-
-  route {
-    cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.main.id
-  }
 
   tags = {
     Name = "${var.project_name}-public-rt"
   }
+}
+
+resource "aws_route" "public_internet" {
+  route_table_id         = aws_route_table.public.id
+  destination_cidr_block = "0.0.0.0/0"
+  gateway_id             = aws_internet_gateway.main.id
 }
 
 resource "aws_route_table_association" "public" {
@@ -89,15 +91,23 @@ resource "aws_route_table_association" "public" {
 
 resource "aws_route_table" "private" {
   vpc_id = aws_vpc.main.id
-
-  route {
-    cidr_block     = "0.0.0.0/0"
-    nat_gateway_id = aws_nat_gateway.main.id
-  }
-
   tags = {
     Name = "${var.project_name}-private-rt"
   }
+}
+
+resource "aws_route" "private_nat" {
+  route_table_id         = aws_route_table.private.id
+  destination_cidr_block = "0.0.0.0/0"
+  nat_gateway_id         = aws_nat_gateway.main.id
+}
+
+#making it idempotent by ignoring changes to nat_gateway_id, so that if the NAT gateway is replaced (e.g. due to AZ failure), it won't trigger a route replacement which can cause downtime
+
+resource "aws_route" "private_peering" {
+  route_table_id            = aws_route_table.private.id
+  destination_cidr_block    = "172.31.0.0/16"
+  vpc_peering_connection_id = aws_vpc_peering_connection.main_to_default.id
 }
 
 resource "aws_route_table_association" "private" {

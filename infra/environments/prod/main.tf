@@ -71,7 +71,8 @@ module "rds" {
   vpc_id                 = module.vpc.vpc_id
   db_private_subnet_ids  = module.vpc.db_subnet_ids
   node_security_group_id = module.eks.node_security_group_id
-
+  cluster_oidc_issuer_url = module.eks.cluster_oidc_issuer_url
+  oidc_provider_arn      = module.eks.oidc_provider_arn
   # RDS Configuration
   postgres_version       = var.postgres_version
   instance_class         = var.rds_instance_class

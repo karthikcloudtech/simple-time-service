@@ -1,14 +1,3 @@
-# Patch to reduce EBS CSI Controller replicas from 2 to 1
-# This saves resources (~100-200MB memory, ~100m CPU) for small clusters
-#
-# Apply manually:
-#   kubectl patch deployment ebs-csi-controller -n kube-system --type='json' -p='[{"op": "replace", "path": "/spec/replicas", "value": 1}]'
-#
-# Or apply this file:
-#   kubectl apply -f k8s/ebs-csi-controller-scale-patch.yaml
-#
-# Note: This patch may be reset during EKS addon updates. Re-apply if needed.
-# For production clusters with high volume operations, consider keeping 2 replicas for HA.
 
 apiVersion: apps/v1
 kind: Deployment

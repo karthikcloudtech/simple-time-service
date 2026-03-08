@@ -20,6 +20,16 @@ variable "node_security_group_id" {
 }
 
 
+variable "cluster_oidc_issuer_url" {
+  description = "OIDC issuer URL for the EKS cluster"
+  type        = string
+}
+variable "oidc_provider_arn" {
+  description = "OIDC provider ARN for IRSA"
+  type        = string
+}
+
+
 variable "postgres_version" {
   description = "PostgreSQL engine version"
   type        = string

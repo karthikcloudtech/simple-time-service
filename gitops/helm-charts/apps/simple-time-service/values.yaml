@@ -25,6 +25,9 @@ deployment:
       maxUnavailable: 0
 
 # Container configuration
+serviceAccount:
+  create: false
+  name: simple-time-sa
 container:
   name: simple-time-service
   port: 8080

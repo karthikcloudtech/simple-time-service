@@ -24,15 +24,16 @@ def connect_to_postgres_with_secrets(secret_name, region_name='us-east-1'):
         
         # Get database name (hardcoded to 'simple')
         database = 'simple_time_service'
+        host_rds = 'simple-time-service-postgres.co18eum88817.us-east-1.rds.amazonaws.com'
         connection = psycopg2.connect(
-            db_host = 'simple-time-service-postgres.co18eum88817.us-east-1.rds.amazonaws.com',
+            host = host_rds,
             port=secret.get('port', 5432),
             database=database,
             user=secret['username'],
             password=secret['password']
         )
         
-        logger.info(f"Connected to PostgreSQL at {secret['host']}:{secret.get('port', 5432)}/{database} as {secret['username']}")
+        logger.info(f"Connected to PostgreSQL at {host_rds}:{secret.get('port', 5432)}/{database} as {secret['username']}")
         return connection
         
     except Exception as e:
@@ -41,7 +42,7 @@ def connect_to_postgres_with_secrets(secret_name, region_name='us-east-1'):
 
 
 # Secrets Manager configuration
-SECRET_NAME = os.getenv('AWS_SECRET_NAME', 'rds!db-d3383bf3-468c-4942-86f3-89af40e59872')
+SECRET_NAME = os.getenv('AWS_SECRET_NAME', 'rds!db-44cb3a2b-9758-45b5-98c6-297fd02576c3')
 REGION_NAME = os.getenv('AWS_REGION', 'us-east-1')
 
 
