@@ -11,11 +11,10 @@ on:
 jobs:
   helm-deploy-prod:
     runs-on: ubuntu-latest
-    environment: prod   # enables manual approval
+    environment: prod
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -34,7 +33,7 @@ jobs:
         with:
           helmfile-version: v1.3.2
           helm-version: v3.15.0
-          helm-plugins: https://github.com/databus23/helm-diff
+          helm-plugins: https://github.com/databus23/helm-diff@v3.9.7
 
       - name: Update kubeconfig
         run: |
